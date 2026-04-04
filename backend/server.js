@@ -2,18 +2,20 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
-const { getDb, save } = require('./database');
+const path = require('path');
+const { pool, initDb } = require('./database');
 const { sendEmail } = require('./emailService');
 const { appointmentConfirmation, appointmentRescheduled, appointmentReminder24h, clientConfirmedNotification, clientCancelledNotification } = require('./emailTemplates');
 const { startReminderJob } = require('./reminderJob');
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const PORT = process.env.PORT || 3001;
 
 const app = express();
-const PORT = 3001;
-
 app.use(cors());
 app.use(express.json());
+
+// ── CLIENTS ───────────────────────────────────────────────────
 
 // POST /clients - create a new client
 app.post('/clients', async (req, res) => {
@@ -24,128 +26,94 @@ app.post('/clients', async (req, res) => {
     return res.status(400).json({ error: 'first_name and last_name are required' });
   }
 
-  const db = await getDb();
-  db.run(
+  const { rows } = await pool.query(
     `INSERT INTO clients (first_name, last_name, phone, email, notes, is_vip,
        birthdate, sex, address, occupation, civil_status, medical_history)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
     [first_name, last_name, phone || null, email || null, notes || null, is_vip ? 1 : 0,
      birthdate || null, sex || null, address || null, occupation || null, civil_status || null,
      medical_history ? JSON.stringify(medical_history) : null]
   );
-  save();
-
-  const stmt = db.prepare('SELECT * FROM clients WHERE id = last_insert_rowid()');
-  stmt.step();
-  const client = parseClient(stmt.getAsObject());
-  stmt.free();
-
-  res.status(201).json(client);
+  const { rows: clientRows } = await pool.query('SELECT * FROM clients WHERE id = $1', [rows[0].id]);
+  res.status(201).json(parseClient(clientRows[0]));
 });
 
-// PATCH /clients/:id - update client fields (including VIP toggle)
+// PATCH /clients/:id - update client fields
 app.patch('/clients/:id', async (req, res) => {
   const { first_name, last_name, phone, email, notes, is_vip,
           birthdate, sex, address, occupation, civil_status, medical_history } = req.body;
-  const db = await getDb();
 
-  const check = db.prepare('SELECT * FROM clients WHERE id = ?');
-  check.bind([parseInt(req.params.id)]);
-  if (!check.step()) { check.free(); return res.status(404).json({ error: 'Client not found' }); }
-  const existing = check.getAsObject();
-  check.free();
+  const { rows: existing } = await pool.query('SELECT * FROM clients WHERE id = $1', [parseInt(req.params.id)]);
+  if (!existing.length) return res.status(404).json({ error: 'Client not found' });
+  const e = existing[0];
 
-  db.run(
-    `UPDATE clients SET first_name=?, last_name=?, phone=?, email=?, notes=?, is_vip=?,
-       birthdate=?, sex=?, address=?, occupation=?, civil_status=?, medical_history=?
-     WHERE id=?`,
+  await pool.query(
+    `UPDATE clients SET first_name=$1, last_name=$2, phone=$3, email=$4, notes=$5, is_vip=$6,
+       birthdate=$7, sex=$8, address=$9, occupation=$10, civil_status=$11, medical_history=$12
+     WHERE id=$13`,
     [
-      first_name    ?? existing.first_name,
-      last_name     ?? existing.last_name,
-      phone         !== undefined ? phone         : existing.phone,
-      email         !== undefined ? email         : existing.email,
-      notes         !== undefined ? notes         : existing.notes,
-      is_vip        !== undefined ? (is_vip ? 1 : 0) : existing.is_vip,
-      birthdate     !== undefined ? birthdate     : existing.birthdate,
-      sex           !== undefined ? sex           : existing.sex,
-      address       !== undefined ? address       : existing.address,
-      occupation    !== undefined ? occupation    : existing.occupation,
-      civil_status  !== undefined ? civil_status  : existing.civil_status,
-      medical_history !== undefined
-        ? JSON.stringify(medical_history)
-        : existing.medical_history,
+      first_name    ?? e.first_name,
+      last_name     ?? e.last_name,
+      phone         !== undefined ? phone         : e.phone,
+      email         !== undefined ? email         : e.email,
+      notes         !== undefined ? notes         : e.notes,
+      is_vip        !== undefined ? (is_vip ? 1 : 0) : e.is_vip,
+      birthdate     !== undefined ? birthdate     : e.birthdate,
+      sex           !== undefined ? sex           : e.sex,
+      address       !== undefined ? address       : e.address,
+      occupation    !== undefined ? occupation    : e.occupation,
+      civil_status  !== undefined ? civil_status  : e.civil_status,
+      medical_history !== undefined ? JSON.stringify(medical_history) : e.medical_history,
       parseInt(req.params.id),
     ]
   );
-  save();
 
-  const stmt = db.prepare('SELECT * FROM clients WHERE id = ?');
-  stmt.bind([parseInt(req.params.id)]);
-  stmt.step();
-  const client = parseClient(stmt.getAsObject());
-  stmt.free();
-
-  res.json(client);
+  const { rows: updated } = await pool.query('SELECT * FROM clients WHERE id = $1', [parseInt(req.params.id)]);
+  res.json(parseClient(updated[0]));
 });
 
 // POST /clients/bulk - import multiple clients from CSV
 app.post('/clients/bulk', async (req, res) => {
   const { clients } = req.body;
-
   if (!Array.isArray(clients) || clients.length === 0) {
     return res.status(400).json({ error: 'clients array is required' });
   }
 
-  const db = await getDb();
   const imported = [];
   const errors = [];
 
-  db.run('BEGIN');
+  await pool.query('BEGIN');
   for (let i = 0; i < clients.length; i++) {
     const { first_name, last_name, phone, email, notes } = clients[i];
     if (!first_name || !last_name) {
       errors.push({ row: i + 1, reason: 'Missing first_name or last_name' });
       continue;
     }
-    db.run(
-      'INSERT INTO clients (first_name, last_name, phone, email, notes) VALUES (?, ?, ?, ?, ?)',
+    await pool.query(
+      'INSERT INTO clients (first_name, last_name, phone, email, notes) VALUES ($1, $2, $3, $4, $5)',
       [first_name.trim(), last_name.trim(), phone || null, email || null, notes || null]
     );
     imported.push({ first_name, last_name });
   }
-  db.run('COMMIT');
+  await pool.query('COMMIT');
 
-  save();
   res.status(201).json({ imported: imported.length, errors });
 });
 
 // GET /clients - list all clients
 app.get('/clients', async (req, res) => {
-  const db = await getDb();
-  const stmt = db.prepare('SELECT * FROM clients ORDER BY created_at DESC');
-  const clients = [];
-  while (stmt.step()) {
-    clients.push(stmt.getAsObject());
-  }
-  stmt.free();
-  res.json(clients);
+  const { rows } = await pool.query('SELECT * FROM clients ORDER BY created_at DESC');
+  res.json(rows);
 });
 
 // GET /clients/:id - get a single client
 app.get('/clients/:id', async (req, res) => {
-  const db = await getDb();
-  const stmt = db.prepare('SELECT * FROM clients WHERE id = ?');
-  stmt.bind([parseInt(req.params.id)]);
-  if (stmt.step()) {
-    const client = parseClient(stmt.getAsObject());
-    stmt.free();
-    return res.json(client);
-  }
-  stmt.free();
-  res.status(404).json({ error: 'Client not found' });
+  const { rows } = await pool.query('SELECT * FROM clients WHERE id = $1', [parseInt(req.params.id)]);
+  if (!rows.length) return res.status(404).json({ error: 'Client not found' });
+  res.json(parseClient(rows[0]));
 });
 
-// Helper: parse medical_history JSON field on a client row
+// Helper: parse medical_history JSON field
 function parseClient(c) {
   if (c && c.medical_history && typeof c.medical_history === 'string') {
     try { c.medical_history = JSON.parse(c.medical_history); } catch (e) { c.medical_history = {}; }
@@ -153,7 +121,8 @@ function parseClient(c) {
   return c;
 }
 
-// Helper: get Monday of the week for a given date string (YYYY-MM-DD)
+// ── DATE HELPERS ──────────────────────────────────────────────
+
 function dateToLocalStr(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -163,7 +132,7 @@ function dateToLocalStr(d) {
 
 function getWeekStart(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
-  const day = d.getDay(); // 0=Sun, 1=Mon...
+  const day = d.getDay();
   const diff = (day === 0) ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   return dateToLocalStr(d);
@@ -175,7 +144,12 @@ function getWeekEnd(weekStart) {
   return dateToLocalStr(d);
 }
 
-// ── APPOINTMENTS ─────────────────────────────────────────────
+function timeToMinutes(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// ── APPOINTMENTS ──────────────────────────────────────────────
 
 // POST /appointments - create appointment
 app.post('/appointments', async (req, res) => {
@@ -185,204 +159,149 @@ app.post('/appointments', async (req, res) => {
     return res.status(400).json({ error: 'client_id, date, start_time, and duration_minutes are required' });
   }
 
-  const db = await getDb();
-
-  // Count overlapping appointments on this date/time (allow up to 3)
   const startMinutes = timeToMinutes(start_time);
   const endMinutes = startMinutes + parseInt(duration_minutes);
 
-  const existing = db.prepare('SELECT start_time, duration_minutes FROM appointments WHERE date = ?');
-  existing.bind([date]);
+  const { rows: existing } = await pool.query(
+    'SELECT start_time, duration_minutes FROM appointments WHERE date = $1', [date]
+  );
   let overlapCount = 0;
-  while (existing.step()) {
-    const row = existing.getAsObject();
+  for (const row of existing) {
     const existStart = timeToMinutes(row.start_time);
     const existEnd = existStart + row.duration_minutes;
-    if (startMinutes < existEnd && endMinutes > existStart) {
-      overlapCount++;
-    }
+    if (startMinutes < existEnd && endMinutes > existStart) overlapCount++;
   }
-  existing.free();
-
   if (overlapCount >= 3) {
     return res.status(409).json({ error: 'This time slot is fully booked (3/3 appointments)' });
   }
 
   const confirmationToken = crypto.randomBytes(24).toString('hex');
-  db.run(
-    'INSERT INTO appointments (client_id, date, start_time, duration_minutes, treatments, therapist, notes, confirmation_token, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  const { rows: inserted } = await pool.query(
+    `INSERT INTO appointments (client_id, date, start_time, duration_minutes, treatments, therapist, notes, confirmation_token, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
     [client_id, date, start_time, duration_minutes, treatments || null, therapist || null, notes || null, confirmationToken, 'confirmed']
   );
-  const newId = Number(db.exec('SELECT last_insert_rowid()')[0].values[0][0]);
-  save();
-  const stmt = db.prepare('SELECT * FROM appointments WHERE id = ?');
-  stmt.bind([newId]);
-  stmt.step();
-  const appt = stmt.getAsObject();
-  stmt.free();
+  const newId = inserted[0].id;
 
-  // Send confirmation email if client has an email address
-  const clientStmt = db.prepare('SELECT * FROM clients WHERE id = ?');
-  clientStmt.bind([parseInt(client_id)]);
-  if (clientStmt.step()) {
-    const c = clientStmt.getAsObject();
-    if (c.email) {
-      const { subject, html } = appointmentConfirmation(
-        `${c.first_name} ${c.last_name}`, date, start_time, treatments
-      );
-      try {
-        await sendEmail(c.email, subject, html);
-        const now = new Date().toISOString();
-        db.run('UPDATE appointments SET confirmation_sent_at = ? WHERE id = ?', [now, newId]);
-        appt.confirmation_sent_at = now;
-        save();
-      } catch (e) {
-        console.error('[Email] Confirmation email failed:', e);
-      }
+  const { rows: apptRows } = await pool.query(
+    'SELECT a.*, c.first_name, c.last_name FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1',
+    [newId]
+  );
+  const appt = apptRows[0];
+
+  const { rows: clientRows } = await pool.query('SELECT * FROM clients WHERE id = $1', [parseInt(client_id)]);
+  if (clientRows.length && clientRows[0].email) {
+    const c = clientRows[0];
+    const { subject, html } = appointmentConfirmation(
+      `${c.first_name} ${c.last_name}`, date, start_time, treatments
+    );
+    try {
+      await sendEmail(c.email, subject, html);
+      const now = new Date().toISOString();
+      await pool.query('UPDATE appointments SET confirmation_sent_at = $1 WHERE id = $2', [now, newId]);
+      appt.confirmation_sent_at = now;
+    } catch (e) {
+      console.error('[Email] Confirmation email failed:', e);
     }
   }
-  clientStmt.free();
 
   res.status(201).json(appt);
 });
 
-// GET /appointments - list all, optional ?week=YYYY-MM-DD or ?month=YYYY-MM
+// GET /appointments - list all, optional ?week=YYYY-MM-DD or ?month=YYYY-MM or ?client_id=N
 app.get('/appointments', async (req, res) => {
-  const db = await getDb();
-  let stmt;
+  let query, params;
 
   if (req.query.week) {
     const weekStart = getWeekStart(req.query.week);
     const weekEnd = getWeekEnd(weekStart);
-    stmt = db.prepare(`
-      SELECT a.*, c.first_name, c.last_name
-      FROM appointments a
-      JOIN clients c ON a.client_id = c.id
-      WHERE a.date >= ? AND a.date <= ?
-      ORDER BY a.date, a.start_time
-    `);
-    stmt.bind([weekStart, weekEnd]);
+    query = `SELECT a.*, c.first_name, c.last_name, c.is_vip
+             FROM appointments a JOIN clients c ON a.client_id = c.id
+             WHERE a.date >= $1 AND a.date <= $2 ORDER BY a.date, a.start_time`;
+    params = [weekStart, weekEnd];
   } else if (req.query.month) {
     const [y, m] = req.query.month.split('-').map(Number);
     const start = `${y}-${String(m).padStart(2, '0')}-01`;
     const end = new Date(y, m, 0).toISOString().slice(0, 10);
-    stmt = db.prepare(`
-      SELECT a.*, c.first_name, c.last_name
-      FROM appointments a
-      JOIN clients c ON a.client_id = c.id
-      WHERE a.date >= ? AND a.date <= ?
-      ORDER BY a.date, a.start_time
-    `);
-    stmt.bind([start, end]);
+    query = `SELECT a.*, c.first_name, c.last_name, c.is_vip
+             FROM appointments a JOIN clients c ON a.client_id = c.id
+             WHERE a.date >= $1 AND a.date <= $2 ORDER BY a.date, a.start_time`;
+    params = [start, end];
   } else if (req.query.client_id) {
-    stmt = db.prepare(`
-      SELECT a.*, c.first_name, c.last_name
-      FROM appointments a
-      JOIN clients c ON a.client_id = c.id
-      WHERE a.client_id = ?
-      ORDER BY a.date DESC, a.start_time DESC
-    `);
-    stmt.bind([parseInt(req.query.client_id)]);
+    query = `SELECT a.*, c.first_name, c.last_name, c.is_vip
+             FROM appointments a JOIN clients c ON a.client_id = c.id
+             WHERE a.client_id = $1 ORDER BY a.date DESC, a.start_time DESC`;
+    params = [parseInt(req.query.client_id)];
   } else {
-    stmt = db.prepare(`
-      SELECT a.*, c.first_name, c.last_name
-      FROM appointments a
-      JOIN clients c ON a.client_id = c.id
-      ORDER BY a.date, a.start_time
-    `);
+    query = `SELECT a.*, c.first_name, c.last_name, c.is_vip
+             FROM appointments a JOIN clients c ON a.client_id = c.id
+             ORDER BY a.date, a.start_time`;
+    params = [];
   }
 
-  const appointments = [];
-  while (stmt.step()) {
-    appointments.push(stmt.getAsObject());
-  }
-  stmt.free();
-  res.json(appointments);
+  const { rows } = await pool.query(query, params);
+  res.json(rows);
 });
 
 // GET /appointments/:id - single appointment
 app.get('/appointments/:id', async (req, res) => {
-  const db = await getDb();
-  const stmt = db.prepare(`
-    SELECT a.*, c.first_name, c.last_name
-    FROM appointments a
-    JOIN clients c ON a.client_id = c.id
-    WHERE a.id = ?
-  `);
-  stmt.bind([parseInt(req.params.id)]);
-  if (stmt.step()) {
-    const appt = stmt.getAsObject();
-    stmt.free();
-    return res.json(appt);
-  }
-  stmt.free();
-  res.status(404).json({ error: 'Appointment not found' });
+  const { rows } = await pool.query(
+    `SELECT a.*, c.first_name, c.last_name
+     FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1`,
+    [parseInt(req.params.id)]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'Appointment not found' });
+  res.json(rows[0]);
 });
 
 // PATCH /appointments/:id - update editable fields
 app.patch('/appointments/:id', async (req, res) => {
   const { treatments, therapist, notes, date, start_time, duration_minutes, status } = req.body;
-  const db = await getDb();
 
-  const check = db.prepare('SELECT * FROM appointments WHERE id = ?');
-  check.bind([parseInt(req.params.id)]);
-  if (!check.step()) { check.free(); return res.status(404).json({ error: 'Appointment not found' }); }
-  const existing = check.getAsObject();
-  check.free();
+  const { rows: existing } = await pool.query('SELECT * FROM appointments WHERE id = $1', [parseInt(req.params.id)]);
+  if (!existing.length) return res.status(404).json({ error: 'Appointment not found' });
+  const e = existing[0];
 
   const allowedStatuses = ['confirmed', 'done', 'cancelled'];
-  const newStatus = (status && allowedStatuses.includes(status)) ? status : existing.status;
+  const newStatus = (status && allowedStatuses.includes(status)) ? status : e.status;
 
-  db.run(
-    'UPDATE appointments SET date=?, start_time=?, duration_minutes=?, treatments=?, therapist=?, notes=?, status=? WHERE id=?',
+  await pool.query(
+    'UPDATE appointments SET date=$1, start_time=$2, duration_minutes=$3, treatments=$4, therapist=$5, notes=$6, status=$7 WHERE id=$8',
     [
-      date             !== undefined ? date             : existing.date,
-      start_time       !== undefined ? start_time       : existing.start_time,
-      duration_minutes !== undefined ? duration_minutes : existing.duration_minutes,
-      treatments       !== undefined ? treatments       : existing.treatments,
-      therapist        !== undefined ? therapist        : existing.therapist,
-      notes            !== undefined ? notes            : existing.notes,
+      date             !== undefined ? date             : e.date,
+      start_time       !== undefined ? start_time       : e.start_time,
+      duration_minutes !== undefined ? duration_minutes : e.duration_minutes,
+      treatments       !== undefined ? treatments       : e.treatments,
+      therapist        !== undefined ? therapist        : e.therapist,
+      notes            !== undefined ? notes            : e.notes,
       newStatus,
       parseInt(req.params.id),
     ]
   );
-  save();
 
-  const stmt = db.prepare(`
-    SELECT a.*, c.first_name, c.last_name
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.id = ?
-  `);
-  stmt.bind([parseInt(req.params.id)]);
-  stmt.step();
-  const appt = stmt.getAsObject();
-  stmt.free();
-
-  res.json(appt);
+  const { rows: updated } = await pool.query(
+    `SELECT a.*, c.first_name, c.last_name FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1`,
+    [parseInt(req.params.id)]
+  );
+  res.json(updated[0]);
 });
 
-// POST /appointments/:id/send-reminder - manually trigger reminder email
+// POST /appointments/:id/send-reminder
 app.post('/appointments/:id/send-reminder', async (req, res) => {
-  const db = await getDb();
-  const stmt = db.prepare(`
-    SELECT a.*, c.first_name, c.last_name, c.email
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.id = ?
-  `);
-  stmt.bind([parseInt(req.params.id)]);
-  if (!stmt.step()) { stmt.free(); return res.status(404).json({ error: 'Appointment not found' }); }
-  const row = stmt.getAsObject();
-  stmt.free();
+  const { rows } = await pool.query(
+    `SELECT a.*, c.first_name, c.last_name, c.email
+     FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1`,
+    [parseInt(req.params.id)]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'Appointment not found' });
+  const row = rows[0];
 
-  if (!row.email) {
-    return res.status(400).json({ error: 'Client has no email address on file' });
-  }
+  if (!row.email) return res.status(400).json({ error: 'Client has no email address on file' });
 
-  // Ensure token exists for older appointments
   let token = row.confirmation_token;
   if (!token) {
     token = crypto.randomBytes(24).toString('hex');
-    db.run('UPDATE appointments SET confirmation_token = ? WHERE id = ?', [token, parseInt(req.params.id)]);
+    await pool.query('UPDATE appointments SET confirmation_token = $1 WHERE id = $2', [token, parseInt(req.params.id)]);
   }
 
   const confirmUrl = `${BACKEND_URL}/appointments/${req.params.id}/confirm?token=${token}`;
@@ -390,100 +309,80 @@ app.post('/appointments/:id/send-reminder', async (req, res) => {
   const { subject, html } = appointmentReminder24h(
     `${row.first_name} ${row.last_name}`, row.date, row.start_time, row.treatments, confirmUrl, cancelUrl
   );
+
   try {
     await sendEmail(row.email, subject, html);
-    db.run('UPDATE appointments SET reminder_24h_sent = 1, reminder_24h_sent_at = ? WHERE id = ?', [new Date().toISOString(), parseInt(req.params.id)]);
-    save();
-
-    const updated = db.prepare('SELECT a.*, c.first_name, c.last_name FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = ?');
-    updated.bind([parseInt(req.params.id)]);
-    updated.step();
-    const appt = updated.getAsObject();
-    updated.free();
-    res.json(appt);
+    await pool.query(
+      'UPDATE appointments SET reminder_24h_sent = 1, reminder_24h_sent_at = $1 WHERE id = $2',
+      [new Date().toISOString(), parseInt(req.params.id)]
+    );
+    const { rows: updated } = await pool.query(
+      `SELECT a.*, c.first_name, c.last_name FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1`,
+      [parseInt(req.params.id)]
+    );
+    res.json(updated[0]);
   } catch (err) {
     console.error('[Email] Send failed:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /appointments/:id/reschedule - change date/time and notify client
+// POST /appointments/:id/reschedule
 app.post('/appointments/:id/reschedule', async (req, res) => {
   const { date, start_time, duration_minutes } = req.body;
   if (!date || !start_time || !duration_minutes) {
     return res.status(400).json({ error: 'date, start_time, and duration_minutes are required' });
   }
 
-  const db = await getDb();
-  const stmt = db.prepare(`
-    SELECT a.*, c.first_name, c.last_name, c.email
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.id = ?
-  `);
-  stmt.bind([parseInt(req.params.id)]);
-  if (!stmt.step()) { stmt.free(); return res.status(404).json({ error: 'Appointment not found' }); }
-  const row = stmt.getAsObject();
-  stmt.free();
+  const { rows } = await pool.query(
+    `SELECT a.*, c.first_name, c.last_name, c.email
+     FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1`,
+    [parseInt(req.params.id)]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'Appointment not found' });
+  const row = rows[0];
 
-  const oldDate = row.date;
-  const oldTime = row.start_time;
-
-  db.run(
-    'UPDATE appointments SET date=?, start_time=?, duration_minutes=?, rescheduled_at=? WHERE id=?',
+  await pool.query(
+    'UPDATE appointments SET date=$1, start_time=$2, duration_minutes=$3, rescheduled_at=$4 WHERE id=$5',
     [date, start_time, parseInt(duration_minutes), new Date().toISOString(), parseInt(req.params.id)]
   );
-  save();
 
   if (row.email) {
     const { subject, html } = appointmentRescheduled(
-      `${row.first_name} ${row.last_name}`, oldDate, oldTime, date, start_time, row.treatments
+      `${row.first_name} ${row.last_name}`, row.date, row.start_time, date, start_time, row.treatments
     );
-    try {
-      await sendEmail(row.email, subject, html);
-    } catch (err) {
+    try { await sendEmail(row.email, subject, html); } catch (err) {
       console.error('[Email] Reschedule email failed:', err.message);
     }
   }
 
-  const updated = db.prepare(`
-    SELECT a.*, c.first_name, c.last_name
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.id = ?
-  `);
-  updated.bind([parseInt(req.params.id)]);
-  updated.step();
-  const appt = updated.getAsObject();
-  updated.free();
-
-  res.json(appt);
+  const { rows: updated } = await pool.query(
+    `SELECT a.*, c.first_name, c.last_name FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1`,
+    [parseInt(req.params.id)]
+  );
+  res.json(updated[0]);
 });
 
-// GET /appointments/:id/confirm - client clicks confirm button in email
+// GET /appointments/:id/confirm - client confirms via email link
 app.get('/appointments/:id/confirm', async (req, res) => {
   const { token } = req.query;
-  const db = await getDb();
-
-  const stmt = db.prepare(`
-    SELECT a.*, c.first_name, c.last_name, c.email
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.id = ?
-  `);
-  stmt.bind([parseInt(req.params.id)]);
-  if (!stmt.step()) {
-    stmt.free();
-    return res.send(confirmPage('Not Found', 'This appointment could not be found.', '#cc3333'));
-  }
-  const row = stmt.getAsObject();
-  stmt.free();
+  const { rows } = await pool.query(
+    `SELECT a.*, c.first_name, c.last_name, c.email
+     FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1`,
+    [parseInt(req.params.id)]
+  );
+  if (!rows.length) return res.send(confirmPage('Not Found', 'This appointment could not be found.', '#cc3333'));
+  const row = rows[0];
 
   if (!token || token !== row.confirmation_token) {
     return res.send(confirmPage('Invalid Link', 'This confirmation link is invalid or has expired.', '#cc3333'));
   }
 
   if (!row.client_confirmed_at) {
-    db.run('UPDATE appointments SET client_confirmed_at = ?, status = ? WHERE id = ?', [new Date().toISOString(), 'confirmed_by_client', parseInt(req.params.id)]);
-    save();
-
+    await pool.query(
+      'UPDATE appointments SET client_confirmed_at = $1, status = $2 WHERE id = $3',
+      [new Date().toISOString(), 'confirmed_by_client', parseInt(req.params.id)]
+    );
     const clinicEmail = process.env.SMTP_USER;
     if (clinicEmail) {
       const { subject, html } = clientConfirmedNotification(
@@ -493,36 +392,27 @@ app.get('/appointments/:id/confirm', async (req, res) => {
     }
   }
 
-  const name = `${row.first_name} ${row.last_name}`;
   res.send(confirmPage(
     'Attendance Confirmed!',
-    `Thank you, <strong>${name}</strong>! Your appointment on ${new Date(row.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} has been confirmed. See you soon!`,
+    `Thank you, <strong>${row.first_name} ${row.last_name}</strong>! Your appointment on ${new Date(row.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} has been confirmed. See you soon!`,
     '#0f9d58'
   ));
 });
 
-// GET /appointments/:id/cancel - client clicks cancel button in email
+// GET /appointments/:id/cancel - client cancels via email link
 app.get('/appointments/:id/cancel', async (req, res) => {
   const { token } = req.query;
-  const db = await getDb();
-
-  const stmt = db.prepare(`
-    SELECT a.*, c.first_name, c.last_name, c.email
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.id = ?
-  `);
-  stmt.bind([parseInt(req.params.id)]);
-  if (!stmt.step()) {
-    stmt.free();
-    return res.send(confirmPage('Not Found', 'This appointment could not be found.', '#cc3333'));
-  }
-  const row = stmt.getAsObject();
-  stmt.free();
+  const { rows } = await pool.query(
+    `SELECT a.*, c.first_name, c.last_name, c.email
+     FROM appointments a JOIN clients c ON a.client_id = c.id WHERE a.id = $1`,
+    [parseInt(req.params.id)]
+  );
+  if (!rows.length) return res.send(confirmPage('Not Found', 'This appointment could not be found.', '#cc3333'));
+  const row = rows[0];
 
   if (!token || token !== row.confirmation_token) {
     return res.send(confirmPage('Invalid Link', 'This cancellation link is invalid or has expired.', '#cc3333'));
   }
-
   if (row.status === 'cancelled_by_client') {
     return res.send(confirmPage('Already Cancelled', 'This appointment has already been cancelled.', '#cc3333'));
   }
@@ -535,9 +425,10 @@ app.get('/appointments/:id/cancel', async (req, res) => {
       '#cc3333'));
   }
 
-  db.run('UPDATE appointments SET cancelled_at = ?, status = ? WHERE id = ?',
-    [new Date().toISOString(), 'cancelled_by_client', parseInt(req.params.id)]);
-  save();
+  await pool.query(
+    'UPDATE appointments SET cancelled_at = $1, status = $2 WHERE id = $3',
+    [new Date().toISOString(), 'cancelled_by_client', parseInt(req.params.id)]
+  );
 
   const clinicEmail = process.env.SMTP_USER;
   if (clinicEmail) {
@@ -567,224 +458,191 @@ function confirmPage(title, message, color) {
 
 // DELETE /appointments/:id
 app.delete('/appointments/:id', async (req, res) => {
-  const db = await getDb();
-  db.run('DELETE FROM appointments WHERE id = ?', [parseInt(req.params.id)]);
-  save();
+  await pool.query('DELETE FROM appointments WHERE id = $1', [parseInt(req.params.id)]);
   res.json({ success: true });
 });
 
 // ── BLOCKED SLOTS ─────────────────────────────────────────────
 
-// POST /blocked-slots - manually block a time range
 app.post('/blocked-slots', async (req, res) => {
   const { date, start_time, end_time, reason } = req.body;
-
   if (!date || !start_time || !end_time) {
     return res.status(400).json({ error: 'date, start_time, and end_time are required' });
   }
-
-  const db = await getDb();
-  db.run(
-    'INSERT INTO blocked_slots (date, start_time, end_time, reason) VALUES (?, ?, ?, ?)',
+  const { rows } = await pool.query(
+    'INSERT INTO blocked_slots (date, start_time, end_time, reason) VALUES ($1, $2, $3, $4) RETURNING *',
     [date, start_time, end_time, reason || null]
   );
-  save();
-
-  const stmt = db.prepare('SELECT * FROM blocked_slots WHERE id = last_insert_rowid()');
-  stmt.step();
-  const slot = stmt.getAsObject();
-  stmt.free();
-
-  res.status(201).json(slot);
+  res.status(201).json(rows[0]);
 });
 
-// GET /blocked-slots - list all, optional ?week=YYYY-MM-DD or ?month=YYYY-MM
 app.get('/blocked-slots', async (req, res) => {
-  const db = await getDb();
-  let stmt;
-
+  let query, params;
   if (req.query.week) {
     const weekStart = getWeekStart(req.query.week);
     const weekEnd = getWeekEnd(weekStart);
-    stmt = db.prepare('SELECT * FROM blocked_slots WHERE date >= ? AND date <= ? ORDER BY date, start_time');
-    stmt.bind([weekStart, weekEnd]);
+    query = 'SELECT * FROM blocked_slots WHERE date >= $1 AND date <= $2 ORDER BY date, start_time';
+    params = [weekStart, weekEnd];
   } else if (req.query.month) {
     const [y, m] = req.query.month.split('-').map(Number);
     const start = `${y}-${String(m).padStart(2, '0')}-01`;
     const end = new Date(y, m, 0).toISOString().slice(0, 10);
-    stmt = db.prepare('SELECT * FROM blocked_slots WHERE date >= ? AND date <= ? ORDER BY date, start_time');
-    stmt.bind([start, end]);
+    query = 'SELECT * FROM blocked_slots WHERE date >= $1 AND date <= $2 ORDER BY date, start_time';
+    params = [start, end];
   } else {
-    stmt = db.prepare('SELECT * FROM blocked_slots ORDER BY date, start_time');
+    query = 'SELECT * FROM blocked_slots ORDER BY date, start_time';
+    params = [];
   }
-
-  const slots = [];
-  while (stmt.step()) {
-    slots.push(stmt.getAsObject());
-  }
-  stmt.free();
-  res.json(slots);
+  const { rows } = await pool.query(query, params);
+  res.json(rows);
 });
 
-// DELETE /blocked-slots/:id
 app.delete('/blocked-slots/:id', async (req, res) => {
-  const db = await getDb();
-  db.run('DELETE FROM blocked_slots WHERE id = ?', [parseInt(req.params.id)]);
-  save();
+  await pool.query('DELETE FROM blocked_slots WHERE id = $1', [parseInt(req.params.id)]);
   res.json({ success: true });
 });
 
-// ── HELPERS ───────────────────────────────────────────────────
+// ── INVENTORY ─────────────────────────────────────────────────
 
-function timeToMinutes(timeStr) {
-  const [h, m] = timeStr.split(':').map(Number);
-  return h * 60 + m;
-}
-
-// ── Inventory ─────────────────────────────────────────────────
-
-// POST /inventory — create item
 app.post('/inventory', async (req, res) => {
   const { name, category, unit, stock_quantity, low_stock_threshold, conversion_unit, conversion_factor } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
-  const db = await getDb();
   const qty = parseInt(stock_quantity) || 0;
   const threshold = parseInt(low_stock_threshold) || 0;
   const factor = parseFloat(conversion_factor) || null;
-  db.run(
-    'INSERT INTO inventory_items (name, category, unit, stock_quantity, low_stock_threshold, conversion_unit, conversion_factor) VALUES (?, ?, ?, ?, ?, ?, ?)',
+
+  const { rows } = await pool.query(
+    `INSERT INTO inventory_items (name, category, unit, stock_quantity, low_stock_threshold, conversion_unit, conversion_factor)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
     [name, category || null, unit || null, qty, threshold, conversion_unit || null, factor]
   );
-  const newId = db.exec('SELECT last_insert_rowid()')[0].values[0][0];
+  const newId = rows[0].id;
+
   if (qty > 0) {
-    db.run(
-      'INSERT INTO stock_movements (item_id, type, quantity, reason) VALUES (?, ?, ?, ?)',
+    await pool.query(
+      'INSERT INTO stock_movements (item_id, type, quantity, reason) VALUES ($1, $2, $3, $4)',
       [newId, 'IN', qty, 'Initial stock']
     );
   }
-  save();
-  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
-  stmt.bind([newId]); stmt.step();
-  const item = stmt.getAsObject(); stmt.free();
-  res.status(201).json(item);
+
+  const { rows: itemRows } = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [newId]);
+  res.status(201).json(itemRows[0]);
 });
 
-// PATCH /inventory/:id — update item details
 app.patch('/inventory/:id', async (req, res) => {
   const { name, category, unit, low_stock_threshold, conversion_unit, conversion_factor, preferred_unit } = req.body;
-  const db = await getDb();
-  const check = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
-  check.bind([parseInt(req.params.id)]);
-  if (!check.step()) { check.free(); return res.status(404).json({ error: 'Item not found' }); }
-  const existing = check.getAsObject(); check.free();
-  db.run(
-    `UPDATE inventory_items SET name=?, category=?, unit=?, low_stock_threshold=?,
-     conversion_unit=?, conversion_factor=?, preferred_unit=? WHERE id=?`,
+
+  const { rows: existing } = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [parseInt(req.params.id)]);
+  if (!existing.length) return res.status(404).json({ error: 'Item not found' });
+  const e = existing[0];
+
+  await pool.query(
+    `UPDATE inventory_items SET name=$1, category=$2, unit=$3, low_stock_threshold=$4,
+     conversion_unit=$5, conversion_factor=$6, preferred_unit=$7 WHERE id=$8`,
     [
-      name               ?? existing.name,
-      category           !== undefined ? category           : existing.category,
-      unit               !== undefined ? unit               : existing.unit,
-      low_stock_threshold !== undefined ? parseInt(low_stock_threshold) : existing.low_stock_threshold,
-      conversion_unit    !== undefined ? conversion_unit    : existing.conversion_unit,
-      conversion_factor  !== undefined ? (parseFloat(conversion_factor) || null) : existing.conversion_factor,
-      preferred_unit     !== undefined ? preferred_unit     : existing.preferred_unit,
+      name               ?? e.name,
+      category           !== undefined ? category           : e.category,
+      unit               !== undefined ? unit               : e.unit,
+      low_stock_threshold !== undefined ? parseInt(low_stock_threshold) : e.low_stock_threshold,
+      conversion_unit    !== undefined ? conversion_unit    : e.conversion_unit,
+      conversion_factor  !== undefined ? (parseFloat(conversion_factor) || null) : e.conversion_factor,
+      preferred_unit     !== undefined ? preferred_unit     : e.preferred_unit,
       parseInt(req.params.id),
     ]
   );
-  save();
-  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
-  stmt.bind([parseInt(req.params.id)]); stmt.step();
-  const item = stmt.getAsObject(); stmt.free();
-  res.json(item);
+
+  const { rows: updated } = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [parseInt(req.params.id)]);
+  res.json(updated[0]);
 });
 
-// GET /inventory/:id — single item
 app.get('/inventory/:id', async (req, res) => {
-  const db = await getDb();
-  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
-  stmt.bind([parseInt(req.params.id)]);
-  if (stmt.step()) { const item = stmt.getAsObject(); stmt.free(); return res.json(item); }
-  stmt.free();
-  res.status(404).json({ error: 'Item not found' });
+  const { rows } = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [parseInt(req.params.id)]);
+  if (!rows.length) return res.status(404).json({ error: 'Item not found' });
+  res.json(rows[0]);
 });
 
-// GET /inventory — list all items
 app.get('/inventory', async (req, res) => {
-  const db = await getDb();
-  const stmt = db.prepare('SELECT * FROM inventory_items ORDER BY name ASC');
-  const items = [];
-  while (stmt.step()) items.push(stmt.getAsObject());
-  stmt.free();
-  res.json(items);
+  const { rows } = await pool.query('SELECT * FROM inventory_items ORDER BY name ASC');
+  res.json(rows);
 });
 
-// POST /inventory/:id/add-stock
 app.post('/inventory/:id/add-stock', async (req, res) => {
   const { quantity, reason, date, input_unit } = req.body;
   const inputQty = parseFloat(quantity);
   if (!inputQty || inputQty <= 0) return res.status(400).json({ error: 'quantity must be a positive number' });
-  const db = await getDb();
-  const check = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
-  check.bind([parseInt(req.params.id)]);
-  if (!check.step()) { check.free(); return res.status(404).json({ error: 'Item not found' }); }
-  const item = check.getAsObject(); check.free();
+
+  const { rows: itemRows } = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [parseInt(req.params.id)]);
+  if (!itemRows.length) return res.status(404).json({ error: 'Item not found' });
+  const item = itemRows[0];
+
   const useConversion = input_unit && item.conversion_unit && input_unit === item.conversion_unit && item.conversion_factor;
   const qty = useConversion ? Math.round(inputQty * item.conversion_factor) : Math.round(inputQty);
   const newQty = item.stock_quantity + qty;
   const createdAt = date ? new Date(date).toISOString() : new Date().toISOString();
   const reasonStr = reason || (useConversion ? `${inputQty} ${item.conversion_unit}` : null);
-  db.run('UPDATE inventory_items SET stock_quantity = ? WHERE id = ?', [newQty, item.id]);
-  db.run(
-    'INSERT INTO stock_movements (item_id, type, quantity, reason, created_at) VALUES (?, ?, ?, ?, ?)',
+
+  await pool.query('UPDATE inventory_items SET stock_quantity = $1 WHERE id = $2', [newQty, item.id]);
+  await pool.query(
+    'INSERT INTO stock_movements (item_id, type, quantity, reason, created_at) VALUES ($1, $2, $3, $4, $5)',
     [item.id, 'IN', qty, reasonStr, createdAt]
   );
-  save();
-  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
-  stmt.bind([item.id]); stmt.step();
-  const updated = stmt.getAsObject(); stmt.free();
-  res.json(updated);
+
+  const { rows: updated } = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [item.id]);
+  res.json(updated[0]);
 });
 
-// POST /inventory/:id/remove-stock
 app.post('/inventory/:id/remove-stock', async (req, res) => {
   const { quantity, reason, date, input_unit } = req.body;
   const inputQty = parseFloat(quantity);
   if (!inputQty || inputQty <= 0) return res.status(400).json({ error: 'quantity must be a positive number' });
-  const db = await getDb();
-  const check = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
-  check.bind([parseInt(req.params.id)]);
-  if (!check.step()) { check.free(); return res.status(404).json({ error: 'Item not found' }); }
-  const item = check.getAsObject(); check.free();
+
+  const { rows: itemRows } = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [parseInt(req.params.id)]);
+  if (!itemRows.length) return res.status(404).json({ error: 'Item not found' });
+  const item = itemRows[0];
+
   const useConversion = input_unit && item.conversion_unit && input_unit === item.conversion_unit && item.conversion_factor;
   const qty = useConversion ? Math.round(inputQty * item.conversion_factor) : Math.round(inputQty);
   if (item.stock_quantity < qty) return res.status(400).json({ error: 'Insufficient stock' });
+
   const newQty = item.stock_quantity - qty;
   const createdAt = date ? new Date(date).toISOString() : new Date().toISOString();
   const reasonStr = reason || (useConversion ? `${inputQty} ${item.conversion_unit}` : null);
-  db.run('UPDATE inventory_items SET stock_quantity = ? WHERE id = ?', [newQty, item.id]);
-  db.run(
-    'INSERT INTO stock_movements (item_id, type, quantity, reason, created_at) VALUES (?, ?, ?, ?, ?)',
+
+  await pool.query('UPDATE inventory_items SET stock_quantity = $1 WHERE id = $2', [newQty, item.id]);
+  await pool.query(
+    'INSERT INTO stock_movements (item_id, type, quantity, reason, created_at) VALUES ($1, $2, $3, $4, $5)',
     [item.id, 'OUT', qty, reasonStr, createdAt]
   );
-  save();
-  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
-  stmt.bind([item.id]); stmt.step();
-  const updated = stmt.getAsObject(); stmt.free();
-  res.json(updated);
+
+  const { rows: updated } = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [item.id]);
+  res.json(updated[0]);
 });
 
-// GET /inventory/:id/movements
 app.get('/inventory/:id/movements', async (req, res) => {
-  const db = await getDb();
-  const stmt = db.prepare('SELECT * FROM stock_movements WHERE item_id = ? ORDER BY created_at DESC');
-  stmt.bind([parseInt(req.params.id)]);
-  const movements = [];
-  while (stmt.step()) movements.push(stmt.getAsObject());
-  stmt.free();
-  res.json(movements);
+  const { rows } = await pool.query(
+    'SELECT * FROM stock_movements WHERE item_id = $1 ORDER BY created_at DESC',
+    [parseInt(req.params.id)]
+  );
+  res.json(rows);
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend running at http://localhost:${PORT}`);
-  startReminderJob();
+// ── STATIC FILES (production) ────────────────────────────────
+const distPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(distPath));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
+// ── START ─────────────────────────────────────────────────────
+async function start() {
+  await initDb();
+  app.listen(PORT, () => {
+    console.log(`Backend running at http://localhost:${PORT}`);
+    startReminderJob();
+  });
+}
+
+start().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
