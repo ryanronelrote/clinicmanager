@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
+import Login from './pages/Login';
 import Home from './pages/Home';
 import ClientList from './pages/ClientList';
 import AddClient from './pages/AddClient';
@@ -15,11 +16,38 @@ import InventoryList from './pages/InventoryList';
 import AddInventoryItem from './pages/AddInventoryItem';
 import InventoryDetail from './pages/InventoryDetail';
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
+function AuthWrapper() {
+  const [status, setStatus] = useState('checking'); // 'checking' | 'in' | 'out'
+
+  useEffect(() => {
+    const token = localStorage.getItem('clinic_token');
+    if (!token) { setStatus('out'); return; }
+    fetch('/auth/verify', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setStatus(d.valid ? 'in' : 'out'))
+      .catch(() => setStatus('out'));
+  }, []);
+
+  function handleLogin() { setStatus('in'); }
+  function handleLogout() {
+    localStorage.removeItem('clinic_token');
+    setStatus('out');
+  }
+
+  if (status === 'checking') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'sans-serif', color: '#888' }}>
+        Loading…
+      </div>
+    );
+  }
+
+  if (status === 'out') return <Login onLogin={handleLogin} />;
+
+  return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App />}>
+        <Route path="/" element={<App onLogout={handleLogout} />}>
           <Route index element={<Home />} />
           <Route path="clients" element={<ClientList />} />
           <Route path="add" element={<AddClient />} />
@@ -35,5 +63,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </Route>
       </Routes>
     </BrowserRouter>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <AuthWrapper />
   </React.StrictMode>
 );

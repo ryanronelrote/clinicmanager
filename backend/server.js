@@ -15,6 +15,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ── AUTH ──────────────────────────────────────────────────────
+
+function authToken() {
+  const pass = process.env.CLINIC_PASSWORD || '';
+  return crypto.createHmac('sha256', pass).update(pass).digest('hex');
+}
+
+app.post('/auth/login', (req, res) => {
+  const { password } = req.body;
+  if (!process.env.CLINIC_PASSWORD) return res.status(500).json({ error: 'CLINIC_PASSWORD not set' });
+  if (password !== process.env.CLINIC_PASSWORD) return res.status(401).json({ error: 'Incorrect password' });
+  res.json({ token: authToken() });
+});
+
+app.get('/auth/verify', (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  res.json({ valid: !!process.env.CLINIC_PASSWORD && token === authToken() });
+});
+
 // ── CLIENTS ───────────────────────────────────────────────────
 
 // POST /clients - create a new client

@@ -59,7 +59,7 @@ function subNavLinkStyle({ isActive }) {
   };
 }
 
-export default function App() {
+export default function App({ onLogout }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
       {/* Sidebar */}
@@ -85,6 +85,19 @@ export default function App() {
         <div style={{ padding: '4px 0' }}>
           <div style={sectionLabelStyle}>Inventory</div>
           <NavLink to="/inventory" style={navLinkStyle}>Stock</NavLink>
+        </div>
+
+        <div style={{ marginTop: 'auto', padding: '16px 8px' }}>
+          <button
+            onClick={onLogout}
+            style={{
+              width: '100%', padding: '7px 16px', fontSize: 13,
+              background: 'none', border: '1px solid #ddd', borderRadius: 4,
+              color: '#888', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            Sign Out
+          </button>
         </div>
       </nav>
 
