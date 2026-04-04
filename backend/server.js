@@ -17,7 +17,8 @@ app.use(express.json());
 
 // POST /clients - create a new client
 app.post('/clients', async (req, res) => {
-  const { first_name, last_name, phone, email, notes, is_vip } = req.body;
+  const { first_name, last_name, phone, email, notes, is_vip,
+          birthdate, sex, address, occupation, civil_status, medical_history } = req.body;
 
   if (!first_name || !last_name) {
     return res.status(400).json({ error: 'first_name and last_name are required' });
@@ -25,14 +26,18 @@ app.post('/clients', async (req, res) => {
 
   const db = await getDb();
   db.run(
-    'INSERT INTO clients (first_name, last_name, phone, email, notes, is_vip) VALUES (?, ?, ?, ?, ?, ?)',
-    [first_name, last_name, phone || null, email || null, notes || null, is_vip ? 1 : 0]
+    `INSERT INTO clients (first_name, last_name, phone, email, notes, is_vip,
+       birthdate, sex, address, occupation, civil_status, medical_history)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [first_name, last_name, phone || null, email || null, notes || null, is_vip ? 1 : 0,
+     birthdate || null, sex || null, address || null, occupation || null, civil_status || null,
+     medical_history ? JSON.stringify(medical_history) : null]
   );
   save();
 
   const stmt = db.prepare('SELECT * FROM clients WHERE id = last_insert_rowid()');
   stmt.step();
-  const client = stmt.getAsObject();
+  const client = parseClient(stmt.getAsObject());
   stmt.free();
 
   res.status(201).json(client);
@@ -40,7 +45,8 @@ app.post('/clients', async (req, res) => {
 
 // PATCH /clients/:id - update client fields (including VIP toggle)
 app.patch('/clients/:id', async (req, res) => {
-  const { first_name, last_name, phone, email, notes, is_vip } = req.body;
+  const { first_name, last_name, phone, email, notes, is_vip,
+          birthdate, sex, address, occupation, civil_status, medical_history } = req.body;
   const db = await getDb();
 
   const check = db.prepare('SELECT * FROM clients WHERE id = ?');
@@ -50,14 +56,24 @@ app.patch('/clients/:id', async (req, res) => {
   check.free();
 
   db.run(
-    'UPDATE clients SET first_name=?, last_name=?, phone=?, email=?, notes=?, is_vip=? WHERE id=?',
+    `UPDATE clients SET first_name=?, last_name=?, phone=?, email=?, notes=?, is_vip=?,
+       birthdate=?, sex=?, address=?, occupation=?, civil_status=?, medical_history=?
+     WHERE id=?`,
     [
-      first_name  ?? existing.first_name,
-      last_name   ?? existing.last_name,
-      phone       !== undefined ? phone  : existing.phone,
-      email       !== undefined ? email  : existing.email,
-      notes       !== undefined ? notes  : existing.notes,
-      is_vip      !== undefined ? (is_vip ? 1 : 0) : existing.is_vip,
+      first_name    ?? existing.first_name,
+      last_name     ?? existing.last_name,
+      phone         !== undefined ? phone         : existing.phone,
+      email         !== undefined ? email         : existing.email,
+      notes         !== undefined ? notes         : existing.notes,
+      is_vip        !== undefined ? (is_vip ? 1 : 0) : existing.is_vip,
+      birthdate     !== undefined ? birthdate     : existing.birthdate,
+      sex           !== undefined ? sex           : existing.sex,
+      address       !== undefined ? address       : existing.address,
+      occupation    !== undefined ? occupation    : existing.occupation,
+      civil_status  !== undefined ? civil_status  : existing.civil_status,
+      medical_history !== undefined
+        ? JSON.stringify(medical_history)
+        : existing.medical_history,
       parseInt(req.params.id),
     ]
   );
@@ -66,7 +82,7 @@ app.patch('/clients/:id', async (req, res) => {
   const stmt = db.prepare('SELECT * FROM clients WHERE id = ?');
   stmt.bind([parseInt(req.params.id)]);
   stmt.step();
-  const client = stmt.getAsObject();
+  const client = parseClient(stmt.getAsObject());
   stmt.free();
 
   res.json(client);
@@ -84,6 +100,7 @@ app.post('/clients/bulk', async (req, res) => {
   const imported = [];
   const errors = [];
 
+  db.run('BEGIN');
   for (let i = 0; i < clients.length; i++) {
     const { first_name, last_name, phone, email, notes } = clients[i];
     if (!first_name || !last_name) {
@@ -96,6 +113,7 @@ app.post('/clients/bulk', async (req, res) => {
     );
     imported.push({ first_name, last_name });
   }
+  db.run('COMMIT');
 
   save();
   res.status(201).json({ imported: imported.length, errors });
@@ -119,13 +137,21 @@ app.get('/clients/:id', async (req, res) => {
   const stmt = db.prepare('SELECT * FROM clients WHERE id = ?');
   stmt.bind([parseInt(req.params.id)]);
   if (stmt.step()) {
-    const client = stmt.getAsObject();
+    const client = parseClient(stmt.getAsObject());
     stmt.free();
     return res.json(client);
   }
   stmt.free();
   res.status(404).json({ error: 'Client not found' });
 });
+
+// Helper: parse medical_history JSON field on a client row
+function parseClient(c) {
+  if (c && c.medical_history && typeof c.medical_history === 'string') {
+    try { c.medical_history = JSON.parse(c.medical_history); } catch (e) { c.medical_history = {}; }
+  }
+  return c;
+}
 
 // Helper: get Monday of the week for a given date string (YYYY-MM-DD)
 function dateToLocalStr(d) {
@@ -614,6 +640,149 @@ function timeToMinutes(timeStr) {
   const [h, m] = timeStr.split(':').map(Number);
   return h * 60 + m;
 }
+
+// ── Inventory ─────────────────────────────────────────────────
+
+// POST /inventory — create item
+app.post('/inventory', async (req, res) => {
+  const { name, category, unit, stock_quantity, low_stock_threshold, conversion_unit, conversion_factor } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+  const db = await getDb();
+  const qty = parseInt(stock_quantity) || 0;
+  const threshold = parseInt(low_stock_threshold) || 0;
+  const factor = parseFloat(conversion_factor) || null;
+  db.run(
+    'INSERT INTO inventory_items (name, category, unit, stock_quantity, low_stock_threshold, conversion_unit, conversion_factor) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [name, category || null, unit || null, qty, threshold, conversion_unit || null, factor]
+  );
+  const newId = db.exec('SELECT last_insert_rowid()')[0].values[0][0];
+  if (qty > 0) {
+    db.run(
+      'INSERT INTO stock_movements (item_id, type, quantity, reason) VALUES (?, ?, ?, ?)',
+      [newId, 'IN', qty, 'Initial stock']
+    );
+  }
+  save();
+  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
+  stmt.bind([newId]); stmt.step();
+  const item = stmt.getAsObject(); stmt.free();
+  res.status(201).json(item);
+});
+
+// PATCH /inventory/:id — update item details
+app.patch('/inventory/:id', async (req, res) => {
+  const { name, category, unit, low_stock_threshold, conversion_unit, conversion_factor, preferred_unit } = req.body;
+  const db = await getDb();
+  const check = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
+  check.bind([parseInt(req.params.id)]);
+  if (!check.step()) { check.free(); return res.status(404).json({ error: 'Item not found' }); }
+  const existing = check.getAsObject(); check.free();
+  db.run(
+    `UPDATE inventory_items SET name=?, category=?, unit=?, low_stock_threshold=?,
+     conversion_unit=?, conversion_factor=?, preferred_unit=? WHERE id=?`,
+    [
+      name               ?? existing.name,
+      category           !== undefined ? category           : existing.category,
+      unit               !== undefined ? unit               : existing.unit,
+      low_stock_threshold !== undefined ? parseInt(low_stock_threshold) : existing.low_stock_threshold,
+      conversion_unit    !== undefined ? conversion_unit    : existing.conversion_unit,
+      conversion_factor  !== undefined ? (parseFloat(conversion_factor) || null) : existing.conversion_factor,
+      preferred_unit     !== undefined ? preferred_unit     : existing.preferred_unit,
+      parseInt(req.params.id),
+    ]
+  );
+  save();
+  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
+  stmt.bind([parseInt(req.params.id)]); stmt.step();
+  const item = stmt.getAsObject(); stmt.free();
+  res.json(item);
+});
+
+// GET /inventory/:id — single item
+app.get('/inventory/:id', async (req, res) => {
+  const db = await getDb();
+  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
+  stmt.bind([parseInt(req.params.id)]);
+  if (stmt.step()) { const item = stmt.getAsObject(); stmt.free(); return res.json(item); }
+  stmt.free();
+  res.status(404).json({ error: 'Item not found' });
+});
+
+// GET /inventory — list all items
+app.get('/inventory', async (req, res) => {
+  const db = await getDb();
+  const stmt = db.prepare('SELECT * FROM inventory_items ORDER BY name ASC');
+  const items = [];
+  while (stmt.step()) items.push(stmt.getAsObject());
+  stmt.free();
+  res.json(items);
+});
+
+// POST /inventory/:id/add-stock
+app.post('/inventory/:id/add-stock', async (req, res) => {
+  const { quantity, reason, date, input_unit } = req.body;
+  const inputQty = parseFloat(quantity);
+  if (!inputQty || inputQty <= 0) return res.status(400).json({ error: 'quantity must be a positive number' });
+  const db = await getDb();
+  const check = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
+  check.bind([parseInt(req.params.id)]);
+  if (!check.step()) { check.free(); return res.status(404).json({ error: 'Item not found' }); }
+  const item = check.getAsObject(); check.free();
+  const useConversion = input_unit && item.conversion_unit && input_unit === item.conversion_unit && item.conversion_factor;
+  const qty = useConversion ? Math.round(inputQty * item.conversion_factor) : Math.round(inputQty);
+  const newQty = item.stock_quantity + qty;
+  const createdAt = date ? new Date(date).toISOString() : new Date().toISOString();
+  const reasonStr = reason || (useConversion ? `${inputQty} ${item.conversion_unit}` : null);
+  db.run('UPDATE inventory_items SET stock_quantity = ? WHERE id = ?', [newQty, item.id]);
+  db.run(
+    'INSERT INTO stock_movements (item_id, type, quantity, reason, created_at) VALUES (?, ?, ?, ?, ?)',
+    [item.id, 'IN', qty, reasonStr, createdAt]
+  );
+  save();
+  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
+  stmt.bind([item.id]); stmt.step();
+  const updated = stmt.getAsObject(); stmt.free();
+  res.json(updated);
+});
+
+// POST /inventory/:id/remove-stock
+app.post('/inventory/:id/remove-stock', async (req, res) => {
+  const { quantity, reason, date, input_unit } = req.body;
+  const inputQty = parseFloat(quantity);
+  if (!inputQty || inputQty <= 0) return res.status(400).json({ error: 'quantity must be a positive number' });
+  const db = await getDb();
+  const check = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
+  check.bind([parseInt(req.params.id)]);
+  if (!check.step()) { check.free(); return res.status(404).json({ error: 'Item not found' }); }
+  const item = check.getAsObject(); check.free();
+  const useConversion = input_unit && item.conversion_unit && input_unit === item.conversion_unit && item.conversion_factor;
+  const qty = useConversion ? Math.round(inputQty * item.conversion_factor) : Math.round(inputQty);
+  if (item.stock_quantity < qty) return res.status(400).json({ error: 'Insufficient stock' });
+  const newQty = item.stock_quantity - qty;
+  const createdAt = date ? new Date(date).toISOString() : new Date().toISOString();
+  const reasonStr = reason || (useConversion ? `${inputQty} ${item.conversion_unit}` : null);
+  db.run('UPDATE inventory_items SET stock_quantity = ? WHERE id = ?', [newQty, item.id]);
+  db.run(
+    'INSERT INTO stock_movements (item_id, type, quantity, reason, created_at) VALUES (?, ?, ?, ?, ?)',
+    [item.id, 'OUT', qty, reasonStr, createdAt]
+  );
+  save();
+  const stmt = db.prepare('SELECT * FROM inventory_items WHERE id = ?');
+  stmt.bind([item.id]); stmt.step();
+  const updated = stmt.getAsObject(); stmt.free();
+  res.json(updated);
+});
+
+// GET /inventory/:id/movements
+app.get('/inventory/:id/movements', async (req, res) => {
+  const db = await getDb();
+  const stmt = db.prepare('SELECT * FROM stock_movements WHERE item_id = ? ORDER BY created_at DESC');
+  stmt.bind([parseInt(req.params.id)]);
+  const movements = [];
+  while (stmt.step()) movements.push(stmt.getAsObject());
+  stmt.free();
+  res.json(movements);
+});
 
 app.listen(PORT, () => {
   console.log(`Backend running at http://localhost:${PORT}`);

@@ -110,21 +110,25 @@ export default function ImportClients() {
   async function handleImport() {
     if (!preview) return;
     setImporting(true);
-    const res = await fetch('/clients/bulk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clients: preview.rows }),
-    });
-    const data = await res.json();
-    setResult(data);
-    setPreview(null);
-    setImporting(false);
+    try {
+      const res = await fetch('/clients/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clients: preview.rows }),
+      });
+      const data = await res.json();
+      setResult(data);
+      setPreview(null);
+    } finally {
+      setImporting(false);
+    }
   }
 
   function reset() {
     setPreview(null);
     setResult(null);
     setParseError('');
+    setImporting(false);
     if (fileRef.current) fileRef.current.value = '';
   }
 

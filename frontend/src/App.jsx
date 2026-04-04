@@ -81,6 +81,11 @@ export default function App() {
           <NavLink to="/add" style={subNavLinkStyle}>+ Add Client</NavLink>
           <NavLink to="/import-clients" style={subNavLinkStyle}>Import CSV</NavLink>
         </div>
+
+        <div style={{ padding: '4px 0' }}>
+          <div style={sectionLabelStyle}>Inventory</div>
+          <NavLink to="/inventory" style={navLinkStyle}>Stock</NavLink>
+        </div>
       </nav>
 
       {/* Main content */}

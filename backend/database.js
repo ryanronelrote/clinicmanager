@@ -55,8 +55,43 @@ async function getDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      category TEXT,
+      stock_quantity INTEGER NOT NULL DEFAULT 0,
+      unit TEXT,
+      low_stock_threshold INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS stock_movements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      reason TEXT,
+      reference_id INTEGER,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Add is_vip column if it doesn't exist yet (migration for existing DBs)
   try { db.run('ALTER TABLE clients ADD COLUMN is_vip INTEGER DEFAULT 0'); } catch (e) {}
+  // Patient chart fields
+  try { db.run('ALTER TABLE clients ADD COLUMN birthdate TEXT'); } catch (e) {}
+  try { db.run('ALTER TABLE clients ADD COLUMN sex TEXT'); } catch (e) {}
+  try { db.run('ALTER TABLE clients ADD COLUMN address TEXT'); } catch (e) {}
+  try { db.run('ALTER TABLE clients ADD COLUMN occupation TEXT'); } catch (e) {}
+  try { db.run('ALTER TABLE clients ADD COLUMN civil_status TEXT'); } catch (e) {}
+  try { db.run('ALTER TABLE clients ADD COLUMN medical_history TEXT'); } catch (e) {}
+  // Inventory unit conversion
+  try { db.run('ALTER TABLE inventory_items ADD COLUMN conversion_unit TEXT'); } catch (e) {}
+  try { db.run('ALTER TABLE inventory_items ADD COLUMN conversion_factor REAL'); } catch (e) {}
+  try { db.run('ALTER TABLE inventory_items ADD COLUMN preferred_unit TEXT'); } catch (e) {}
   // Add therapist column if it doesn't exist yet (migration for existing DBs)
   try { db.run('ALTER TABLE appointments ADD COLUMN therapist TEXT'); } catch (e) {}
   // Add email tracking columns (migration for existing DBs)

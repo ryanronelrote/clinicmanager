@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function toDateStr(date) {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function getMondayOf(date) {
@@ -20,7 +23,7 @@ function formatTime(str) {
 
 function dayLabel(dateStr) {
   const today = toDateStr(new Date());
-  const tomorrow = toDateStr(new Date(Date.now() + 86400000));
+  const tomorrow = toDateStr(new Date(new Date().setDate(new Date().getDate() + 1)));
   const date = new Date(dateStr + 'T00:00:00');
   const weekday = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   if (dateStr === today) return `Today — ${weekday}`;
@@ -42,6 +45,8 @@ export default function Home() {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [clientCount, setClientCount] = useState(null);
+  const [vipCount, setVipCount] = useState(null);
+  const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const todayStr = toDateStr(new Date());
@@ -51,12 +56,15 @@ export default function Home() {
     Promise.all([
       fetch(`/appointments?week=${weekParam}`).then(r => r.json()),
       fetch('/clients').then(r => r.json()),
-    ]).then(([appts, clients]) => {
+      fetch('/inventory').then(r => r.json()),
+    ]).then(([appts, clients, inventory]) => {
       setAppointments(appts);
       setClientCount(clients.length);
+      setVipCount(clients.filter(c => c.is_vip).length);
+      setLowStockItems(inventory.filter(i => i.low_stock_threshold > 0 && i.stock_quantity <= i.low_stock_threshold));
       setLoading(false);
     });
-  }, []);
+  }, [weekParam]);
 
   // Filter to today onwards, sort by date + time
   const upcoming = appointments
@@ -83,7 +91,46 @@ export default function Home() {
         <StatCard label="Today's Appointments" value={loading ? '—' : todayCount} color="#1a73e8" />
         <StatCard label="This Week" value={loading ? '—' : weekCount} color="#0f9d58" />
         <StatCard label="Total Clients" value={loading ? '—' : clientCount} color="#9c27b0" />
+        <StatCard label="VIP Clients" value={loading ? '—' : vipCount} color="#f59e0b" onClick={() => navigate('/clients?vip=1')} />
       </div>
+
+      {/* Low stock alerts */}
+      {!loading && (
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <h3 style={{ margin: 0, color: lowStockItems.length > 0 ? '#e07b54' : '#555' }}>
+              {lowStockItems.length > 0 ? '⚠ Low Stock Alerts' : 'Low Stock Alerts'}
+            </h3>
+            <button onClick={() => navigate('/inventory')} style={{ padding: '5px 14px', border: '1px solid #ccc', borderRadius: 4, color: '#555', background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+              View Inventory
+            </button>
+          </div>
+          {lowStockItems.length === 0 ? (
+            <div style={{ padding: '14px 16px', border: '1px solid #eee', borderRadius: 8, color: '#aaa', fontSize: 13 }}>
+              All stock levels are good.
+            </div>
+          ) : (
+            <div style={{ border: '1px solid #fcd9c8', borderRadius: 8, overflow: 'hidden', background: '#fff8f4' }}>
+              {lowStockItems.map((item, i) => (
+                <div key={item.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 16px',
+                  borderTop: i > 0 ? '1px solid #fcd9c8' : 'none',
+                }}>
+                  <div>
+                    <span style={{ fontWeight: '600', fontSize: 14 }}>{item.name}</span>
+                    {item.category && <span style={{ fontSize: 12, color: '#aaa', marginLeft: 8 }}>{item.category}</span>}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#e07b54', fontWeight: '600' }}>
+                    {item.stock_quantity} {item.unit || ''} left
+                    <span style={{ fontSize: 11, color: '#bbb', fontWeight: 'normal', marginLeft: 6 }}>(min {item.low_stock_threshold})</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Upcoming appointments */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -158,12 +205,16 @@ export default function Home() {
   );
 }
 
-function StatCard({ label, value, color }) {
+function StatCard({ label, value, color, onClick }) {
   return (
-    <div style={{
-      flex: '1 1 160px', padding: '16px 20px', borderRadius: 10,
-      border: `1px solid ${color}22`, background: `${color}0d`,
-    }}>
+    <div
+      onClick={onClick}
+      style={{
+        flex: '1 1 160px', padding: '16px 20px', borderRadius: 10,
+        border: `1px solid ${color}22`, background: `${color}0d`,
+        cursor: onClick ? 'pointer' : 'default',
+      }}
+    >
       <div style={{ fontSize: 28, fontWeight: '700', color }}>{value}</div>
       <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{label}</div>
     </div>

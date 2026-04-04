@@ -11,6 +11,9 @@ import AddAppointment from './pages/AddAppointment';
 import AppointmentDetail from './pages/AppointmentDetail';
 import BlockTime from './pages/BlockTime';
 import ImportClients from './pages/ImportClients';
+import InventoryList from './pages/InventoryList';
+import AddInventoryItem from './pages/AddInventoryItem';
+import InventoryDetail from './pages/InventoryDetail';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -26,6 +29,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="appointments/:id" element={<AppointmentDetail />} />
           <Route path="block-time" element={<BlockTime />} />
           <Route path="import-clients" element={<ImportClients />} />
+          <Route path="inventory" element={<InventoryList />} />
+          <Route path="inventory/add" element={<AddInventoryItem />} />
+          <Route path="inventory/:id" element={<InventoryDetail />} />
         </Route>
       </Routes>
     </BrowserRouter>

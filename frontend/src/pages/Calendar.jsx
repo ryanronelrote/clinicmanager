@@ -9,6 +9,11 @@ const GRID_END   = 22 * 60;
 const SLOT_MINS  = 30;
 const TOTAL_SLOTS = (GRID_END - GRID_START) / SLOT_MINS;
 const APPT_COLORS = ['#4a90d9', '#e07b54', '#6dbf67', '#9b6dbd', '#d4a843'];
+const STACK_OFFSET = 30;  // px each overlap level shifts right
+const CLICK_STRIP  = 14;  // px reserved on far right for clicking through
+const SIDEBAR      = 200;
+const MAIN_PADDING = 56;  // 28px left + 28px right
+const LABEL_W      = 52;
 
 // Weekdays open at 11:00, weekends at 09:00
 function clinicOpensAt(dayIndex) { return dayIndex < 5 ? 11 * 60 : 9 * 60; }
@@ -74,7 +79,7 @@ function getColumns(appts) {
 const timeLabels = Array.from({ length: TOTAL_SLOTS }, (_, i) => minsToTime(GRID_START + i * SLOT_MINS));
 
 // ── Shared time-grid column ──────────────────────────────────
-function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
+function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate, stackMode = false }) {
   const opensAt = clinicOpensAt(dayIndex);
   const isPast = dateStr < today();
   const { items: apptCols, maxCols } = getColumns(appts);
@@ -118,18 +123,27 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
       })}
 
       {apptCols.map((appt, ai) => {
-        const top = ((timeToMins(appt.start_time) - GRID_START) / SLOT_MINS) * SLOT_HEIGHT;
+        const top    = ((timeToMins(appt.start_time) - GRID_START) / SLOT_MINS) * SLOT_HEIGHT;
         const height = (appt.duration_minutes / SLOT_MINS) * SLOT_HEIGHT;
-        const apptWidth = colWidth / maxCols;
+        let left, width;
+        if (stackMode) {
+          const step = Math.min(STACK_OFFSET, Math.floor((colWidth - CLICK_STRIP) / maxCols));
+          width = colWidth - CLICK_STRIP - (maxCols - 1) * step;
+          left  = 1 + appt.col * step;
+        } else {
+          const apptWidth = colWidth / maxCols;
+          left  = appt.col * apptWidth + 1;
+          width = apptWidth - 14;
+        }
         return (
           <div key={appt.id}
             onClick={e => { e.stopPropagation(); navigate(`/appointments/${appt.id}`); }}
             style={{
-              position: 'absolute', top: top + 1, left: appt.col * apptWidth + 1,
-              width: apptWidth - 3, height: height - 2,
+              position: 'absolute', top: top + 1, left,
+              width, height: height - 2,
               background: APPT_COLORS[ai % APPT_COLORS.length],
               borderRadius: 4, padding: '3px 5px', boxSizing: 'border-box',
-              overflow: 'hidden', cursor: 'pointer', zIndex: 2,
+              overflow: 'hidden', cursor: 'pointer', zIndex: stackMode ? 2 + appt.col : 2,
               color: '#fff', fontSize: 11, fontWeight: 'bold', lineHeight: 1.3,
             }}
           >
@@ -161,6 +175,13 @@ export default function Calendar() {
   const [appointments, setAppointments] = useState([]);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handler = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   // Derived period info
   const weekStart = getMondayOf(currentDate);
@@ -228,7 +249,7 @@ export default function Calendar() {
   }
 
   const labelWidth = 52;
-  const weekColWidth = 120;
+  const weekColWidth = Math.max(110, Math.floor((windowWidth - SIDEBAR - MAIN_PADDING - LABEL_W) / 7));
   const dailyColWidth = 600;
 
   return (
@@ -316,6 +337,7 @@ export default function Calendar() {
                 blocks={blocksByDate[toDateStr(currentDate)] || []}
                 colWidth={dailyColWidth}
                 navigate={navigate}
+                stackMode
               />
             </div>
           </div>
