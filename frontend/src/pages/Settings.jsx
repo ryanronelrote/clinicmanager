@@ -237,10 +237,10 @@ function EmailTab() {
 
       {/* Resend config */}
       <div style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>Resend Configuration</div>
+        <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>Brevo Configuration</div>
         <label>
           <span style={lbl}>API Key</span>
-          <input type="password" style={inp} value={form.apiKey} onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))} placeholder={form.apiKey ? 'Leave blank to keep existing' : 're_xxxxxxxxxxxxxxxxxxxx'} />
+          <input type="password" style={inp} value={form.apiKey} onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))} placeholder={form.apiKey ? 'Leave blank to keep existing' : 'xkeysib-xxxxxxxxxxxx'} />
         </label>
         <div style={{ display: 'flex', gap: 12 }}>
           <label style={{ flex: 1 }}>
@@ -253,7 +253,7 @@ function EmailTab() {
           </label>
         </div>
         <p style={{ margin: 0, fontSize: 12, color: '#aaa' }}>
-          Need an API key? Sign up free at <strong>resend.com</strong>. To send from your own domain, verify it in the Resend dashboard.
+          Need an API key? Sign up free at <strong>brevo.com</strong>. Verify your sender email under Senders &amp; IP → Senders.
         </p>
       </div>
 
