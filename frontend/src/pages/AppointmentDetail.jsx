@@ -285,7 +285,7 @@ export default function AppointmentDetail() {
         {/* Booked at — always read-only */}
         <div style={rowStyle}>
           <span style={{ ...labelStyle, paddingTop: 0 }}>Booked at</span>
-          <span>{new Date(appt.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</span>
+          <span>{appt.created_at ? new Date(appt.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' }) : '—'}</span>
         </div>
 
         {/* Email Log */}
