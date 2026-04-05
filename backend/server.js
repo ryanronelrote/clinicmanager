@@ -11,6 +11,19 @@ const { startReminderJob } = require('./reminderJob');
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 const PORT = process.env.PORT || 3001;
 
+async function getNotifSettings() {
+  const keys = ['enable_confirmation_email', 'enable_24h_reminder', 'enable_same_day_reminder', 'enable_followup_email'];
+  const { rows } = await pool.query(`SELECT key, value FROM settings WHERE key = ANY($1)`, [keys]);
+  const map = {};
+  for (const r of rows) map[r.key] = r.value;
+  return {
+    confirmation:  map['enable_confirmation_email']  !== 'false',
+    reminder24h:   map['enable_24h_reminder']         !== 'false',
+    reminderSameDay: map['enable_same_day_reminder']  !== 'false',
+    followup:      map['enable_followup_email']        !== 'false',
+  };
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -208,8 +221,11 @@ app.post('/appointments', async (req, res) => {
   );
   const appt = apptRows[0];
 
-  const { rows: clientRows } = await pool.query('SELECT * FROM clients WHERE id = $1', [parseInt(client_id)]);
-  if (clientRows.length && clientRows[0].email) {
+  const [{ rows: clientRows }, notif] = await Promise.all([
+    pool.query('SELECT * FROM clients WHERE id = $1', [parseInt(client_id)]),
+    getNotifSettings(),
+  ]);
+  if (notif.confirmation && clientRows.length && clientRows[0].email) {
     const c = clientRows[0];
     const { subject, html } = appointmentConfirmation(
       `${c.first_name} ${c.last_name}`, date, start_time, treatments
@@ -643,6 +659,50 @@ app.get('/inventory/:id/movements', async (req, res) => {
     [parseInt(req.params.id)]
   );
   res.json(rows);
+});
+
+// ── SETTINGS ──────────────────────────────────────────────────
+
+app.get('/settings', async (req, res) => {
+  const { rows } = await pool.query('SELECT key, value FROM settings');
+  const obj = {};
+  for (const row of rows) obj[row.key] = row.value;
+  res.json(obj);
+});
+
+app.post('/settings', async (req, res) => {
+  for (const [key, value] of Object.entries(req.body)) {
+    await pool.query(
+      'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+      [key, String(value)]
+    );
+  }
+  const { rows } = await pool.query('SELECT key, value FROM settings');
+  const obj = {};
+  for (const row of rows) obj[row.key] = row.value;
+  res.json(obj);
+});
+
+// ── SERVICES ──────────────────────────────────────────────────
+
+app.get('/services', async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM services ORDER BY category NULLS LAST, name');
+  res.json(rows);
+});
+
+app.post('/services', async (req, res) => {
+  const { name, duration_minutes, price, category } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+  const { rows } = await pool.query(
+    'INSERT INTO services (name, duration_minutes, price, category) VALUES ($1, $2, $3, $4) RETURNING *',
+    [name, parseInt(duration_minutes) || 60, parseFloat(price) || null, category || null]
+  );
+  res.status(201).json(rows[0]);
+});
+
+app.delete('/services/:id', async (req, res) => {
+  await pool.query('DELETE FROM services WHERE id = $1', [parseInt(req.params.id)]);
+  res.json({ success: true });
 });
 
 // ── STATIC FILES (production) ────────────────────────────────

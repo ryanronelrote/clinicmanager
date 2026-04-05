@@ -16,80 +16,90 @@ async function ensureToken(row) {
   return token;
 }
 
+async function getNotifSettings() {
+  const keys = ['enable_24h_reminder', 'enable_same_day_reminder', 'enable_followup_email'];
+  const { rows } = await pool.query('SELECT key, value FROM settings WHERE key = ANY($1)', [keys]);
+  const map = {};
+  for (const r of rows) map[r.key] = r.value;
+  return {
+    reminder24h:     map['enable_24h_reminder']       !== 'false',
+    reminderSameDay: map['enable_same_day_reminder']  !== 'false',
+    followup:        map['enable_followup_email']      !== 'false',
+  };
+}
+
 async function runReminders() {
+  const notif = await getNotifSettings();
   const today     = toDateStr(new Date());
   const tomorrow  = toDateStr(new Date(Date.now() + 86400000));
   const yesterday = toDateStr(new Date(Date.now() - 86400000));
 
   // ── 24-hour reminders ────────────────────────────────────────
-  const { rows: rows24 } = await pool.query(`
-    SELECT a.*, c.first_name, c.last_name, c.email
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.date = $1 AND a.reminder_24h_sent = 0 AND c.email IS NOT NULL
-  `, [tomorrow]);
-
-  for (const row of rows24) {
-    const token = await ensureToken(row);
-    const confirmUrl = `${BACKEND_URL}/appointments/${row.id}/confirm?token=${token}`;
-    const cancelUrl  = `${BACKEND_URL}/appointments/${row.id}/cancel?token=${token}`;
-    const { subject, html } = appointmentReminder24h(
-      `${row.first_name} ${row.last_name}`, row.date, row.start_time, row.treatments, confirmUrl, cancelUrl
-    );
-    try {
-      await sendEmail(row.email, subject, html);
-      await pool.query(
-        'UPDATE appointments SET reminder_24h_sent = 1, reminder_24h_sent_at = $1 WHERE id = $2',
-        [new Date().toISOString(), row.id]
+  if (notif.reminder24h) {
+    const { rows } = await pool.query(`
+      SELECT a.*, c.first_name, c.last_name, c.email
+      FROM appointments a JOIN clients c ON a.client_id = c.id
+      WHERE a.date = $1 AND a.reminder_24h_sent = 0 AND c.email IS NOT NULL
+    `, [tomorrow]);
+    for (const row of rows) {
+      const token = await ensureToken(row);
+      const confirmUrl = `${BACKEND_URL}/appointments/${row.id}/confirm?token=${token}`;
+      const cancelUrl  = `${BACKEND_URL}/appointments/${row.id}/cancel?token=${token}`;
+      const { subject, html } = appointmentReminder24h(
+        `${row.first_name} ${row.last_name}`, row.date, row.start_time, row.treatments, confirmUrl, cancelUrl
       );
-    } catch (e) {
-      console.error('[Reminder] 24h email failed:', e.message);
+      try {
+        await sendEmail(row.email, subject, html);
+        await pool.query(
+          'UPDATE appointments SET reminder_24h_sent = 1, reminder_24h_sent_at = $1 WHERE id = $2',
+          [new Date().toISOString(), row.id]
+        );
+      } catch (e) { console.error('[Reminder] 24h email failed:', e.message); }
     }
   }
 
   // ── Same-day reminders ───────────────────────────────────────
-  const { rows: rowsSame } = await pool.query(`
-    SELECT a.*, c.first_name, c.last_name, c.email
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.date = $1 AND a.reminder_same_day_sent = 0 AND c.email IS NOT NULL
-  `, [today]);
-
-  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
-  for (const row of rowsSame) {
-    if (timeToMins(row.start_time) - nowMins > 480) continue;
-    const token = await ensureToken(row);
-    const confirmUrl = `${BACKEND_URL}/appointments/${row.id}/confirm?token=${token}`;
-    const cancelUrl  = `${BACKEND_URL}/appointments/${row.id}/cancel?token=${token}`;
-    const { subject, html } = appointmentReminderSameDay(
-      `${row.first_name} ${row.last_name}`, row.start_time, confirmUrl, cancelUrl
-    );
-    try {
-      await sendEmail(row.email, subject, html);
-      await pool.query(
-        'UPDATE appointments SET reminder_same_day_sent = 1, reminder_same_day_sent_at = $1 WHERE id = $2',
-        [new Date().toISOString(), row.id]
+  if (notif.reminderSameDay) {
+    const { rows } = await pool.query(`
+      SELECT a.*, c.first_name, c.last_name, c.email
+      FROM appointments a JOIN clients c ON a.client_id = c.id
+      WHERE a.date = $1 AND a.reminder_same_day_sent = 0 AND c.email IS NOT NULL
+    `, [today]);
+    const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+    for (const row of rows) {
+      if (timeToMins(row.start_time) - nowMins > 480) continue;
+      const token = await ensureToken(row);
+      const confirmUrl = `${BACKEND_URL}/appointments/${row.id}/confirm?token=${token}`;
+      const cancelUrl  = `${BACKEND_URL}/appointments/${row.id}/cancel?token=${token}`;
+      const { subject, html } = appointmentReminderSameDay(
+        `${row.first_name} ${row.last_name}`, row.start_time, confirmUrl, cancelUrl
       );
-    } catch (e) {
-      console.error('[Reminder] Same-day email failed:', e.message);
+      try {
+        await sendEmail(row.email, subject, html);
+        await pool.query(
+          'UPDATE appointments SET reminder_same_day_sent = 1, reminder_same_day_sent_at = $1 WHERE id = $2',
+          [new Date().toISOString(), row.id]
+        );
+      } catch (e) { console.error('[Reminder] Same-day email failed:', e.message); }
     }
   }
 
   // ── Follow-up emails ─────────────────────────────────────────
-  const { rows: rowsFollowup } = await pool.query(`
-    SELECT a.*, c.first_name, c.last_name, c.email
-    FROM appointments a JOIN clients c ON a.client_id = c.id
-    WHERE a.date = $1 AND a.followup_sent = 0 AND c.email IS NOT NULL
-  `, [yesterday]);
-
-  for (const row of rowsFollowup) {
-    const { subject, html } = followUpEmail(`${row.first_name} ${row.last_name}`);
-    try {
-      await sendEmail(row.email, subject, html);
-      await pool.query(
-        'UPDATE appointments SET followup_sent = 1, followup_sent_at = $1 WHERE id = $2',
-        [new Date().toISOString(), row.id]
-      );
-    } catch (e) {
-      console.error('[Reminder] Follow-up email failed:', e.message);
+  if (notif.followup) {
+    const { rows } = await pool.query(`
+      SELECT a.*, c.first_name, c.last_name, c.email
+      FROM appointments a JOIN clients c ON a.client_id = c.id
+      WHERE a.date = $1 AND a.followup_sent = 0 AND c.email IS NOT NULL
+    `, [yesterday]);
+    for (const row of rows) {
+      const { subject, html } = followUpEmail(`${row.first_name} ${row.last_name}`);
+      try {
+        await sendEmail(row.email, subject, html);
+        await pool.query(
+          'UPDATE appointments SET followup_sent = 1, followup_sent_at = $1 WHERE id = $2',
+          [new Date().toISOString(), row.id]
+        );
+      } catch (e) { console.error('[Reminder] Follow-up email failed:', e.message); }
     }
   }
 }

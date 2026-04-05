@@ -87,6 +87,11 @@ export default function App({ onLogout }) {
           <NavLink to="/inventory" style={navLinkStyle}>Stock</NavLink>
         </div>
 
+        <div style={{ padding: '4px 0' }}>
+          <div style={sectionLabelStyle}>System</div>
+          <NavLink to="/settings" style={navLinkStyle}>Settings</NavLink>
+        </div>
+
         <div style={{ marginTop: 'auto', padding: '16px 8px' }}>
           <button
             onClick={onLogout}

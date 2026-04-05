@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import TreatmentListInput from '../components/TreatmentListInput';
 
-const DURATIONS = [30, 60, 90, 120, 150, 180];
+const DURATIONS = [15, 30, 45, 60, 75, 90, 120, 150, 180];
 
 export default function AddAppointment() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [clients, setClients] = useState([]);
+  const [services, setServices] = useState([]);
   const [form, setForm] = useState({
     client_id: searchParams.get('client_id') || '',
     date: searchParams.get('date') || '',
@@ -22,7 +23,18 @@ export default function AddAppointment() {
 
   useEffect(() => {
     fetch('/clients').then(r => r.json()).then(setClients);
+    fetch('/services').then(r => r.json()).then(setServices);
   }, []);
+
+  function applyService(id) {
+    const svc = services.find(s => String(s.id) === id);
+    if (!svc) return;
+    setForm(f => ({
+      ...f,
+      duration_minutes: String(svc.duration_minutes),
+      treatments: svc.name,
+    }));
+  }
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -71,6 +83,19 @@ export default function AddAppointment() {
       <h2>Add Appointment</h2>
       {error && <p style={{ color: 'red', background: '#fff0f0', padding: '8px', borderRadius: 4 }}>{error}</p>}
       <form onSubmit={handleSubmit}>
+        {services.length > 0 && (
+          <label style={labelStyle}>
+            Service (optional)
+            <select onChange={e => applyService(e.target.value)} defaultValue="" style={fieldStyle}>
+              <option value="">— Pick a service to pre-fill —</option>
+              {services.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.duration_minutes} min{s.price ? ` · ₱${s.price}` : ''})
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label style={labelStyle}>
           Client *
           <select name="client_id" value={form.client_id} onChange={handleChange} required style={fieldStyle}>

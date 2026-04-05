@@ -15,6 +15,7 @@ import ImportClients from './pages/ImportClients';
 import InventoryList from './pages/InventoryList';
 import AddInventoryItem from './pages/AddInventoryItem';
 import InventoryDetail from './pages/InventoryDetail';
+import Settings from './pages/Settings';
 
 function AuthWrapper() {
   const [status, setStatus] = useState('checking'); // 'checking' | 'in' | 'out'
@@ -60,6 +61,7 @@ function AuthWrapper() {
           <Route path="inventory" element={<InventoryList />} />
           <Route path="inventory/add" element={<AddInventoryItem />} />
           <Route path="inventory/:id" element={<InventoryDetail />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>
