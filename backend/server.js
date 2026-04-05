@@ -28,6 +28,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ── STATIC FILES (production) ────────────────────────────────
+// Must come before API routes so browser navigations (accept: text/html)
+// get index.html while API fetch() calls fall through to the routes below.
+const distPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(distPath));
+app.get('*', (req, res, next) => {
+  if (req.headers.accept?.includes('text/html')) {
+    return res.sendFile(path.join(distPath, 'index.html'));
+  }
+  next();
+});
+
 // ── AUTH ──────────────────────────────────────────────────────
 
 function authToken() {
@@ -747,13 +759,6 @@ app.post('/services', async (req, res) => {
 app.delete('/services/:id', async (req, res) => {
   await pool.query('DELETE FROM services WHERE id = $1', [parseInt(req.params.id)]);
   res.json({ success: true });
-});
-
-// ── STATIC FILES (production) ────────────────────────────────
-const distPath = path.join(__dirname, '../frontend/dist');
-app.use(express.static(distPath));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // ── START ─────────────────────────────────────────────────────
