@@ -26,6 +26,7 @@ async function sendEmail(to, subject, html) {
     port: cfg.port,
     secure: false,
     auth: { user: cfg.user, pass: cfg.pass },
+    family: 4,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 10000,
