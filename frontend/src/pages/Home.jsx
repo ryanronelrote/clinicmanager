@@ -88,7 +88,7 @@ export default function Home() {
 
       {/* Stats cards */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
-        <StatCard label="Today's Appointments" value={loading ? '—' : todayCount} color="#1a73e8" />
+        <StatCard label="Today's Appointments" value={loading ? '—' : todayCount} color="var(--primary)" />
         <StatCard label="This Week" value={loading ? '—' : weekCount} color="#0f9d58" />
         <StatCard label="Total Clients" value={loading ? '—' : clientCount} color="#9c27b0" />
         <StatCard label="VIP Clients" value={loading ? '—' : vipCount} color="#f59e0b" onClick={() => navigate('/clients?vip=1')} />
@@ -137,7 +137,7 @@ export default function Home() {
         <h3 style={{ margin: 0 }}>Upcoming This Week</h3>
         <button
           onClick={() => navigate('/calendar')}
-          style={{ padding: '5px 14px', border: '1px solid #1a73e8', borderRadius: 4, color: '#1a73e8', background: '#fff', cursor: 'pointer', fontSize: 13 }}
+          style={{ padding: '5px 14px', border: '1px solid var(--primary)', borderRadius: 4, color: 'var(--primary)', background: '#fff', cursor: 'pointer', fontSize: 13 }}
         >
           View Calendar
         </button>
@@ -168,11 +168,11 @@ export default function Home() {
                   cursor: 'pointer',
                   background: '#fff',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f8f9ff'}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                 onMouseLeave={e => e.currentTarget.style.background = '#fff'}
               >
                 {/* Time */}
-                <div style={{ minWidth: 80, fontWeight: '600', fontSize: 14, color: '#1a73e8' }}>
+                <div style={{ minWidth: 80, fontWeight: '600', fontSize: 14, color: 'var(--primary)' }}>
                   {formatTime(appt.start_time)}
                 </div>
 

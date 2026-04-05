@@ -6,8 +6,8 @@ const sidebarStyle = {
   left: 0,
   width: 200,
   height: '100vh',
-  background: '#f5f5f5',
-  borderRight: '1px solid #ddd',
+  background: 'var(--sidebar-bg)',
+  borderRight: '1px solid var(--sidebar-border)',
   display: 'flex',
   flexDirection: 'column',
   fontFamily: 'sans-serif',
@@ -18,15 +18,15 @@ const brandStyle = {
   padding: '20px 16px 16px',
   fontWeight: 'bold',
   fontSize: 16,
-  borderBottom: '1px solid #ddd',
-  color: '#222',
+  borderBottom: '1px solid var(--sidebar-border)',
+  color: 'var(--brand-text)',
 };
 
 const sectionLabelStyle = {
   padding: '16px 16px 4px',
   fontSize: 11,
   fontWeight: 'bold',
-  color: '#999',
+  color: 'var(--sidebar-label)',
   textTransform: 'uppercase',
   letterSpacing: '0.5px',
 };
@@ -36,8 +36,8 @@ function navLinkStyle({ isActive }) {
     display: 'block',
     padding: '7px 16px',
     textDecoration: 'none',
-    color: isActive ? '#1a73e8' : '#333',
-    background: isActive ? '#e8f0fe' : 'transparent',
+    color: isActive ? 'var(--sidebar-active-text)' : 'var(--sidebar-text)',
+    background: isActive ? 'var(--sidebar-active-bg)' : 'transparent',
     borderRadius: 4,
     margin: '1px 8px',
     fontWeight: isActive ? '600' : 'normal',
@@ -50,8 +50,8 @@ function subNavLinkStyle({ isActive }) {
     display: 'block',
     padding: '6px 16px 6px 28px',
     textDecoration: 'none',
-    color: isActive ? '#1a73e8' : '#555',
-    background: isActive ? '#e8f0fe' : 'transparent',
+    color: isActive ? 'var(--sidebar-active-text)' : 'var(--sidebar-sub-text)',
+    background: isActive ? 'var(--sidebar-active-bg)' : 'transparent',
     borderRadius: 4,
     margin: '1px 8px',
     fontWeight: isActive ? '600' : 'normal',
@@ -97,8 +97,8 @@ export default function App({ onLogout }) {
             onClick={onLogout}
             style={{
               width: '100%', padding: '7px 16px', fontSize: 13,
-              background: 'none', border: '1px solid #ddd', borderRadius: 4,
-              color: '#888', cursor: 'pointer', textAlign: 'left',
+              background: 'none', border: '1px solid var(--signout-border)', borderRadius: 4,
+              color: 'var(--signout-color)', cursor: 'pointer', textAlign: 'left',
             }}
           >
             Sign Out
@@ -107,7 +107,7 @@ export default function App({ onLogout }) {
       </nav>
 
       {/* Main content */}
-      <main style={{ marginLeft: 200, flex: 1, padding: '24px 28px', minHeight: '100vh', background: '#fff' }}>
+      <main style={{ marginLeft: 200, flex: 1, padding: '24px 28px', minHeight: '100vh', background: 'var(--page-bg)' }}>
         <Outlet />
       </main>
     </div>

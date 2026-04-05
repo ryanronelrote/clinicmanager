@@ -266,9 +266,9 @@ export default function Calendar() {
           {['daily', 'weekly', 'monthly'].map(v => (
             <button key={v} onClick={() => setView(v)} style={{
               ...btn,
-              background: view === v ? '#1a73e8' : '#fff',
+              background: view === v ? 'var(--primary)' : '#fff',
               color: view === v ? '#fff' : '#333',
-              borderColor: view === v ? '#1a73e8' : '#ccc',
+              borderColor: view === v ? 'var(--primary)' : '#ccc',
               textTransform: 'capitalize',
             }}>{v}</button>
           ))}
@@ -279,7 +279,7 @@ export default function Calendar() {
       </div>
 
       {/* Appointment count banner */}
-      <div style={{ marginBottom: 14, padding: '6px 12px', background: '#f0f7ff', borderRadius: 6, fontSize: 13, color: '#1a73e8', display: 'inline-block' }}>
+      <div style={{ marginBottom: 14, padding: '6px 12px', background: '#f0f7ff', borderRadius: 6, fontSize: 13, color: 'var(--primary)', display: 'inline-block' }}>
         {loading ? 'Loading…' : countSummary()}
       </div>
 
@@ -429,7 +429,7 @@ function MonthGrid({ currentDate, apptsByDate, onDayClick }) {
                     </div>
                     {count > 0 && (
                       <div style={{
-                        display: 'inline-block', background: '#1a73e8', color: '#fff',
+                        display: 'inline-block', background: 'var(--primary)', color: '#fff',
                         borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 'bold',
                       }}>
                         {count} appt{count !== 1 ? 's' : ''}

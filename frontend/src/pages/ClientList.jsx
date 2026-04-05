@@ -65,7 +65,7 @@ export default function ClientList() {
                 key={client.id}
                 onClick={() => navigate(`/clients/${client.id}`)}
                 style={{ borderBottom: '1px solid #eee', cursor: 'pointer' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#f5f5f5')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--hover-bg)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '')}
               >
                 <td style={{ padding: '8px' }}>

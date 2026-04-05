@@ -157,13 +157,13 @@ export default function AppointmentDetail() {
                 {reminderStatus === 'sending' ? 'Sending…' : 'Send Initial Reminder'}
               </button>
               <button onClick={enterReschedule} style={outlineBtn('#e07b54')}>Reschedule</button>
-              <button onClick={enterEdit} style={outlineBtn('#1a73e8')}>Edit</button>
+              <button onClick={enterEdit} style={outlineBtn('var(--primary)')}>Edit</button>
               <button onClick={handleDelete} style={outlineBtn('#cc3333')}>Delete</button>
             </>
           ) : editMode ? (
             <>
               <button onClick={cancelEdit} style={outlineBtn('#888')}>Cancel</button>
-              <button onClick={saveEdit} disabled={saving} style={solidBtn('#1a73e8')}>{saving ? 'Saving…' : 'Save'}</button>
+              <button onClick={saveEdit} disabled={saving} style={solidBtn('var(--primary)')}>{saving ? 'Saving…' : 'Save'}</button>
             </>
           ) : (
             <>
@@ -312,7 +312,7 @@ export default function AppointmentDetail() {
                   <span style={{
                     marginLeft: 8, fontSize: 11, fontWeight: 'bold',
                     color: confirmed ? '#0f9d58' : '#bbb',
-                    background: confirmed ? '#e8f5e9' : '#f5f5f5',
+                    background: confirmed ? '#e8f5e9' : 'var(--hover-bg)',
                     border: `1px solid ${confirmed ? '#a5d6a7' : '#ddd'}`,
                     borderRadius: 10, padding: '1px 8px',
                   }}>
@@ -329,7 +329,7 @@ export default function AppointmentDetail() {
 }
 
 const STATUS_CONFIG = {
-  confirmed:            { label: 'Confirmed',             color: '#1a73e8', bg: '#e8f0fe' },
+  confirmed:            { label: 'Confirmed',             color: 'var(--primary)', bg: 'var(--primary-light)' },
   confirmed_by_client:  { label: 'Confirmed by Client',   color: '#0f9d58', bg: '#e8f5e9' },
   done:                 { label: 'Treatment Done',         color: '#666',    bg: '#f0f0f0' },
   cancelled:            { label: 'Cancelled',              color: '#cc3333', bg: '#fdecea' },

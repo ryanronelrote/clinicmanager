@@ -20,7 +20,7 @@ export default function AddInventoryItem() {
     navigate('/inventory');
   }
 
-  const inp = { padding: '7px 10px', border: '1px solid #ccc', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
+  const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
   const lbl = { fontSize: 12, color: '#888', display: 'block', marginBottom: 3 };
 
   return (
@@ -61,7 +61,7 @@ export default function AddInventoryItem() {
             <input type="number" min="0" step="any" style={inp} value={form.conversion_factor} onChange={e => set('conversion_factor', e.target.value)} placeholder="e.g. 500" />
           </label>
         </div>
-        <button type="submit" style={{ padding: '8px 20px', background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: '600', alignSelf: 'flex-start' }}>
+        <button type="submit" style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: '600', alignSelf: 'flex-start' }}>
           Save Item
         </button>
       </form>

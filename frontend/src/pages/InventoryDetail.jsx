@@ -99,7 +99,7 @@ export default function InventoryDetail() {
   if (!item) return <p>Item not found. <button onClick={() => navigate('/inventory')}>Back</button></p>;
 
   const low = item.low_stock_threshold > 0 && item.stock_quantity <= item.low_stock_threshold;
-  const inp = { padding: '7px 10px', border: '1px solid #ccc', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
+  const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
 
   // Display stock in preferred unit
   const hasConversion = item.conversion_unit && item.conversion_factor;
@@ -120,13 +120,13 @@ export default function InventoryDetail() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {!editMode && <>
-            <button onClick={enterEdit} style={outlineBtn('#1a73e8')}>Edit</button>
+            <button onClick={enterEdit} style={outlineBtn('var(--primary)')}>Edit</button>
             <button onClick={() => openForm('add')} style={solidBtn('#0f9d58')}>+ Add Stock</button>
             <button onClick={() => openForm('remove')} style={solidBtn('#cc3333')}>− Remove</button>
           </>}
           {editMode && <>
             <button onClick={cancelEdit} style={outlineBtn('#888')}>Cancel</button>
-            <button onClick={saveEdit} disabled={editSaving} style={solidBtn('#1a73e8')}>{editSaving ? '…' : 'Save'}</button>
+            <button onClick={saveEdit} disabled={editSaving} style={solidBtn('var(--primary)')}>{editSaving ? '…' : 'Save'}</button>
           </>}
         </div>
       </div>
@@ -182,7 +182,7 @@ export default function InventoryDetail() {
       {/* Stats */}
       {!editMode && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
-          <StatBox label="Current Stock" value={displayStock} color={low ? '#e07b54' : '#1a73e8'} />
+          <StatBox label="Current Stock" value={displayStock} color={low ? '#e07b54' : 'var(--primary)'} />
           {showInConversion && (
             <StatBox label={`In ${item.unit || 'base unit'}`} value={`${item.stock_quantity} ${item.unit || ''}`} color="#888" />
           )}
@@ -290,7 +290,7 @@ function StatBox({ label, value, color }) {
   );
 }
 
-const lbl = { fontSize: 12, color: '#666', display: 'block', marginBottom: 3 };
+const lbl = { fontSize: 12, color: 'var(--label-color)', display: 'block', marginBottom: 3 };
 function outlineBtn(color) {
   return { padding: '5px 14px', fontSize: 13, cursor: 'pointer', borderRadius: 4, border: `1px solid ${color}`, background: '#fff', color };
 }

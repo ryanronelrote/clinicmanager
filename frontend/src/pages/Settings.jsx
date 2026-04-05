@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-const inp = { padding: '7px 10px', border: '1px solid #ccc', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
-const lbl = { fontSize: 12, color: '#666', display: 'block', marginBottom: 3 };
+const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
+const lbl = { fontSize: 12, color: 'var(--label-color)', display: 'block', marginBottom: 3 };
 
 export default function Settings() {
   const [tab, setTab] = useState('clinic');
@@ -12,11 +12,11 @@ export default function Settings() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 28, borderBottom: '1px solid #eee', paddingBottom: 0 }}>
-        {[['clinic', 'Clinic'], ['services', 'Services'], ['notifications', 'Notifications'], ['email', 'Email']].map(([key, label]) => (
+        {[['clinic', 'Clinic'], ['services', 'Services'], ['notifications', 'Notifications'], ['email', 'Email'], ['appearance', 'Appearance']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             padding: '8px 18px', fontSize: 14, cursor: 'pointer', border: 'none',
-            borderBottom: tab === key ? '2px solid #1a73e8' : '2px solid transparent',
-            background: 'none', color: tab === key ? '#1a73e8' : '#555',
+            borderBottom: tab === key ? '2px solid var(--primary)' : '2px solid transparent',
+            background: 'none', color: tab === key ? 'var(--primary)' : '#555',
             fontWeight: tab === key ? '600' : 'normal', marginBottom: -1,
           }}>{label}</button>
         ))}
@@ -26,6 +26,7 @@ export default function Settings() {
       {tab === 'services'      && <ServicesTab />}
       {tab === 'notifications' && <NotificationsTab />}
       {tab === 'email'         && <EmailTab />}
+      {tab === 'appearance'    && <AppearanceTab />}
     </div>
   );
 }
@@ -70,7 +71,7 @@ function ClinicTab() {
         <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={form.business_hours} onChange={e => setForm(f => ({ ...f, business_hours: e.target.value }))} placeholder="e.g. Mon–Fri 9am–6pm, Sat 9am–4pm" />
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
           {saving ? 'Saving…' : 'Save'}
         </button>
         {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
@@ -137,7 +138,7 @@ function ServicesTab() {
           </label>
         </div>
         {error && <p style={{ color: '#cc3333', fontSize: 13, margin: '0 0 10px' }}>{error}</p>}
-        <button onClick={add} disabled={adding} style={{ padding: '7px 18px', background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: '600', cursor: 'pointer' }}>
+        <button onClick={add} disabled={adding} style={{ padding: '7px 18px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: '600', cursor: 'pointer' }}>
           {adding ? '…' : '+ Add Service'}
         </button>
       </div>
@@ -214,7 +215,7 @@ function EmailTab() {
 
   const toggleStyle = (on) => ({
     position: 'absolute', inset: 0, cursor: 'pointer', borderRadius: 24,
-    background: on ? '#1a73e8' : '#ccc', transition: 'background 0.2s',
+    background: on ? 'var(--primary)' : '#ccc', transition: 'background 0.2s',
   });
   const knobStyle = (on) => ({
     position: 'absolute', height: 18, width: 18, left: on ? 23 : 3, bottom: 3,
@@ -258,7 +259,7 @@ function EmailTab() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
           {saving ? 'Saving…' : 'Save'}
         </button>
         {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
@@ -337,7 +338,7 @@ function NotificationsTab() {
               <input type="checkbox" checked={toggles[key]} onChange={e => setToggles(t => ({ ...t, [key]: e.target.checked }))} style={{ opacity: 0, width: 0, height: 0 }} />
               <span style={{
                 position: 'absolute', inset: 0, cursor: 'pointer', borderRadius: 24,
-                background: toggles[key] ? '#1a73e8' : '#ccc',
+                background: toggles[key] ? 'var(--primary)' : '#ccc',
                 transition: 'background 0.2s',
               }}>
                 <span style={{
@@ -350,10 +351,94 @@ function NotificationsTab() {
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
           {saving ? 'Saving…' : 'Save'}
         </button>
         {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
+      </div>
+    </div>
+  );
+}
+
+// ── Appearance Tab ────────────────────────────────────────────
+
+const THEMES = [
+  {
+    key: 'default',
+    label: 'Default',
+    desc: 'Clean blue and grey',
+    preview: { sidebar: '#f5f5f5', primary: '#1a73e8', page: '#ffffff' },
+  },
+  {
+    key: 'warm',
+    label: 'Warm',
+    desc: 'Cream and warm brown — clinic brand',
+    preview: { sidebar: '#2C1A14', primary: '#8B5E52', page: '#FAF8F5' },
+  },
+];
+
+function AppearanceTab() {
+  const [current, setCurrent] = useState('default');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetch('/settings').then(r => r.json()).then(data => {
+      setCurrent(data.app_theme || 'default');
+    });
+  }, []);
+
+  async function applyAndSave() {
+    setSaving(true);
+    await fetch('/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_theme: current }),
+    });
+    document.documentElement.setAttribute('data-theme', current);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+        {THEMES.map(t => (
+          <div
+            key={t.key}
+            onClick={() => setCurrent(t.key)}
+            style={{
+              flex: '1 1 180px', border: `2px solid ${current === t.key ? 'var(--primary)' : '#eee'}`,
+              borderRadius: 10, overflow: 'hidden', cursor: 'pointer',
+              boxShadow: current === t.key ? '0 0 0 3px var(--primary-light)' : 'none',
+              transition: 'all 0.15s',
+            }}
+          >
+            <div style={{ display: 'flex', height: 80 }}>
+              <div style={{ width: 40, background: t.preview.sidebar }} />
+              <div style={{ flex: 1, background: t.preview.page, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ height: 8, width: '60%', background: t.preview.primary, borderRadius: 4, opacity: 0.8 }} />
+                <div style={{ height: 6, width: '80%', background: '#ddd', borderRadius: 4 }} />
+                <div style={{ height: 6, width: '50%', background: '#ddd', borderRadius: 4 }} />
+                <div style={{ marginTop: 4, height: 14, width: 40, background: t.preview.primary, borderRadius: 4 }} />
+              </div>
+            </div>
+            <div style={{ padding: '10px 14px', borderTop: '1px solid #f0f0f0' }}>
+              <div style={{ fontWeight: '600', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {t.label}
+                {current === t.key && <span style={{ fontSize: 11, color: 'var(--primary)' }}>✓ Selected</span>}
+              </div>
+              <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{t.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={applyAndSave} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+          {saving ? 'Applying…' : 'Apply Theme'}
+        </button>
+        {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Theme applied!</span>}
       </div>
     </div>
   );

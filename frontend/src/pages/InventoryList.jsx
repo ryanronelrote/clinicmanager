@@ -14,7 +14,7 @@ export default function InventoryList() {
     <div style={{ maxWidth: 720 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h2 style={{ margin: 0 }}>Inventory</h2>
-        <button onClick={() => navigate('/inventory/add')} style={solidBtn('#1a73e8')}>+ Add Item</button>
+        <button onClick={() => navigate('/inventory/add')} style={solidBtn('var(--primary)')}>+ Add Item</button>
       </div>
 
       {loading && <p style={{ color: '#888' }}>Loading…</p>}
@@ -46,7 +46,7 @@ export default function InventoryList() {
                   cursor: 'pointer',
                 }}>
                 <div>
-                  <div style={{ fontWeight: '600', fontSize: 14, color: '#1a73e8' }}>{item.name}</div>
+                  <div style={{ fontWeight: '600', fontSize: 14, color: 'var(--primary)' }}>{item.name}</div>
                   {item.category && <div style={{ fontSize: 12, color: '#aaa' }}>{item.category}</div>}
                 </div>
                 <div style={{ textAlign: 'right', fontWeight: '700', fontSize: 15, color: low ? '#e07b54' : '#222' }}>

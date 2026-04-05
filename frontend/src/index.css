@@ -1,0 +1,49 @@
+/* Default theme */
+:root {
+  --primary: #1a73e8;
+  --primary-light: #e8f0fe;
+  --primary-hover: #1557b0;
+  --sidebar-bg: #f5f5f5;
+  --sidebar-border: #ddd;
+  --sidebar-text: #333;
+  --sidebar-sub-text: #555;
+  --sidebar-label: #999;
+  --sidebar-active-bg: #e8f0fe;
+  --sidebar-active-text: #1a73e8;
+  --brand-text: #222;
+  --page-bg: #ffffff;
+  --input-border: #ccc;
+  --label-color: #666;
+  --hover-bg: #f5f5f5;
+  --signout-border: #ddd;
+  --signout-color: #888;
+}
+
+/* Warm theme */
+:root[data-theme="warm"] {
+  --primary: #8B5E52;
+  --primary-light: #F5EDE8;
+  --primary-hover: #7A5047;
+  --sidebar-bg: #2C1A14;
+  --sidebar-border: #3D2518;
+  --sidebar-text: #D4C4BC;
+  --sidebar-sub-text: #C4B4AC;
+  --sidebar-label: #8A7068;
+  --sidebar-active-bg: #4A2E23;
+  --sidebar-active-text: #F5EDE8;
+  --brand-text: #F5EDE8;
+  --page-bg: #FAF8F5;
+  --input-border: #D4C4BC;
+  --label-color: #9E8880;
+  --hover-bg: #F5EDE8;
+  --signout-border: #4A2E23;
+  --signout-color: #A09088;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: var(--page-bg);
+}

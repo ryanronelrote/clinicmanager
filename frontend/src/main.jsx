@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
 import Login from './pages/Login';
@@ -17,6 +18,10 @@ import AddInventoryItem from './pages/AddInventoryItem';
 import InventoryDetail from './pages/InventoryDetail';
 import Settings from './pages/Settings';
 
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme || 'default');
+}
+
 function AuthWrapper() {
   const [status, setStatus] = useState('checking'); // 'checking' | 'in' | 'out'
 
@@ -25,7 +30,14 @@ function AuthWrapper() {
     if (!token) { setStatus('out'); return; }
     fetch('/auth/verify', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
-      .then(d => setStatus(d.valid ? 'in' : 'out'))
+      .then(d => {
+        if (d.valid) {
+          fetch('/settings').then(r => r.json()).then(s => applyTheme(s.app_theme)).catch(() => {});
+          setStatus('in');
+        } else {
+          setStatus('out');
+        }
+      })
       .catch(() => setStatus('out'));
   }, []);
 

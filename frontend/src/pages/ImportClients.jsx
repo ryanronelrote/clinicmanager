@@ -139,7 +139,7 @@ export default function ImportClients() {
       <h2>Import Clients from CSV</h2>
       <p style={{ color: '#666', marginTop: 0 }}>
         Upload a CSV file to bulk-add clients. Expected columns (in any order):<br />
-        <code style={{ background: '#f5f5f5', padding: '2px 6px', borderRadius: 3 }}>
+        <code style={{ background: 'var(--hover-bg)', padding: '2px 6px', borderRadius: 3 }}>
           first_name, last_name, phone, email, notes
         </code>
       </p>
@@ -174,7 +174,7 @@ export default function ImportClients() {
           onDrop={onDrop}
           onClick={() => fileRef.current.click()}
           style={{
-            border: `2px dashed ${dragOver ? '#1a73e8' : '#ccc'}`,
+            border: `2px dashed ${dragOver ? 'var(--primary)' : '#ccc'}`,
             borderRadius: 8,
             padding: '40px 24px',
             textAlign: 'center',
@@ -205,7 +205,7 @@ export default function ImportClients() {
               <button
                 onClick={handleImport}
                 disabled={importing}
-                style={{ padding: '6px 16px', cursor: 'pointer', border: 'none', borderRadius: 4, background: '#1a73e8', color: '#fff', fontWeight: '600' }}
+                style={{ padding: '6px 16px', cursor: 'pointer', border: 'none', borderRadius: 4, background: 'var(--primary)', color: '#fff', fontWeight: '600' }}
               >
                 {importing ? 'Importing…' : `Import ${preview.rows.length} clients`}
               </button>
@@ -215,7 +215,7 @@ export default function ImportClients() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
+                <tr style={{ background: 'var(--hover-bg)', borderBottom: '2px solid #ddd' }}>
                   <th style={th}>#</th>
                   {DISPLAY_COLS.map(c => <th key={c} style={th}>{c.replace('_', ' ')}</th>)}
                 </tr>
@@ -246,7 +246,7 @@ export default function ImportClients() {
       {!preview && !result && (
         <details style={{ marginTop: 16, fontSize: 13, color: '#666' }}>
           <summary style={{ cursor: 'pointer', fontWeight: '600' }}>CSV format example</summary>
-          <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4, marginTop: 8, overflowX: 'auto' }}>
+          <pre style={{ background: 'var(--hover-bg)', padding: 12, borderRadius: 4, marginTop: 8, overflowX: 'auto' }}>
 {`first_name,last_name,phone,email,notes
 Maria,Santos,09171234567,maria@example.com,VIP client
 Juan,Dela Cruz,09281234567,,Sensitive skin`}
@@ -259,4 +259,4 @@ Juan,Dela Cruz,09281234567,,Sensitive skin`}
 
 const th = { padding: '8px 10px', textAlign: 'left', fontWeight: '600', textTransform: 'capitalize' };
 const td = { padding: '7px 10px' };
-const linkBtn = { background: 'none', border: 'none', color: '#1a73e8', cursor: 'pointer', textDecoration: 'underline', fontSize: 13 };
+const linkBtn = { background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontSize: 13 };

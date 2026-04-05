@@ -52,7 +52,7 @@ export default function AddClient() {
   }
 
   const mh = form.medical_history;
-  const inp = { padding: '6px 8px', border: '1px solid #ccc', borderRadius: 4, fontSize: 14, boxSizing: 'border-box' };
+  const inp = { padding: '6px 8px', border: '1px solid var(--input-border)', borderRadius: 4, fontSize: 14, boxSizing: 'border-box' };
   const inpFull = { ...inp, width: '100%' };
 
   return (
@@ -209,7 +209,7 @@ export default function AddClient() {
           </label>
         </div>
 
-        <button type="submit" style={{ padding: '8px 24px', background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: '600' }}>
+        <button type="submit" style={{ padding: '8px 24px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: '600' }}>
           Save Patient
         </button>
       </form>

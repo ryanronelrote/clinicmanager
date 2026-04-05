@@ -208,11 +208,11 @@ export default function ClientDetail() {
             {client.is_vip ? 'Remove VIP' : 'Mark as VIP'}
           </button>
           {!editMode ? (
-            <button onClick={enterEdit} style={outlineBtn('#1a73e8')}>Edit</button>
+            <button onClick={enterEdit} style={outlineBtn('var(--primary)')}>Edit</button>
           ) : (
             <>
               <button onClick={cancelEdit} style={outlineBtn('#888')}>Cancel</button>
-              <button onClick={saveEdit} disabled={saving} style={solidBtn('#1a73e8')}>{saving ? 'Saving…' : 'Save'}</button>
+              <button onClick={saveEdit} disabled={saving} style={solidBtn('var(--primary)')}>{saving ? 'Saving…' : 'Save'}</button>
             </>
           )}
         </div>

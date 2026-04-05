@@ -24,7 +24,7 @@ export default function Login({ onLogin }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      minHeight: '100vh', background: '#f5f5f5', fontFamily: 'sans-serif',
+      minHeight: '100vh', background: 'var(--page-bg)', fontFamily: 'sans-serif',
     }}>
       <div style={{
         background: '#fff', borderRadius: 12, padding: '40px 36px',
@@ -53,7 +53,7 @@ export default function Login({ onLogin }) {
             disabled={loading || !password}
             style={{
               width: '100%', padding: '10px', fontSize: 15, fontWeight: '600',
-              background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 6,
+              background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 6,
               cursor: loading || !password ? 'not-allowed' : 'pointer',
               opacity: loading || !password ? 0.7 : 1,
             }}
