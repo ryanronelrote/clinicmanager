@@ -12,7 +12,7 @@ export default function Settings() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 28, borderBottom: '1px solid #eee', paddingBottom: 0 }}>
-        {[['clinic', 'Clinic'], ['services', 'Services'], ['notifications', 'Notifications']].map(([key, label]) => (
+        {[['clinic', 'Clinic'], ['services', 'Services'], ['notifications', 'Notifications'], ['email', 'Email']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             padding: '8px 18px', fontSize: 14, cursor: 'pointer', border: 'none',
             borderBottom: tab === key ? '2px solid #1a73e8' : '2px solid transparent',
@@ -25,6 +25,7 @@ export default function Settings() {
       {tab === 'clinic'        && <ClinicTab />}
       {tab === 'services'      && <ServicesTab />}
       {tab === 'notifications' && <NotificationsTab />}
+      {tab === 'email'         && <EmailTab />}
     </div>
   );
 }
@@ -160,6 +161,125 @@ function ServicesTab() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Email Tab ─────────────────────────────────────────────────
+
+function EmailTab() {
+  const [form, setForm] = useState({ host: '', port: '587', user: '', pass: '', from: '', fromName: '', enabled: true });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [testTo, setTestTo] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null); // null | 'ok' | string(error)
+
+  useEffect(() => {
+    fetch('/settings/email').then(r => r.json()).then(data => {
+      setForm({
+        host:     data.host     || '',
+        port:     String(data.port || 587),
+        user:     data.user     || '',
+        pass:     data.pass     || '',
+        from:     data.from     || '',
+        fromName: data.fromName || '',
+        enabled:  data.enabled !== false,
+      });
+    });
+  }, []);
+
+  async function save() {
+    setSaving(true);
+    await fetch('/settings/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, port: parseInt(form.port) || 587 }),
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  async function sendTest() {
+    if (!testTo.trim()) return;
+    setTesting(true);
+    setTestResult(null);
+    const res = await fetch('/settings/email/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: testTo }),
+    });
+    const data = await res.json();
+    setTesting(false);
+    setTestResult(res.ok ? 'ok' : data.error || 'Unknown error');
+  }
+
+  const toggleStyle = (on) => ({
+    position: 'absolute', inset: 0, cursor: 'pointer', borderRadius: 24,
+    background: on ? '#1a73e8' : '#ccc', transition: 'background 0.2s',
+  });
+  const knobStyle = (on) => ({
+    position: 'absolute', height: 18, width: 18, left: on ? 23 : 3, bottom: 3,
+    background: '#fff', borderRadius: '50%', transition: 'left 0.2s',
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Enable toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', border: '1px solid #eee', borderRadius: 8 }}>
+        <div>
+          <div style={{ fontWeight: '600', fontSize: 14 }}>Enable Email Sending</div>
+          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Disable to stop all outgoing emails</div>
+        </div>
+        <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, flexShrink: 0 }}>
+          <input type="checkbox" checked={form.enabled} onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))} style={{ opacity: 0, width: 0, height: 0 }} />
+          <span style={toggleStyle(form.enabled)}><span style={knobStyle(form.enabled)} /></span>
+        </label>
+      </div>
+
+      {/* SMTP fields */}
+      <div style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>SMTP Configuration</div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <label style={{ flex: 3 }}><span style={lbl}>SMTP Host</span><input style={inp} value={form.host} onChange={e => setForm(f => ({ ...f, host: e.target.value }))} placeholder="smtp.gmail.com" /></label>
+          <label style={{ flex: 1 }}><span style={lbl}>Port</span><input type="number" style={inp} value={form.port} onChange={e => setForm(f => ({ ...f, port: e.target.value }))} placeholder="587" /></label>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <label style={{ flex: 1 }}><span style={lbl}>Username</span><input style={inp} value={form.user} onChange={e => setForm(f => ({ ...f, user: e.target.value }))} placeholder="you@gmail.com" /></label>
+          <label style={{ flex: 1 }}>
+            <span style={lbl}>Password / App Password</span>
+            <input type="password" style={inp} value={form.pass} onChange={e => setForm(f => ({ ...f, pass: e.target.value }))} placeholder={form.pass ? 'Leave blank to keep existing' : 'Gmail app password'} />
+          </label>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <label style={{ flex: 1 }}><span style={lbl}>From Address</span><input style={inp} value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Same as username if blank" /></label>
+          <label style={{ flex: 1 }}><span style={lbl}>From Name</span><input style={inp} value={form.fromName} onChange={e => setForm(f => ({ ...f, fromName: e.target.value }))} placeholder="e.g. My Clinic" /></label>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: '#1a73e8', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
+      </div>
+
+      {/* Test email */}
+      <div style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px' }}>
+        <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 10 }}>Send Test Email</div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+          <label style={{ flex: 1 }}>
+            <span style={lbl}>Recipient</span>
+            <input style={inp} type="email" value={testTo} onChange={e => setTestTo(e.target.value)} placeholder="test@example.com" />
+          </label>
+          <button onClick={sendTest} disabled={testing || !testTo.trim()} style={{ padding: '7px 18px', background: '#555', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            {testing ? 'Sending…' : 'Send Test'}
+          </button>
+        </div>
+        {testResult === 'ok' && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#0f9d58' }}>Test email sent successfully!</p>}
+        {testResult && testResult !== 'ok' && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#cc3333' }}>{testResult}</p>}
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const path = require('path');
 const { pool, initDb } = require('./database');
-const { sendEmail } = require('./emailService');
+const { sendEmail, getEmailConfig } = require('./emailService');
 const { appointmentConfirmation, appointmentRescheduled, appointmentReminder24h, clientConfirmedNotification, clientCancelledNotification } = require('./emailTemplates');
 const { startReminderJob } = require('./reminderJob');
 
@@ -681,6 +681,50 @@ app.post('/settings', async (req, res) => {
   const obj = {};
   for (const row of rows) obj[row.key] = row.value;
   res.json(obj);
+});
+
+// ── EMAIL SETTINGS ────────────────────────────────────────────
+
+app.get('/settings/email', async (req, res) => {
+  try {
+    const cfg = await getEmailConfig();
+    res.json({ ...cfg, pass: cfg.pass ? '••••••••' : '' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/settings/email', async (req, res) => {
+  try {
+    const { host, port, user, pass, from, fromName, enabled } = req.body;
+    const pairs = [
+      ['smtp_host', host || ''],
+      ['smtp_port', String(port || 587)],
+      ['smtp_user', user || ''],
+      ['from_email', from || ''],
+      ['from_name', fromName || ''],
+      ['email_enabled', String(enabled !== false)],
+    ];
+    if (pass && pass !== '••••••••') pairs.push(['smtp_pass', pass]);
+    for (const [k, v] of pairs) {
+      await pool.query(
+        'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+        [k, v]
+      );
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/settings/email/test', async (req, res) => {
+  try {
+    await sendEmail(req.body.to, 'Test Email from Clinic App', '<p>Your email settings are working correctly!</p>');
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── SERVICES ──────────────────────────────────────────────────

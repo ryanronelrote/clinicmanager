@@ -21,6 +21,7 @@ export default defineConfig({
       '/blocked-slots': apiProxy('http://localhost:3001'),
       '/inventory':     apiProxy('http://localhost:3001'),
       '/settings':      apiProxy('http://localhost:3001'),
+      '/settings/email': apiProxy('http://localhost:3001'),
       '/services':      apiProxy('http://localhost:3001'),
     },
   },
