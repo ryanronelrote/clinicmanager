@@ -168,23 +168,20 @@ function ServicesTab() {
 // ── Email Tab ─────────────────────────────────────────────────
 
 function EmailTab() {
-  const [form, setForm] = useState({ host: '', port: '587', user: '', pass: '', from: '', fromName: '', enabled: true });
+  const [form, setForm] = useState({ apiKey: '', from: '', fromName: '', enabled: true });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testTo, setTestTo] = useState('');
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState(null); // null | 'ok' | string(error)
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     fetch('/settings/email').then(r => r.json()).then(data => {
       setForm({
-        host:     data.host     || '',
-        port:     String(data.port || 587),
-        user:     data.user     || '',
-        pass:     data.pass     || '',
+        apiKey:   data.apiKey   || '',
         from:     data.from     || '',
         fromName: data.fromName || '',
-        enabled:  data.enabled !== false,
+        enabled:  data.enabled  !== false,
       });
     });
   }, []);
@@ -194,7 +191,7 @@ function EmailTab() {
     await fetch('/settings/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, port: parseInt(form.port) || 587 }),
+      body: JSON.stringify(form),
     });
     setSaving(false);
     setSaved(true);
@@ -238,24 +235,26 @@ function EmailTab() {
         </label>
       </div>
 
-      {/* SMTP fields */}
+      {/* Resend config */}
       <div style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>SMTP Configuration</div>
+        <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>Resend Configuration</div>
+        <label>
+          <span style={lbl}>API Key</span>
+          <input type="password" style={inp} value={form.apiKey} onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))} placeholder={form.apiKey ? 'Leave blank to keep existing' : 're_xxxxxxxxxxxxxxxxxxxx'} />
+        </label>
         <div style={{ display: 'flex', gap: 12 }}>
-          <label style={{ flex: 3 }}><span style={lbl}>SMTP Host</span><input style={inp} value={form.host} onChange={e => setForm(f => ({ ...f, host: e.target.value }))} placeholder="smtp.gmail.com" /></label>
-          <label style={{ flex: 1 }}><span style={lbl}>Port</span><input type="number" style={inp} value={form.port} onChange={e => setForm(f => ({ ...f, port: e.target.value }))} placeholder="587" /></label>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <label style={{ flex: 1 }}><span style={lbl}>Username</span><input style={inp} value={form.user} onChange={e => setForm(f => ({ ...f, user: e.target.value }))} placeholder="you@gmail.com" /></label>
           <label style={{ flex: 1 }}>
-            <span style={lbl}>Password / App Password</span>
-            <input type="password" style={inp} value={form.pass} onChange={e => setForm(f => ({ ...f, pass: e.target.value }))} placeholder={form.pass ? 'Leave blank to keep existing' : 'Gmail app password'} />
+            <span style={lbl}>From Address</span>
+            <input style={inp} value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="you@yourdomain.com" />
+          </label>
+          <label style={{ flex: 1 }}>
+            <span style={lbl}>From Name</span>
+            <input style={inp} value={form.fromName} onChange={e => setForm(f => ({ ...f, fromName: e.target.value }))} placeholder="e.g. Gentle Skin Aesthetics" />
           </label>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <label style={{ flex: 1 }}><span style={lbl}>From Address</span><input style={inp} value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Same as username if blank" /></label>
-          <label style={{ flex: 1 }}><span style={lbl}>From Name</span><input style={inp} value={form.fromName} onChange={e => setForm(f => ({ ...f, fromName: e.target.value }))} placeholder="e.g. My Clinic" /></label>
-        </div>
+        <p style={{ margin: 0, fontSize: 12, color: '#aaa' }}>
+          Need an API key? Sign up free at <strong>resend.com</strong>. To send from your own domain, verify it in the Resend dashboard.
+        </p>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

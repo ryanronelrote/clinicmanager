@@ -1,19 +1,15 @@
-const nodemailer = require('nodemailer');
 const { pool } = require('./database');
 
 async function getEmailConfig() {
-  const keys = ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'from_email', 'from_name', 'email_enabled'];
+  const keys = ['resend_api_key', 'from_email', 'from_name', 'email_enabled'];
   const { rows } = await pool.query(`SELECT key, value FROM settings WHERE key = ANY($1)`, [keys]);
   const m = {};
   for (const r of rows) m[r.key] = r.value;
   return {
-    host:     m.smtp_host  || process.env.SMTP_HOST || 'smtp.gmail.com',
-    port:     parseInt(m.smtp_port || process.env.SMTP_PORT || '587'),
-    user:     m.smtp_user  || process.env.SMTP_USER || '',
-    pass:     m.smtp_pass  || process.env.SMTP_PASS || '',
-    from:     m.from_email || m.smtp_user || process.env.SMTP_FROM || process.env.SMTP_USER || '',
-    fromName: m.from_name  || '',
-    enabled:  m.email_enabled !== 'false',
+    apiKey:   m.resend_api_key || process.env.RESEND_API_KEY || '',
+    from:     m.from_email     || process.env.SMTP_FROM      || 'onboarding@resend.dev',
+    fromName: m.from_name      || '',
+    enabled:  m.email_enabled  !== 'false',
   };
 }
 
@@ -21,18 +17,24 @@ async function sendEmail(to, subject, html) {
   if (!to) return;
   const cfg = await getEmailConfig();
   if (!cfg.enabled) return;
-  const transporter = nodemailer.createTransport({
-    host: cfg.host,
-    port: cfg.port,
-    secure: false,
-    auth: { user: cfg.user, pass: cfg.pass },
-    family: 4,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
+  if (!cfg.apiKey) throw new Error('Resend API key not configured');
+
+  const fromField = cfg.fromName ? `${cfg.fromName} <${cfg.from}>` : cfg.from;
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${cfg.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: fromField, to, subject, html }),
   });
-  const fromField = cfg.fromName ? `"${cfg.fromName}" <${cfg.from}>` : cfg.from;
-  await transporter.sendMail({ from: fromField, to, subject, html });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Resend error ${res.status}`);
+  }
+
   console.log(`[Email] "${subject}" sent to ${to}`);
 }
 

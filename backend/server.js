@@ -700,7 +700,7 @@ app.post('/settings', async (req, res) => {
 app.get('/settings/email', async (req, res) => {
   try {
     const cfg = await getEmailConfig();
-    res.json({ ...cfg, pass: cfg.pass ? '••••••••' : '' });
+    res.json({ ...cfg, apiKey: cfg.apiKey ? '••••••••••••••••' : '' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -708,16 +708,13 @@ app.get('/settings/email', async (req, res) => {
 
 app.post('/settings/email', async (req, res) => {
   try {
-    const { host, port, user, pass, from, fromName, enabled } = req.body;
+    const { apiKey, from, fromName, enabled } = req.body;
     const pairs = [
-      ['smtp_host', host || ''],
-      ['smtp_port', String(port || 587)],
-      ['smtp_user', user || ''],
       ['from_email', from || ''],
       ['from_name', fromName || ''],
       ['email_enabled', String(enabled !== false)],
     ];
-    if (pass && pass !== '••••••••') pairs.push(['smtp_pass', pass]);
+    if (apiKey && !apiKey.startsWith('••')) pairs.push(['resend_api_key', apiKey]);
     for (const [k, v] of pairs) {
       await pool.query(
         'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
