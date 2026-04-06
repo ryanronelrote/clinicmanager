@@ -122,6 +122,24 @@ function clientCancelledNotification(clientName, date, time) {
   };
 }
 
+function attendanceConfirmedReceipt(clientName, date, startTime, treatments) {
+  return {
+    subject: 'Your appointment is confirmed ✓',
+    html: `
+      <h2>Attendance Confirmed ✓</h2>
+      <p>Hi <strong>${clientName}</strong>,</p>
+      <p>We have received your confirmation. We look forward to seeing you!</p>
+      <p>
+        <strong>Date:</strong> ${formatDate(date)}<br>
+        <strong>Time:</strong> ${formatTime(startTime)}<br>
+        <strong>Service:</strong> ${treatments ? treatments.split('\n').filter(Boolean).join(', ') : 'Appointment'}
+      </p>
+      <p>If you need to make any changes, please contact us as soon as possible.</p>
+      <p>See you soon!</p>
+    `,
+  };
+}
+
 function followUpEmail(clientName) {
   return {
     subject: 'How was your treatment?',
@@ -134,4 +152,4 @@ function followUpEmail(clientName) {
   };
 }
 
-module.exports = { appointmentConfirmation, appointmentReminder24h, appointmentReminderSameDay, followUpEmail, appointmentRescheduled, clientConfirmedNotification, clientCancelledNotification };
+module.exports = { appointmentConfirmation, appointmentReminder24h, appointmentReminderSameDay, followUpEmail, appointmentRescheduled, clientConfirmedNotification, clientCancelledNotification, attendanceConfirmedReceipt };

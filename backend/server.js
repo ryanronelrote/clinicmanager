@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { pool, initDb } = require('./database');
 const { sendEmail, getEmailConfig } = require('./emailService');
-const { appointmentConfirmation, appointmentRescheduled, appointmentReminder24h, clientConfirmedNotification, clientCancelledNotification } = require('./emailTemplates');
+const { appointmentConfirmation, appointmentRescheduled, appointmentReminder24h, clientConfirmedNotification, clientCancelledNotification, attendanceConfirmedReceipt } = require('./emailTemplates');
 const { startReminderJob } = require('./reminderJob');
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
@@ -467,6 +467,14 @@ app.get('/appointments/:id/confirm', async (req, res) => {
         `${row.first_name} ${row.last_name}`, row.date, row.start_time
       );
       try { await sendEmail(clinicEmail, subject, html); } catch (e) {}
+    }
+    if (row.email) {
+      const { subject, html } = attendanceConfirmedReceipt(
+        `${row.first_name} ${row.last_name}`, row.date, row.start_time, row.treatments
+      );
+      try { await sendEmail(row.email, subject, html); } catch (e) {
+        console.error('[Email] Client receipt email failed:', e.message);
+      }
     }
   }
 
