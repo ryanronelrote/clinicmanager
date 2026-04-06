@@ -48,6 +48,7 @@ export default function Home() {
   const [clientCount, setClientCount] = useState(null);
   const [vipCount, setVipCount] = useState(null);
   const [lowStockItems, setLowStockItems] = useState([]);
+  const [clinicName, setClinicName] = useState('');
   const [loading, setLoading] = useState(true);
 
   const todayStr = toDateStr(new Date());
@@ -58,11 +59,13 @@ export default function Home() {
       authFetch(`/appointments?week=${weekParam}`).then(r => r.json()),
       authFetch('/clients').then(r => r.json()),
       authFetch('/inventory').then(r => r.json()),
-    ]).then(([appts, clients, inventory]) => {
+      authFetch('/settings').then(r => r.json()),
+    ]).then(([appts, clients, inventory, settings]) => {
       setAppointments(appts);
       setClientCount(clients.length);
       setVipCount(clients.filter(c => c.is_vip).length);
       setLowStockItems(inventory.filter(i => i.low_stock_threshold > 0 && i.stock_quantity <= i.low_stock_threshold));
+      setClinicName(settings.clinic_name || '');
       setLoading(false);
     });
   }, [weekParam]);
@@ -85,6 +88,11 @@ export default function Home() {
 
   return (
     <div style={{ maxWidth: 720 }}>
+      {clinicName && (
+        <div style={{ fontSize: 22, fontWeight: '700', color: 'var(--primary)', marginBottom: 4 }}>
+          {clinicName}
+        </div>
+      )}
       <h2 style={{ marginTop: 0, marginBottom: 20 }}>Dashboard</h2>
 
       {/* Stats cards */}
