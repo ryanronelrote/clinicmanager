@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { pool, initDb } = require('./database');
 const { sendEmail, getEmailConfig } = require('./emailService');
@@ -68,7 +69,15 @@ function requireAuth(req, res, next) {
 
 app.use(requireAuth);
 
-app.post('/auth/login', (req, res) => {
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Try again in 15 minutes.' },
+});
+
+app.post('/auth/login', loginLimiter, (req, res) => {
   const { password } = req.body;
   if (!process.env.CLINIC_PASSWORD) return res.status(500).json({ error: 'CLINIC_PASSWORD not set' });
   if (password !== process.env.CLINIC_PASSWORD) return res.status(401).json({ error: 'Incorrect password' });
