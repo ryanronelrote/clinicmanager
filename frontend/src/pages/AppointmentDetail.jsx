@@ -294,7 +294,7 @@ export default function AppointmentDetail() {
           <span style={{ ...labelStyle, width: 'auto', fontWeight: 'bold', fontSize: 13, color: '#555' }}>Email Log</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {[
-              { label: 'Confirmation', sentAt: appt.confirmation_sent_at },
+              { label: 'Booking Email', sentAt: appt.confirmation_sent_at },
               { label: 'Reschedule',   sentAt: appt.rescheduled_at },
               { label: 'Initial Reminder', sentAt: appt.reminder_24h_sent_at,  confirmed: appt.client_confirmed_at },
               { label: 'Final Reminder',  sentAt: appt.reminder_same_day_sent_at, confirmed: appt.client_confirmed_at },

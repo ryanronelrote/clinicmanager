@@ -288,7 +288,7 @@ function EmailTab() {
 // ── Notifications Tab ─────────────────────────────────────────
 
 const NOTIF_KEYS = [
-  { key: 'enable_confirmation_email', label: 'Confirmation Email',    desc: 'Send confirmation when appointment is booked' },
+  { key: 'enable_confirmation_email', label: 'Booking Email',         desc: 'Send booking email when appointment is created' },
   { key: 'enable_24h_reminder',       label: '24-hour Reminder',      desc: 'Send reminder the day before the appointment' },
   { key: 'enable_same_day_reminder',  label: 'Same-day Reminder',     desc: 'Send reminder on the day of the appointment' },
   { key: 'enable_followup_email',     label: 'Follow-up Email',       desc: 'Send follow-up email after the appointment' },
