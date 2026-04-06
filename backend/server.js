@@ -38,7 +38,7 @@ app.use(express.json());
 const distPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(distPath));
 app.get('*', (req, res, next) => {
-  if (req.headers.accept?.includes('text/html')) {
+  if (req.headers.accept?.includes('text/html') && !/^\/appointments\/\d+\/(confirm|cancel)/.test(req.path)) {
     return res.sendFile(path.join(distPath, 'index.html'));
   }
   next();
