@@ -12,11 +12,11 @@ function formatTime(str) {
 
 function appointmentConfirmation(clientName, date, time, treatments) {
   return {
-    subject: 'Appointment Confirmed',
+    subject: 'Your Appointment Has Been Booked',
     html: `
-      <h2>Appointment Confirmed ✓</h2>
+      <h2>Appointment Booked!</h2>
       <p>Hi <strong>${clientName}</strong>,</p>
-      <p>Your appointment has been confirmed. We look forward to seeing you!</p>
+      <p>Thank you for booking with us! We have received your appointment and look forward to seeing you.</p>
       <p>
         <strong>Date:</strong> ${formatDate(date)}<br>
         <strong>Time:</strong> ${formatTime(time)}<br>
