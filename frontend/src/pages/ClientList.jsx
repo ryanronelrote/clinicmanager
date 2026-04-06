@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -17,7 +18,7 @@ export default function ClientList() {
   const vipOnly = searchParams.get('vip') === '1';
 
   useEffect(() => {
-    fetch('/clients')
+    authFetch('/clients')
       .then((res) => res.json())
       .then((data) => {
         setClients(data);

@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -54,9 +55,9 @@ export default function Home() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/appointments?week=${weekParam}`).then(r => r.json()),
-      fetch('/clients').then(r => r.json()),
-      fetch('/inventory').then(r => r.json()),
+      authFetch(`/appointments?week=${weekParam}`).then(r => r.json()),
+      authFetch('/clients').then(r => r.json()),
+      authFetch('/inventory').then(r => r.json()),
     ]).then(([appts, clients, inventory]) => {
       setAppointments(appts);
       setClientCount(clients.length);

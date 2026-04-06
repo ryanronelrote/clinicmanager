@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -25,8 +26,8 @@ export default function InventoryDetail() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/inventory/${id}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
-      fetch(`/inventory/${id}/movements`).then(r => r.json()),
+      authFetch(`/inventory/${id}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
+      authFetch(`/inventory/${id}/movements`).then(r => r.json()),
     ]).then(([i, m]) => { setItem(i); setMovements(m); setLoading(false); })
       .catch(() => setLoading(false));
   }, [id]);
@@ -48,7 +49,7 @@ export default function InventoryDetail() {
 
   async function saveEdit() {
     setEditSaving(true);
-    const res = await fetch(`/inventory/${id}`, {
+    const res = await authFetch(`/inventory/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -81,7 +82,7 @@ export default function InventoryDetail() {
     setSaving(true);
     setError('');
     const endpoint = mode === 'add' ? 'add-stock' : 'remove-stock';
-    const res = await fetch(`/inventory/${id}/${endpoint}`, {
+    const res = await authFetch(`/inventory/${id}/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantity: q, reason: reason || undefined, date: date || undefined, input_unit: inputUnit || undefined }),
@@ -89,7 +90,7 @@ export default function InventoryDetail() {
     const data = await res.json();
     if (!res.ok) { setError(data.error || 'Error'); setSaving(false); return; }
     setItem(data);
-    const updated = await fetch(`/inventory/${id}/movements`).then(r => r.json());
+    const updated = await authFetch(`/inventory/${id}/movements`).then(r => r.json());
     setMovements(updated);
     setSaving(false);
     closeForm();

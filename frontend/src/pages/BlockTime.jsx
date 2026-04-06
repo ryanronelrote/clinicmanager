@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,7 +20,7 @@ export default function BlockTime() {
       return;
     }
 
-    const res = await fetch('/blocked-slots', {
+    const res = await authFetch('/blocked-slots', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),

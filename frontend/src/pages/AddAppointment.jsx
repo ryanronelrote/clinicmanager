@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import TreatmentListInput from '../components/TreatmentListInput';
@@ -22,8 +23,8 @@ export default function AddAppointment() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/clients').then(r => r.json()).then(setClients);
-    fetch('/services').then(r => r.json()).then(setServices);
+    authFetch('/clients').then(r => r.json()).then(setClients);
+    authFetch('/services').then(r => r.json()).then(setServices);
   }, []);
 
   function applyService(id) {
@@ -50,7 +51,7 @@ export default function AddAppointment() {
       return;
     }
 
-    const res = await fetch('/appointments', {
+    const res = await authFetch('/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,7 +8,7 @@ export default function InventoryList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/inventory').then(r => r.json()).then(data => { setItems(data); setLoading(false); });
+    authFetch('/inventory').then(r => r.json()).then(data => { setItems(data); setLoading(false); });
   }, []);
 
   return (

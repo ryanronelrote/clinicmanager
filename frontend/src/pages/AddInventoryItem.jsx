@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,7 +12,7 @@ export default function AddInventoryItem() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    const res = await fetch('/inventory', {
+    const res = await authFetch('/inventory', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),

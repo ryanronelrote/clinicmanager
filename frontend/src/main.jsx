@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { authFetch } from './authFetch';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -32,7 +33,7 @@ function AuthWrapper() {
       .then(r => r.json())
       .then(d => {
         if (d.valid) {
-          fetch('/settings').then(r => r.json()).then(s => applyTheme(s.app_theme)).catch(() => {});
+          authFetch('/settings').then(r => r.json()).then(s => applyTheme(s.app_theme)).catch(() => {});
           setStatus('in');
         } else {
           setStatus('out');

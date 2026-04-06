@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 
 const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
@@ -39,7 +40,7 @@ function ClinicTab() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch('/settings').then(r => r.json()).then(data => {
+    authFetch('/settings').then(r => r.json()).then(data => {
       setForm(f => ({
         clinic_name:     data.clinic_name     || '',
         address:         data.address         || '',
@@ -52,7 +53,7 @@ function ClinicTab() {
 
   async function save() {
     setSaving(true);
-    await fetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    await authFetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -91,13 +92,13 @@ function ServicesTab() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/services').then(r => r.json()).then(setServices);
+    authFetch('/services').then(r => r.json()).then(setServices);
   }, []);
 
   async function add() {
     if (!form.name.trim()) { setError('Name is required'); return; }
     setAdding(true); setError('');
-    const res = await fetch('/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    const res = await authFetch('/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
     const data = await res.json();
     setAdding(false);
     if (!res.ok) { setError(data.error); return; }
@@ -106,7 +107,7 @@ function ServicesTab() {
   }
 
   async function remove(id) {
-    await fetch(`/services/${id}`, { method: 'DELETE' });
+    await authFetch(`/services/${id}`, { method: 'DELETE' });
     setServices(s => s.filter(x => x.id !== id));
   }
 
@@ -177,7 +178,7 @@ function EmailTab() {
   const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
-    fetch('/settings/email').then(r => r.json()).then(data => {
+    authFetch('/settings/email').then(r => r.json()).then(data => {
       setForm({
         apiKey:   data.apiKey   || '',
         from:     data.from     || '',
@@ -189,7 +190,7 @@ function EmailTab() {
 
   async function save() {
     setSaving(true);
-    await fetch('/settings/email', {
+    await authFetch('/settings/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
@@ -203,7 +204,7 @@ function EmailTab() {
     if (!testTo.trim()) return;
     setTesting(true);
     setTestResult(null);
-    const res = await fetch('/settings/email/test', {
+    const res = await authFetch('/settings/email/test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to: testTo }),
@@ -304,7 +305,7 @@ function NotificationsTab() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch('/settings').then(r => r.json()).then(data => {
+    authFetch('/settings').then(r => r.json()).then(data => {
       setToggles(t => {
         const next = { ...t };
         for (const k of NOTIF_KEYS.map(n => n.key)) {
@@ -319,7 +320,7 @@ function NotificationsTab() {
     setSaving(true);
     const payload = {};
     for (const k of NOTIF_KEYS.map(n => n.key)) payload[k] = String(toggles[k]);
-    await fetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    await authFetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -383,14 +384,14 @@ function AppearanceTab() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch('/settings').then(r => r.json()).then(data => {
+    authFetch('/settings').then(r => r.json()).then(data => {
       setCurrent(data.app_theme || 'default');
     });
   }, []);
 
   async function applyAndSave() {
     setSaving(true);
-    await fetch('/settings', {
+    await authFetch('/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ app_theme: current }),

@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -200,7 +201,7 @@ export default function Calendar() {
       apptUrl  = `/appointments?week=${weekParam}`;
       blockUrl = `/blocked-slots?week=${weekParam}`;
     }
-    Promise.all([fetch(apptUrl).then(r => r.json()), fetch(blockUrl).then(r => r.json())])
+    Promise.all([authFetch(apptUrl).then(r => r.json()), authFetch(blockUrl).then(r => r.json())])
       .then(([appts, blocks]) => { setAppointments(appts); setBlockedSlots(blocks); setLoading(false); });
   }, [view, toDateStr(weekStart), monthStr]);
 

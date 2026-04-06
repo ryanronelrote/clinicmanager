@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -111,7 +112,7 @@ export default function ImportClients() {
     if (!preview) return;
     setImporting(true);
     try {
-      const res = await fetch('/clients/bulk', {
+      const res = await authFetch('/clients/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clients: preview.rows }),

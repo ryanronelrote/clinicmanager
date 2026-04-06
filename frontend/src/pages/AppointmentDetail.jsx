@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import TreatmentListInput from '../components/TreatmentListInput';
@@ -30,7 +31,7 @@ export default function AppointmentDetail() {
   const [rescheduleStatus, setRescheduleStatus] = useState(null); // null | 'success' | 'error'
 
   useEffect(() => {
-    fetch(`/appointments/${id}`)
+    authFetch(`/appointments/${id}`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => { setAppt(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -50,7 +51,7 @@ export default function AppointmentDetail() {
 
   async function saveEdit() {
     setSaving(true);
-    const res = await fetch(`/appointments/${id}`, {
+    const res = await authFetch(`/appointments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(draft),
@@ -78,7 +79,7 @@ export default function AppointmentDetail() {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch(`/appointments/${id}/reschedule`, {
+      const res = await authFetch(`/appointments/${id}/reschedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...rescheduleDraft, duration_minutes: parseInt(rescheduleDraft.duration_minutes) }),
@@ -106,7 +107,7 @@ export default function AppointmentDetail() {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch(`/appointments/${id}/send-reminder`, { method: 'POST', signal: controller.signal });
+      const res = await authFetch(`/appointments/${id}/send-reminder`, { method: 'POST', signal: controller.signal });
       clearTimeout(timeout);
       if (res.ok) {
         const updated = await res.json();
@@ -125,7 +126,7 @@ export default function AppointmentDetail() {
 
   async function handleDelete() {
     if (!confirm('Delete this appointment?')) return;
-    await fetch(`/appointments/${id}`, { method: 'DELETE' });
+    await authFetch(`/appointments/${id}`, { method: 'DELETE' });
     navigate('/calendar');
   }
 

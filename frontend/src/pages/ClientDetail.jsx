@@ -1,3 +1,4 @@
+import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import TreatmentListInput from '../components/TreatmentListInput';
@@ -67,8 +68,8 @@ export default function ClientDetail() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/clients/${id}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
-      fetch(`/appointments?client_id=${id}`).then(r => r.json()),
+      authFetch(`/clients/${id}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
+      authFetch(`/appointments?client_id=${id}`).then(r => r.json()),
     ])
       .then(([c, appts]) => { setClient(c); setAppointments(appts); setLoading(false); })
       .catch(() => setLoading(false));
@@ -109,7 +110,7 @@ export default function ClientDetail() {
 
   async function saveEdit() {
     setSaving(true);
-    const profileRes = await fetch(`/clients/${id}`, {
+    const profileRes = await authFetch(`/clients/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(profileDraft),
@@ -121,7 +122,7 @@ export default function ClientDetail() {
         treatmentDrafts[a.id] !== (a.treatments || '') ||
         (therapistDrafts[a.id] ?? '') !== (a.therapist || '')
       )
-      .map(a => fetch(`/appointments/${a.id}`, {
+      .map(a => authFetch(`/appointments/${a.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ treatments: treatmentDrafts[a.id], therapist: therapistDrafts[a.id] || null }),
@@ -137,7 +138,7 @@ export default function ClientDetail() {
 
   async function toggleVip() {
     setToggling(true);
-    const res = await fetch(`/clients/${id}`, {
+    const res = await authFetch(`/clients/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_vip: client.is_vip ? 0 : 1 }),
@@ -149,7 +150,7 @@ export default function ClientDetail() {
   async function addPastAppointment() {
     if (!newPast.date) return;
     setAddingPast(true);
-    const res = await fetch('/appointments', {
+    const res = await authFetch('/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -164,7 +165,7 @@ export default function ClientDetail() {
     });
     if (res.ok) {
       const created = await res.json();
-      const full = await fetch(`/appointments/${created.id}`).then(r => r.json());
+      const full = await authFetch(`/appointments/${created.id}`).then(r => r.json());
       setAppointments(prev => [...prev, full]);
       setTreatmentDrafts(d => ({ ...d, [full.id]: full.treatments || '' }));
       setTherapistDrafts(d => ({ ...d, [full.id]: full.therapist || '' }));
