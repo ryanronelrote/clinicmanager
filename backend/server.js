@@ -25,7 +25,10 @@ async function getNotifSettings() {
 }
 
 const app = express();
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'];
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // ── STATIC FILES (production) ────────────────────────────────
@@ -46,6 +49,24 @@ function authToken() {
   const pass = process.env.CLINIC_PASSWORD || '';
   return crypto.createHmac('sha256', pass).update(pass).digest('hex');
 }
+
+function requireAuth(req, res, next) {
+  // Public endpoints: auth routes and client-facing email confirmation/cancellation links
+  if (
+    (req.method === 'POST' && req.path === '/auth/login') ||
+    (req.method === 'GET'  && req.path === '/auth/verify') ||
+    (req.method === 'GET'  && /^\/appointments\/\d+\/(confirm|cancel)$/.test(req.path))
+  ) {
+    return next();
+  }
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!process.env.CLINIC_PASSWORD || token !== authToken()) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.use(requireAuth);
 
 app.post('/auth/login', (req, res) => {
   const { password } = req.body;
@@ -207,7 +228,8 @@ app.post('/appointments', async (req, res) => {
   const endMinutes = startMinutes + parseInt(duration_minutes);
 
   const { rows: existing } = await pool.query(
-    'SELECT start_time, duration_minutes FROM appointments WHERE date = $1', [date]
+    `SELECT start_time, duration_minutes FROM appointments WHERE date = $1 AND status NOT IN ('cancelled', 'cancelled_by_client')`,
+    [date]
   );
   let overlapCount = 0;
   for (const row of existing) {
@@ -441,7 +463,7 @@ app.get('/appointments/:id/confirm', async (req, res) => {
 
   res.send(confirmPage(
     'Attendance Confirmed!',
-    `Thank you, <strong>${row.first_name} ${row.last_name}</strong>! Your appointment on ${new Date(row.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} has been confirmed. See you soon!`,
+    `Thank you, <strong>${escHtml(row.first_name)} ${escHtml(row.last_name)}</strong>! Your appointment on ${new Date(row.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} has been confirmed. See you soon!`,
     '#0f9d58'
   ));
 });
@@ -490,7 +512,16 @@ app.get('/appointments/:id/cancel', async (req, res) => {
     `Your appointment on ${new Date(row.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} has been cancelled. We hope to see you again soon!`,
     '#e07b54'
   ));
+
 });
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 function confirmPage(title, message, color) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
