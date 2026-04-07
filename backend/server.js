@@ -796,8 +796,10 @@ app.get('/settings/email-templates', async (req, res) => {
   const result = {};
   for (const t of TEMPLATE_REGISTRY) {
     result[t.name] = {
-      subject: stored[`email_tpl_${t.name}_subject`] || '',
-      body:    stored[`email_tpl_${t.name}_body`]    || '',
+      subject:        stored[`email_tpl_${t.name}_subject`] || '',
+      body:           stored[`email_tpl_${t.name}_body`]    || '',
+      defaultSubject: t.defaultSubject,
+      defaultBody:    t.defaultBody,
     };
   }
   res.json(result);

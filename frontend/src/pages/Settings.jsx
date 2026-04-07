@@ -431,7 +431,7 @@ function TemplatesTab() {
                   style={inp}
                   value={tpl.subject}
                   onChange={e => update(name, 'subject', e.target.value)}
-                  placeholder="Leave blank to use default"
+                  placeholder={tpl.defaultSubject || ''}
                 />
               </label>
               <label>
@@ -441,7 +441,7 @@ function TemplatesTab() {
                   rows={6}
                   value={tpl.body}
                   onChange={e => update(name, 'body', e.target.value)}
-                  placeholder="Leave blank to use default"
+                  placeholder={tpl.defaultBody || ''}
                 />
               </label>
             </div>

@@ -112,14 +112,46 @@ async function followUpEmail(clientName) {
 // ── Template registry (for UI) ────────────────────────────────
 
 const TEMPLATE_REGISTRY = [
-  { name: 'booking',           label: 'Booking Email',            vars: ['clientName', 'date', 'time', 'treatments'] },
-  { name: 'reminder_24h',      label: '24h Reminder',             vars: ['clientName', 'date', 'time', 'treatments', 'confirmButton', 'cancelButton'] },
-  { name: 'reminder_same_day', label: 'Same-day Reminder',        vars: ['clientName', 'time', 'confirmButton', 'cancelButton'] },
-  { name: 'confirmed_receipt', label: 'Confirmation Receipt',     vars: ['clientName', 'date', 'time', 'treatments'] },
-  { name: 'rescheduled',       label: 'Rescheduled',              vars: ['clientName', 'date', 'time', 'newDate', 'newTime', 'treatments'] },
-  { name: 'follow_up',         label: 'Follow-up',                vars: ['clientName'] },
-  { name: 'clinic_confirmed',  label: 'Clinic: Client Confirmed', vars: ['clientName', 'date', 'time'] },
-  { name: 'clinic_cancelled',  label: 'Clinic: Client Cancelled', vars: ['clientName', 'date', 'time'] },
+  {
+    name: 'booking', label: 'Booking Email', vars: ['clientName', 'date', 'time', 'treatments'],
+    defaultSubject: 'Your Appointment Has Been Booked',
+    defaultBody: `<h2>Appointment Booked!</h2><p>Hi <strong>{{clientName}}</strong>,</p><p>Thank you for booking with us! We have received your appointment and look forward to seeing you.</p><p><strong>Date:</strong> {{date}}<br><strong>Time:</strong> {{time}}<br><strong>Service:</strong> {{treatments}}</p><p>If you need to reschedule or have any questions, feel free to contact us.</p>`,
+  },
+  {
+    name: 'reminder_24h', label: '24h Reminder', vars: ['clientName', 'date', 'time', 'treatments', 'confirmButton', 'cancelButton'],
+    defaultSubject: 'Initial Reminder',
+    defaultBody: `<h2>Initial Reminder: Appointment Tomorrow</h2><p>Hi <strong>{{clientName}}</strong>,</p><p>Just a friendly reminder that you have an appointment with us tomorrow.</p><p><strong>Date:</strong> {{date}}<br><strong>Time:</strong> {{time}}<br><strong>Service:</strong> {{treatments}}</p>{{confirmButton}}{{cancelButton}}<p>See you soon!</p>`,
+  },
+  {
+    name: 'reminder_same_day', label: 'Same-day Reminder', vars: ['clientName', 'time', 'confirmButton', 'cancelButton'],
+    defaultSubject: 'Final Reminder',
+    defaultBody: `<h2>Final Reminder: Your Appointment is Today!</h2><p>Hi <strong>{{clientName}}</strong>,</p><p>This is a reminder that your appointment is today at <strong>{{time}}</strong>.</p>{{confirmButton}}{{cancelButton}}<p>We look forward to seeing you!</p>`,
+  },
+  {
+    name: 'confirmed_receipt', label: 'Confirmation Receipt', vars: ['clientName', 'date', 'time', 'treatments'],
+    defaultSubject: 'Your appointment is confirmed ✓',
+    defaultBody: `<h2>Attendance Confirmed ✓</h2><p>Hi <strong>{{clientName}}</strong>,</p><p>We have received your confirmation. We look forward to seeing you!</p><p><strong>Date:</strong> {{date}}<br><strong>Time:</strong> {{time}}<br><strong>Service:</strong> {{treatments}}</p><p>If you need to make any changes, please contact us as soon as possible.</p><p>See you soon!</p>`,
+  },
+  {
+    name: 'rescheduled', label: 'Rescheduled', vars: ['clientName', 'date', 'time', 'newDate', 'newTime', 'treatments'],
+    defaultSubject: 'Appointment Rescheduled',
+    defaultBody: `<h2>Your Appointment Has Been Rescheduled</h2><p>Hi <strong>{{clientName}}</strong>,</p><p>Your appointment has been moved to a new date and time.</p><p><strong>New Date:</strong> {{newDate}}<br><strong>New Time:</strong> {{newTime}}<br><strong>Service:</strong> {{treatments}}</p><p><em>Previous appointment was on {{date}} at {{time}}.</em></p><p>If you have any questions, feel free to contact us.</p>`,
+  },
+  {
+    name: 'follow_up', label: 'Follow-up', vars: ['clientName'],
+    defaultSubject: 'How was your treatment?',
+    defaultBody: `<h2>How was your visit?</h2><p>Hi <strong>{{clientName}}</strong>,</p><p>Thank you for coming in! We hope you enjoyed your treatment and are feeling great.</p><p>We'd love to see you again. Feel free to book your next appointment anytime.</p>`,
+  },
+  {
+    name: 'clinic_confirmed', label: 'Clinic: Client Confirmed', vars: ['clientName', 'date', 'time'],
+    defaultSubject: 'Client Confirmed: {{clientName}}',
+    defaultBody: `<h2>Attendance Confirmed by Client</h2><p><strong>{{clientName}}</strong> has confirmed their attendance for the appointment on <strong>{{date}}</strong> at <strong>{{time}}</strong>.</p>`,
+  },
+  {
+    name: 'clinic_cancelled', label: 'Clinic: Client Cancelled', vars: ['clientName', 'date', 'time'],
+    defaultSubject: 'Client Cancelled: {{clientName}}',
+    defaultBody: `<h2>Appointment Cancelled by Client</h2><p><strong>{{clientName}}</strong> has cancelled their appointment on <strong>{{date}}</strong> at <strong>{{time}}</strong>.</p>`,
+  },
 ];
 
 module.exports = {
