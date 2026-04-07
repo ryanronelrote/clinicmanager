@@ -461,7 +461,7 @@ app.get('/appointments/:id/confirm', async (req, res) => {
       'UPDATE appointments SET client_confirmed_at = $1, status = $2 WHERE id = $3',
       [new Date().toISOString(), 'confirmed_by_client', parseInt(req.params.id)]
     );
-    const clinicEmail = process.env.SMTP_USER;
+    const { clinicEmail } = await getEmailConfig();
     if (clinicEmail) {
       const { subject, html } = clientConfirmedNotification(
         `${row.first_name} ${row.last_name}`, row.date, row.start_time
@@ -516,7 +516,7 @@ app.get('/appointments/:id/cancel', async (req, res) => {
     [new Date().toISOString(), 'cancelled_by_client', parseInt(req.params.id)]
   );
 
-  const clinicEmail = process.env.SMTP_USER;
+  const { clinicEmail } = await getEmailConfig();
   if (clinicEmail) {
     const { subject, html } = clientCancelledNotification(
       `${row.first_name} ${row.last_name}`, row.date, row.start_time

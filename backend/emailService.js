@@ -1,15 +1,16 @@
 const { pool } = require('./database');
 
 async function getEmailConfig() {
-  const keys = ['brevo_api_key', 'from_email', 'from_name', 'email_enabled'];
+  const keys = ['brevo_api_key', 'from_email', 'from_name', 'email_enabled', 'email'];
   const { rows } = await pool.query(`SELECT key, value FROM settings WHERE key = ANY($1)`, [keys]);
   const m = {};
   for (const r of rows) m[r.key] = r.value;
   return {
-    apiKey:   m.brevo_api_key || process.env.BREVO_API_KEY || '',
-    from:     m.from_email    || process.env.SMTP_FROM     || '',
-    fromName: m.from_name     || '',
-    enabled:  m.email_enabled !== 'false',
+    apiKey:      m.brevo_api_key || process.env.BREVO_API_KEY || '',
+    from:        m.from_email    || process.env.SMTP_FROM     || '',
+    fromName:    m.from_name     || '',
+    enabled:     m.email_enabled !== 'false',
+    clinicEmail: m.email         || process.env.SMTP_USER     || '',
   };
 }
 
