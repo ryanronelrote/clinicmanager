@@ -1,20 +1,7 @@
-import { authFetch } from '../authFetch';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const EMPTY_MH = {
-  q1_medications: '', q1_explain: '',
-  q2_conditions: '',
-  q3_surgeries: '', q3_list: '',
-  q4_metal: '', q4_explain: '',
-  q5_pregnant: '',
-  q6_birth_control: '', q6_explain: '',
-  q7_skin_disease: '', q7_explain: '',
-  q8_water: '',
-  q9_activity: '',
-  q10_contraindications: '', q10_explain: '',
-  q11_areas: '',
-};
+import { clientService } from '../services/clientService';
+import { EMPTY_MH } from '../utils/medicalHistory';
 
 const initialForm = {
   first_name: '', last_name: '', phone: '', email: '',
@@ -38,18 +25,12 @@ export default function AddClient() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    const res = await authFetch('/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || 'Something went wrong');
-      return;
+    try {
+      const client = await clientService.create(form);
+      navigate(`/clients/${client.id}`);
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
     }
-    const client = await res.json();
-    navigate(`/clients/${client.id}`);
   }
 
   const mh = form.medical_history;

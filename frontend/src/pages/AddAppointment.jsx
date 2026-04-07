@@ -1,7 +1,10 @@
-import { authFetch } from '../authFetch';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import TreatmentListInput from '../components/TreatmentListInput';
+import { appointmentService } from '../services/appointmentService';
+import { useClients } from '../hooks/useClients';
+import { useServices } from '../hooks/useServices';
+import { useConflictCheck } from '../hooks/useConflictCheck';
 
 const DURATIONS = [15, 30, 45, 60, 75, 90, 120, 150, 180];
 
@@ -9,8 +12,8 @@ export default function AddAppointment() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const [clients, setClients] = useState([]);
-  const [services, setServices] = useState([]);
+  const { data: clients = [] } = useClients();
+  const { data: services = [] } = useServices();
   const [form, setForm] = useState({
     client_id: searchParams.get('client_id') || '',
     date: searchParams.get('date') || '',
@@ -22,10 +25,7 @@ export default function AddAppointment() {
   });
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    authFetch('/clients').then(r => r.json()).then(setClients);
-    authFetch('/services').then(r => r.json()).then(setServices);
-  }, []);
+  const conflicts = useConflictCheck(form.date, form.start_time, form.duration_minutes);
 
   function applyService(id) {
     const svc = services.find(s => String(s.id) === id);
@@ -51,28 +51,21 @@ export default function AddAppointment() {
       return;
     }
 
-    const res = await authFetch('/appointments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    if (conflicts && conflicts.count >= 3) {
+      setError('All 3 slots are occupied at this time. Please choose a different time.');
+      return;
+    }
+
+    try {
+      await appointmentService.create({
         ...form,
         client_id: parseInt(form.client_id),
         duration_minutes: parseInt(form.duration_minutes),
-      }),
-    });
-
-    if (res.status === 409) {
-      const data = await res.json();
-      setError(data.error);
-      return;
+      });
+      navigate('/calendar');
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
     }
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || 'Something went wrong');
-      return;
-    }
-
-    navigate('/calendar');
   }
 
   const fieldStyle = { display: 'block', width: '100%', padding: '8px', marginTop: 4, boxSizing: 'border-box' };
@@ -83,6 +76,16 @@ export default function AddAppointment() {
       <button onClick={() => navigate('/calendar')} style={{ marginBottom: 16 }}>← Back to Calendar</button>
       <h2>Add Appointment</h2>
       {error && <p style={{ color: 'red', background: '#fff0f0', padding: '8px', borderRadius: 4 }}>{error}</p>}
+      {conflicts && conflicts.count > 0 && conflicts.count < 3 && (
+        <p style={{ color: '#b45309', background: '#fef3c7', padding: '8px', borderRadius: 4, fontSize: 13 }}>
+          {conflicts.count} of 3 slots occupied at this time. You can still book.
+        </p>
+      )}
+      {conflicts && conflicts.count >= 3 && (
+        <p style={{ color: '#cc3333', background: '#fdecea', padding: '8px', borderRadius: 4, fontSize: 13 }}>
+          All 3 slots are occupied at this time. Please choose a different time.
+        </p>
+      )}
       <form onSubmit={handleSubmit}>
         {services.length > 0 && (
           <label style={labelStyle}>
@@ -142,7 +145,7 @@ export default function AddAppointment() {
           Notes
           <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} style={fieldStyle} />
         </label>
-        <button type="submit" style={{ padding: '8px 20px' }}>Save Appointment</button>
+        <button type="submit" disabled={conflicts && conflicts.count >= 3} style={{ padding: '8px 20px' }}>Save Appointment</button>
       </form>
     </div>
   );

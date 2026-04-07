@@ -1,5 +1,7 @@
-import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
+import { settingsService } from '../services/settingsService';
+import { serviceService } from '../services/serviceService';
+import { useClinicSettings } from '../context/SettingsContext';
 
 const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
 const lbl = { fontSize: 12, color: 'var(--label-color)', display: 'block', marginBottom: 3 };
@@ -41,7 +43,7 @@ function ClinicTab() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    authFetch('/settings').then(r => r.json()).then(data => {
+    settingsService.getAll().then(data => {
       setForm(f => ({
         clinic_name:     data.clinic_name     || '',
         address:         data.address         || '',
@@ -49,15 +51,19 @@ function ClinicTab() {
         email:           data.email           || '',
         business_hours:  data.business_hours  || '',
       }));
-    });
+    }).catch(() => {});
   }, []);
 
   async function save() {
     setSaving(true);
-    await authFetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    try {
+      await settingsService.save(form);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      console.error('Save failed:', err);
+    }
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   }
 
   return (
@@ -93,23 +99,29 @@ function ServicesTab() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    authFetch('/services').then(r => r.json()).then(setServices);
+    serviceService.getAll().then(setServices).catch(() => {});
   }, []);
 
   async function add() {
     if (!form.name.trim()) { setError('Name is required'); return; }
     setAdding(true); setError('');
-    const res = await authFetch('/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-    const data = await res.json();
+    try {
+      const data = await serviceService.create(form);
+      setServices(s => [...s, data]);
+      setForm({ name: '', duration_minutes: '60', price: '', category: '' });
+    } catch (err) {
+      setError(err.message || 'Error');
+    }
     setAdding(false);
-    if (!res.ok) { setError(data.error); return; }
-    setServices(s => [...s, data]);
-    setForm({ name: '', duration_minutes: '60', price: '', category: '' });
   }
 
   async function remove(id) {
-    await authFetch(`/services/${id}`, { method: 'DELETE' });
-    setServices(s => s.filter(x => x.id !== id));
+    try {
+      await serviceService.delete(id);
+      setServices(s => s.filter(x => x.id !== id));
+    } catch (err) {
+      console.error('Delete failed:', err);
+    }
   }
 
   const categories = [...new Set(services.map(s => s.category).filter(Boolean))];
@@ -179,40 +191,39 @@ function EmailTab() {
   const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
-    authFetch('/settings/email').then(r => r.json()).then(data => {
+    settingsService.getEmailConfig().then(data => {
       setForm({
         apiKey:   data.apiKey   || '',
         from:     data.from     || '',
         fromName: data.fromName || '',
         enabled:  data.enabled  !== false,
       });
-    });
+    }).catch(() => {});
   }, []);
 
   async function save() {
     setSaving(true);
-    await authFetch('/settings/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
+    try {
+      await settingsService.saveEmailConfig(form);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      console.error('Save failed:', err);
+    }
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   }
 
   async function sendTest() {
     if (!testTo.trim()) return;
     setTesting(true);
     setTestResult(null);
-    const res = await authFetch('/settings/email/test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: testTo }),
-    });
-    const data = await res.json();
+    try {
+      await settingsService.sendTestEmail(testTo);
+      setTestResult('ok');
+    } catch (err) {
+      setTestResult(err.message || 'Unknown error');
+    }
     setTesting(false);
-    setTestResult(res.ok ? 'ok' : data.error || 'Unknown error');
   }
 
   const toggleStyle = (on) => ({
@@ -306,7 +317,7 @@ function NotificationsTab() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    authFetch('/settings').then(r => r.json()).then(data => {
+    settingsService.getAll().then(data => {
       setToggles(t => {
         const next = { ...t };
         for (const k of NOTIF_KEYS.map(n => n.key)) {
@@ -314,17 +325,21 @@ function NotificationsTab() {
         }
         return next;
       });
-    });
+    }).catch(() => {});
   }, []);
 
   async function save() {
     setSaving(true);
-    const payload = {};
-    for (const k of NOTIF_KEYS.map(n => n.key)) payload[k] = String(toggles[k]);
-    await authFetch('/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    try {
+      const payload = {};
+      for (const k of NOTIF_KEYS.map(n => n.key)) payload[k] = String(toggles[k]);
+      await settingsService.save(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      console.error('Save failed:', err);
+    }
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   }
 
   return (
@@ -381,7 +396,7 @@ function TemplatesTab() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    authFetch('/settings/email-templates').then(r => r.json()).then(setTemplates);
+    settingsService.getEmailTemplates().then(setTemplates).catch(() => {});
   }, []);
 
   function update(name, field, value) {
@@ -394,14 +409,14 @@ function TemplatesTab() {
 
   async function save() {
     setSaving(true);
-    await authFetch('/settings/email-templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(templates),
-    });
+    try {
+      await settingsService.saveEmailTemplates(templates);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      console.error('Save failed:', err);
+    }
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   }
 
   return (
@@ -485,27 +500,27 @@ const THEMES = [
 ];
 
 function AppearanceTab() {
-  const [current, setCurrent] = useState('default');
+  const { settings, updateSettings } = useClinicSettings();
+  const [current, setCurrent] = useState(settings?.app_theme || 'default');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    authFetch('/settings').then(r => r.json()).then(data => {
-      setCurrent(data.app_theme || 'default');
-    });
-  }, []);
+    if (settings?.app_theme) {
+      setCurrent(settings.app_theme);
+    }
+  }, [settings]);
 
   async function applyAndSave() {
     setSaving(true);
-    await authFetch('/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ app_theme: current }),
-    });
-    document.documentElement.setAttribute('data-theme', current);
+    try {
+      await updateSettings({ app_theme: current });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      console.error('Theme save failed:', err);
+    }
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   }
 
   return (

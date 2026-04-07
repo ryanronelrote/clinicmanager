@@ -1,14 +1,23 @@
-import { authFetch } from '../authFetch';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { inventoryService } from '../services/inventoryService';
+import { useInventoryItem } from '../hooks/useInventoryItem';
+import { outlineBtn, solidBtn } from '../utils/styleUtils';
 
 export default function InventoryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [item, setItem] = useState(null);
-  const [movements, setMovements] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, setData } = useInventoryItem(id);
+  const item = data?.item || null;
+  const movements = data?.movements || [];
+
+  function setItem(updated) {
+    setData(prev => ({ ...prev, item: updated }));
+  }
+  function setMovements(updated) {
+    setData(prev => ({ ...prev, movements: updated }));
+  }
 
   // Edit mode
   const [editMode, setEditMode] = useState(false);
@@ -23,14 +32,6 @@ export default function InventoryDetail() {
   const [inputUnit, setInputUnit] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    Promise.all([
-      authFetch(`/inventory/${id}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
-      authFetch(`/inventory/${id}/movements`).then(r => r.json()),
-    ]).then(([i, m]) => { setItem(i); setMovements(m); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [id]);
 
   function enterEdit() {
     setDraft({
@@ -49,20 +50,19 @@ export default function InventoryDetail() {
 
   async function saveEdit() {
     setEditSaving(true);
-    const res = await authFetch(`/inventory/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const updated = await inventoryService.update(id, {
         ...draft,
         conversion_factor: draft.conversion_factor !== '' ? parseFloat(draft.conversion_factor) : null,
         conversion_unit:   draft.conversion_unit || null,
         preferred_unit:    draft.preferred_unit || null,
-      }),
-    });
-    const updated = await res.json();
-    setItem(updated);
+      });
+      setItem(updated);
+      setEditMode(false);
+    } catch (err) {
+      console.error('Save failed:', err);
+    }
     setEditSaving(false);
-    setEditMode(false);
   }
 
   function openForm(m) {
@@ -81,22 +81,25 @@ export default function InventoryDetail() {
     if (!q || q <= 0) { setError('Enter a valid quantity'); return; }
     setSaving(true);
     setError('');
-    const endpoint = mode === 'add' ? 'add-stock' : 'remove-stock';
-    const res = await authFetch(`/inventory/${id}/${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quantity: q, reason: reason || undefined, date: date || undefined, input_unit: inputUnit || undefined }),
-    });
-    const data = await res.json();
-    if (!res.ok) { setError(data.error || 'Error'); setSaving(false); return; }
-    setItem(data);
-    const updated = await authFetch(`/inventory/${id}/movements`).then(r => r.json());
-    setMovements(updated);
+    try {
+      const stockData = { quantity: q, reason: reason || undefined, date: date || undefined, input_unit: inputUnit || undefined };
+      let updatedItem;
+      if (mode === 'add') {
+        updatedItem = await inventoryService.addStock(id, stockData);
+      } else {
+        updatedItem = await inventoryService.removeStock(id, stockData);
+      }
+      setItem(updatedItem);
+      const updatedMovements = await inventoryService.getMovements(id);
+      setMovements(updatedMovements);
+      closeForm();
+    } catch (err) {
+      setError(err.message || 'Error');
+    }
     setSaving(false);
-    closeForm();
   }
 
-  if (loading) return <p>Loading…</p>;
+  if (loading) return <p>Loading...</p>;
   if (!item) return <p>Item not found. <button onClick={() => navigate('/inventory')}>Back</button></p>;
 
   const low = item.low_stock_threshold > 0 && item.stock_quantity <= item.low_stock_threshold;
@@ -292,9 +295,3 @@ function StatBox({ label, value, color }) {
 }
 
 const lbl = { fontSize: 12, color: 'var(--label-color)', display: 'block', marginBottom: 3 };
-function outlineBtn(color) {
-  return { padding: '5px 14px', fontSize: 13, cursor: 'pointer', borderRadius: 4, border: `1px solid ${color}`, background: '#fff', color };
-}
-function solidBtn(color) {
-  return { padding: '5px 14px', fontSize: 13, cursor: 'pointer', borderRadius: 4, border: 'none', background: color, color: '#fff', fontWeight: '600' };
-}

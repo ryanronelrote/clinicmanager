@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { authFetch } from './authFetch';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { SettingsProvider, useClinicSettings } from './context/SettingsContext';
 import App from './App';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -18,35 +19,15 @@ import InventoryList from './pages/InventoryList';
 import AddInventoryItem from './pages/AddInventoryItem';
 import InventoryDetail from './pages/InventoryDetail';
 import Settings from './pages/Settings';
+import { useEffect } from 'react';
 
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme || 'default');
-}
-
-function AuthWrapper() {
-  const [status, setStatus] = useState('checking'); // 'checking' | 'in' | 'out'
+function AppShell() {
+  const { status, logout } = useAuth();
+  const { loadSettings } = useClinicSettings();
 
   useEffect(() => {
-    const token = localStorage.getItem('clinic_token');
-    if (!token) { setStatus('out'); return; }
-    fetch('/auth/verify', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(d => {
-        if (d.valid) {
-          authFetch('/settings').then(r => r.json()).then(s => applyTheme(s.app_theme)).catch(() => {});
-          setStatus('in');
-        } else {
-          setStatus('out');
-        }
-      })
-      .catch(() => setStatus('out'));
-  }, []);
-
-  function handleLogin() { setStatus('in'); }
-  function handleLogout() {
-    localStorage.removeItem('clinic_token');
-    setStatus('out');
-  }
+    if (status === 'in') loadSettings();
+  }, [status, loadSettings]);
 
   if (status === 'checking') {
     return (
@@ -56,12 +37,12 @@ function AuthWrapper() {
     );
   }
 
-  if (status === 'out') return <Login onLogin={handleLogin} />;
+  if (status === 'out') return <Login />;
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App onLogout={handleLogout} />}>
+        <Route path="/" element={<App onLogout={logout} />}>
           <Route index element={<Home />} />
           <Route path="clients" element={<ClientList />} />
           <Route path="add" element={<AddClient />} />
@@ -83,6 +64,10 @@ function AuthWrapper() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthWrapper />
+    <AuthProvider>
+      <SettingsProvider>
+        <AppShell />
+      </SettingsProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

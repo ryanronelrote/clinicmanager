@@ -1,6 +1,6 @@
-import { authFetch } from '../authFetch';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { inventoryService } from '../services/inventoryService';
 
 export default function AddInventoryItem() {
   const navigate = useNavigate();
@@ -12,13 +12,12 @@ export default function AddInventoryItem() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    const res = await authFetch('/inventory', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    if (!res.ok) { const d = await res.json(); setError(d.error || 'Error'); return; }
-    navigate('/inventory');
+    try {
+      await inventoryService.create(form);
+      navigate('/inventory');
+    } catch (err) {
+      setError(err.message || 'Error');
+    }
   }
 
   const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };

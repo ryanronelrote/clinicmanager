@@ -1,60 +1,25 @@
-import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import TreatmentListInput from '../components/TreatmentListInput';
+import { clientService } from '../services/clientService';
+import { appointmentService } from '../services/appointmentService';
+import { useClient } from '../hooks/useClient';
+import { useAppointmentsByClient } from '../hooks/useAppointments';
+import { toDateStr, formatDateShort, calcAge } from '../utils/dateUtils';
+import { outlineBtn, solidBtn, VIP_BADGE_FULL } from '../utils/styleUtils';
+import { EMPTY_MH } from '../utils/medicalHistory';
 
-function toDateStr(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
 const today = toDateStr(new Date());
-
-function formatDate(dateStr) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-  });
-}
-
-function calcAge(birthdateStr) {
-  if (!birthdateStr) return null;
-  const birth = new Date(birthdateStr + 'T00:00:00');
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const m = now.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-  return age;
-}
-
-const VIP_BADGE = (
-  <span style={{
-    background: '#fbbf24', color: '#78350f',
-    borderRadius: 12, padding: '2px 10px', fontSize: 12, fontWeight: '700',
-  }}>★ VIP Client</span>
-);
-
-const EMPTY_MH = {
-  q1_medications: '', q1_explain: '',
-  q2_conditions: '',
-  q3_surgeries: '', q3_list: '',
-  q4_metal: '', q4_explain: '',
-  q5_pregnant: '',
-  q6_birth_control: '', q6_explain: '',
-  q7_skin_disease: '', q7_explain: '',
-  q8_water: '',
-  q9_activity: '',
-  q10_contraindications: '', q10_explain: '',
-  q11_areas: '',
-};
 
 export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [client, setClient] = useState(null);
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: client, loading: clientLoading, setData: setClient } = useClient(id);
+  const { data: appointmentsData, loading: apptsLoading, setData: setAppointments } = useAppointmentsByClient(id);
+
+  const loading = clientLoading || apptsLoading;
+  const appointments = appointmentsData || [];
 
   const [editMode, setEditMode] = useState(false);
   const [profileDraft, setProfileDraft] = useState({});
@@ -65,15 +30,6 @@ export default function ClientDetail() {
 
   const [newPast, setNewPast] = useState({ date: '', therapist: '', treatments: '', notes: '' });
   const [addingPast, setAddingPast] = useState(false);
-
-  useEffect(() => {
-    Promise.all([
-      authFetch(`/clients/${id}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
-      authFetch(`/appointments?client_id=${id}`).then(r => r.json()),
-    ])
-      .then(([c, appts]) => { setClient(c); setAppointments(appts); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [id]);
 
   function enterEdit() {
     const mh = (client.medical_history && typeof client.medical_history === 'object')
@@ -110,27 +66,23 @@ export default function ClientDetail() {
 
   async function saveEdit() {
     setSaving(true);
-    const profileRes = await authFetch(`/clients/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(profileDraft),
-    });
-    setClient(await profileRes.json());
+    try {
+      const updatedClient = await clientService.update(id, profileDraft);
+      setClient(updatedClient);
 
-    const apptUpdates = appointments
-      .filter(a =>
-        treatmentDrafts[a.id] !== (a.treatments || '') ||
-        (therapistDrafts[a.id] ?? '') !== (a.therapist || '')
-      )
-      .map(a => authFetch(`/appointments/${a.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ treatments: treatmentDrafts[a.id], therapist: therapistDrafts[a.id] || null }),
-      }).then(r => r.json()));
+      const apptUpdates = appointments
+        .filter(a =>
+          treatmentDrafts[a.id] !== (a.treatments || '') ||
+          (therapistDrafts[a.id] ?? '') !== (a.therapist || '')
+        )
+        .map(a => appointmentService.update(a.id, { treatments: treatmentDrafts[a.id], therapist: therapistDrafts[a.id] || null }));
 
-    const updatedAppts = await Promise.all(apptUpdates);
-    if (updatedAppts.length > 0) {
-      setAppointments(prev => prev.map(a => updatedAppts.find(u => u.id === a.id) || a));
+      const updatedAppts = await Promise.all(apptUpdates);
+      if (updatedAppts.length > 0) {
+        setAppointments(prev => prev.map(a => updatedAppts.find(u => u.id === a.id) || a));
+      }
+    } catch (err) {
+      console.error('Save failed:', err);
     }
     setSaving(false);
     setEditMode(false);
@@ -138,22 +90,20 @@ export default function ClientDetail() {
 
   async function toggleVip() {
     setToggling(true);
-    const res = await authFetch(`/clients/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_vip: client.is_vip ? 0 : 1 }),
-    });
-    setClient(await res.json());
+    try {
+      const updated = await clientService.update(id, { is_vip: client.is_vip ? 0 : 1 });
+      setClient(updated);
+    } catch (err) {
+      console.error('Toggle VIP failed:', err);
+    }
     setToggling(false);
   }
 
   async function addPastAppointment() {
     if (!newPast.date) return;
     setAddingPast(true);
-    const res = await authFetch('/appointments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const created = await appointmentService.create({
         client_id: parseInt(id),
         date: newPast.date,
         start_time: '12:00',
@@ -161,15 +111,14 @@ export default function ClientDetail() {
         therapist: newPast.therapist || null,
         treatments: newPast.treatments || null,
         notes: newPast.notes || null,
-      }),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      const full = await authFetch(`/appointments/${created.id}`).then(r => r.json());
+      });
+      const full = await appointmentService.getById(created.id);
       setAppointments(prev => [...prev, full]);
       setTreatmentDrafts(d => ({ ...d, [full.id]: full.treatments || '' }));
       setTherapistDrafts(d => ({ ...d, [full.id]: full.therapist || '' }));
       setNewPast({ date: '', therapist: '', treatments: '', notes: '' });
+    } catch (err) {
+      console.error('Add past appointment failed:', err);
     }
     setAddingPast(false);
   }
@@ -197,7 +146,7 @@ export default function ClientDetail() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <h2 style={{ margin: 0 }}>{client.first_name} {client.last_name}</h2>
-          {client.is_vip ? VIP_BADGE : null}
+          {client.is_vip ? VIP_BADGE_FULL : null}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={toggleVip} disabled={toggling} style={{
@@ -545,7 +494,7 @@ function ApptRow({ appt, i, editMode, treatmentDrafts, setTreatmentDrafts, thera
       onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
     >
       <div style={{ minWidth: 150, fontSize: 13, fontWeight: '600', color: muted ? '#888' : '#333', paddingTop: editMode ? 5 : 0 }}>
-        {formatDate(appt.date)}
+        {formatDateShort(appt.date)}
       </div>
       <div style={{ flex: 1 }} onClick={e => editMode && e.stopPropagation()}>
         {editMode ? (
@@ -578,10 +527,3 @@ function ApptRow({ appt, i, editMode, treatmentDrafts, setTreatmentDrafts, thera
 }
 
 const lblStyle = { fontSize: 12, color: '#888', display: 'block', marginBottom: 3 };
-
-function outlineBtn(color) {
-  return { padding: '5px 14px', fontSize: 13, cursor: 'pointer', borderRadius: 4, border: `1px solid ${color}`, background: '#fff', color };
-}
-function solidBtn(color) {
-  return { padding: '5px 14px', fontSize: 13, cursor: 'pointer', borderRadius: 4, border: 'none', background: color, color: '#fff', fontWeight: '600' };
-}

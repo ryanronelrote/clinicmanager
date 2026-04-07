@@ -1,15 +1,10 @@
-import { authFetch } from '../authFetch';
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useInventory } from '../hooks/useInventory';
+import { solidBtn } from '../utils/styleUtils';
 
 export default function InventoryList() {
   const navigate = useNavigate();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    authFetch('/inventory').then(r => r.json()).then(data => { setItems(data); setLoading(false); });
-  }, []);
+  const { data: items, loading } = useInventory();
 
   return (
     <div style={{ maxWidth: 720 }}>
@@ -20,13 +15,13 @@ export default function InventoryList() {
 
       {loading && <p style={{ color: '#888' }}>Loading…</p>}
 
-      {!loading && items.length === 0 && (
+      {!loading && (items || []).length === 0 && (
         <div style={{ padding: 32, textAlign: 'center', color: '#888', border: '1px dashed #ddd', borderRadius: 8 }}>
           No inventory items yet.
         </div>
       )}
 
-      {!loading && items.length > 0 && (
+      {!loading && (items || []).length > 0 && (
         <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 80px', background: '#fafafa', borderBottom: '1px solid #eee', padding: '8px 16px', fontSize: 12, fontWeight: '700', color: '#888', textTransform: 'uppercase' }}>
             <span>Item</span>
@@ -34,7 +29,7 @@ export default function InventoryList() {
             <span style={{ textAlign: 'right' }}>Unit</span>
             <span style={{ textAlign: 'right' }}>Min</span>
           </div>
-          {items.map((item, i) => {
+          {(items || []).map((item, i) => {
             const low = item.low_stock_threshold > 0 && item.stock_quantity <= item.low_stock_threshold;
             return (
               <div key={item.id}
@@ -63,8 +58,4 @@ export default function InventoryList() {
       )}
     </div>
   );
-}
-
-function solidBtn(color) {
-  return { padding: '5px 14px', fontSize: 13, cursor: 'pointer', borderRadius: 4, border: 'none', background: color, color: '#fff', fontWeight: '600' };
 }

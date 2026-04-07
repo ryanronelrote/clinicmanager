@@ -3,11 +3,10 @@ const crypto = require('crypto');
 const { pool } = require('./database');
 const { sendEmail } = require('./emailService');
 const { appointmentReminder24h, appointmentReminderSameDay, followUpEmail } = require('./emailTemplates');
+const { dateToLocalStr, timeToMinutes } = require('./helpers/dateHelpers');
+const { getNotifSettings } = require('./helpers/notifSettings');
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
-
-function toDateStr(d) { return d.toISOString().slice(0, 10); }
-function timeToMins(str) { const [h, m] = str.split(':').map(Number); return h * 60 + m; }
 
 async function ensureToken(row) {
   if (row.confirmation_token) return row.confirmation_token;
@@ -16,23 +15,11 @@ async function ensureToken(row) {
   return token;
 }
 
-async function getNotifSettings() {
-  const keys = ['enable_24h_reminder', 'enable_same_day_reminder', 'enable_followup_email'];
-  const { rows } = await pool.query('SELECT key, value FROM settings WHERE key = ANY($1)', [keys]);
-  const map = {};
-  for (const r of rows) map[r.key] = r.value;
-  return {
-    reminder24h:     map['enable_24h_reminder']       !== 'false',
-    reminderSameDay: map['enable_same_day_reminder']  !== 'false',
-    followup:        map['enable_followup_email']      !== 'false',
-  };
-}
-
 async function runReminders() {
   const notif = await getNotifSettings();
-  const today     = toDateStr(new Date());
-  const tomorrow  = toDateStr(new Date(Date.now() + 86400000));
-  const yesterday = toDateStr(new Date(Date.now() - 86400000));
+  const today     = dateToLocalStr(new Date());
+  const tomorrow  = dateToLocalStr(new Date(Date.now() + 86400000));
+  const yesterday = dateToLocalStr(new Date(Date.now() - 86400000));
 
   // ── 24-hour reminders ────────────────────────────────────────
   if (notif.reminder24h) {
@@ -67,7 +54,7 @@ async function runReminders() {
     `, [today]);
     const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
     for (const row of rows) {
-      if (timeToMins(row.start_time) - nowMins > 480) continue;
+      if (timeToMinutes(row.start_time) - nowMins > 480) continue;
       const token = await ensureToken(row);
       const confirmUrl = `${BACKEND_URL}/appointments/${row.id}/confirm?token=${token}`;
       const cancelUrl  = `${BACKEND_URL}/appointments/${row.id}/cancel?token=${token}`;

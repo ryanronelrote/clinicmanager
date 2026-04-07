@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
-export default function Login({ onLogin }) {
+export default function Login() {
+  const { login } = useAuth();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,8 +19,7 @@ export default function Login({ onLogin }) {
     const data = await res.json();
     setLoading(false);
     if (!res.ok) { setError(data.error || 'Incorrect password'); return; }
-    localStorage.setItem('clinic_token', data.token);
-    onLogin();
+    login(data.token);
   }
 
   return (

@@ -1,32 +1,14 @@
-import { authFetch } from '../authFetch';
-import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
-const VIP_BADGE = (
-  <span style={{
-    display: 'inline-block', background: '#fbbf24', color: '#78350f',
-    borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: '700',
-    marginLeft: 8, verticalAlign: 'middle',
-  }}>★ VIP</span>
-);
+import { useClients } from '../hooks/useClients';
+import { VIP_BADGE } from '../utils/styleUtils';
 
 export default function ClientList() {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: clients, loading } = useClients();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const vipOnly = searchParams.get('vip') === '1';
 
-  useEffect(() => {
-    authFetch('/clients')
-      .then((res) => res.json())
-      .then((data) => {
-        setClients(data);
-        setLoading(false);
-      });
-  }, []);
-
-  const displayed = vipOnly ? clients.filter(c => c.is_vip) : clients;
+  const displayed = vipOnly ? (clients || []).filter(c => c.is_vip) : (clients || []);
 
   if (loading) return <p>Loading...</p>;
 

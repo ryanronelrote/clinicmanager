@@ -1,74 +1,36 @@
-import { authFetch } from '../authFetch';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-function toDateStr(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function getMondayOf(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
-  return d;
-}
-
-function formatTime(str) {
-  const [h, m] = str.split(':').map(Number);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`;
-}
-
-function dayLabel(dateStr) {
-  const today = toDateStr(new Date());
-  const tomorrow = toDateStr(new Date(new Date().setDate(new Date().getDate() + 1)));
-  const date = new Date(dateStr + 'T00:00:00');
-  const weekday = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-  if (dateStr === today) return `Today — ${weekday}`;
-  if (dateStr === tomorrow) return `Tomorrow — ${weekday}`;
-  return weekday;
-}
-
-const VIP_BADGE = (
-  <span style={{
-    display: 'inline-block', background: '#fbbf24', color: '#78350f',
-    borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: '700',
-    marginLeft: 6, verticalAlign: 'middle',
-  }}>
-    ★ VIP
-  </span>
-);
+import { useAsync } from '../hooks/useAsync';
+import { appointmentService } from '../services/appointmentService';
+import { clientService } from '../services/clientService';
+import { inventoryService } from '../services/inventoryService';
+import { useClinicSettings } from '../context/SettingsContext';
+import { toDateStr, getMondayOf, formatTime, dayLabel } from '../utils/dateUtils';
+import { VIP_BADGE } from '../utils/styleUtils';
 
 export default function Home() {
   const navigate = useNavigate();
-  const [appointments, setAppointments] = useState([]);
-  const [clientCount, setClientCount] = useState(null);
-  const [vipCount, setVipCount] = useState(null);
-  const [lowStockItems, setLowStockItems] = useState([]);
-  const [clinicName, setClinicName] = useState('');
-  const [loading, setLoading] = useState(true);
+  const { settings } = useClinicSettings();
+  const clinicName = settings?.clinic_name || '';
 
   const todayStr = toDateStr(new Date());
   const weekParam = toDateStr(getMondayOf(new Date()));
 
-  useEffect(() => {
-    Promise.all([
-      authFetch(`/appointments?week=${weekParam}`).then(r => r.json()),
-      authFetch('/clients').then(r => r.json()),
-      authFetch('/inventory').then(r => r.json()),
-      authFetch('/settings').then(r => r.json()),
-    ]).then(([appts, clients, inventory, settings]) => {
-      setAppointments(appts);
-      setClientCount(clients.length);
-      setVipCount(clients.filter(c => c.is_vip).length);
-      setLowStockItems(inventory.filter(i => i.low_stock_threshold > 0 && i.stock_quantity <= i.low_stock_threshold));
-      setClinicName(settings.clinic_name || '');
-      setLoading(false);
-    });
+  const { data, loading } = useAsync(async () => {
+    const [appts, clients, inventory] = await Promise.all([
+      appointmentService.getByWeek(weekParam),
+      clientService.getAll(),
+      inventoryService.getAll(),
+    ]);
+    return { appts, clients, inventory };
   }, [weekParam]);
+
+  const appointments = data?.appts || [];
+  const clientCount = data ? data.clients.length : null;
+  const vipCount = data ? data.clients.filter(c => c.is_vip).length : null;
+  const lowStockItems = data
+    ? data.inventory.filter(i => i.low_stock_threshold > 0 && i.stock_quantity <= i.low_stock_threshold)
+    : [];
 
   // Filter to today onwards, sort by date + time
   const upcoming = appointments

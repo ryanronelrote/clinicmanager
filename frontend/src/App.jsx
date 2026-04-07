@@ -1,4 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
+import { useClinicSettings } from './context/SettingsContext';
 
 const sidebarStyle = {
   position: 'fixed',
@@ -60,11 +61,14 @@ function subNavLinkStyle({ isActive }) {
 }
 
 export default function App({ onLogout }) {
+  const { settings } = useClinicSettings();
+  const clinicName = settings?.clinic_name || 'Clinic Manager';
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
       {/* Sidebar */}
       <nav style={sidebarStyle}>
-        <div style={brandStyle}>Clinic Manager</div>
+        <div style={brandStyle}>{clinicName}</div>
 
         <div style={{ padding: '8px 0' }}>
           <NavLink to="/" end style={navLinkStyle}>Home</NavLink>

@@ -1,26 +1,18 @@
-import { authFetch } from '../authFetch';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import TreatmentListInput from '../components/TreatmentListInput';
+import { appointmentService } from '../services/appointmentService';
+import { useAppointment } from '../hooks/useAppointment';
+import { useConflictCheck } from '../hooks/useConflictCheck';
+import { formatTime, formatDate } from '../utils/dateUtils';
+import { outlineBtn, solidBtn } from '../utils/styleUtils';
 
 const DURATIONS = [30, 60, 90, 120, 150, 180];
-
-function formatTime(str) {
-  const [h, m] = str.split(':').map(Number);
-  return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
-}
-
-function formatDate(dateStr) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
-}
 
 export default function AppointmentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [appt, setAppt] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: appt, loading, setData: setAppt } = useAppointment(id);
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState({});
   const [saving, setSaving] = useState(false);
@@ -30,12 +22,12 @@ export default function AppointmentDetail() {
   const [rescheduling, setRescheduling] = useState(false);
   const [rescheduleStatus, setRescheduleStatus] = useState(null); // null | 'success' | 'error'
 
-  useEffect(() => {
-    authFetch(`/appointments/${id}`)
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(data => { setAppt(data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [id]);
+  const conflicts = useConflictCheck(
+    rescheduleMode ? rescheduleDraft.date : null,
+    rescheduleMode ? rescheduleDraft.start_time : null,
+    rescheduleMode ? rescheduleDraft.duration_minutes : null,
+    id
+  );
 
   function enterEdit() {
     setDraft({
@@ -51,15 +43,15 @@ export default function AppointmentDetail() {
 
   async function saveEdit() {
     setSaving(true);
-    const res = await authFetch(`/appointments/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(draft),
-    });
-    const updated = await res.json();
-    setAppt(updated);
-    setSaving(false);
-    setEditMode(false);
+    try {
+      const updated = await appointmentService.update(id, draft);
+      setAppt(updated);
+      setEditMode(false);
+    } catch {
+      // keep edit mode open on failure
+    } finally {
+      setSaving(false);
+    }
   }
 
   function enterReschedule() {
@@ -77,25 +69,15 @@ export default function AppointmentDetail() {
   async function confirmReschedule() {
     setRescheduling(true);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      const res = await authFetch(`/appointments/${id}/reschedule`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...rescheduleDraft, duration_minutes: parseInt(rescheduleDraft.duration_minutes) }),
-        signal: controller.signal,
+      const updated = await appointmentService.reschedule(id, {
+        ...rescheduleDraft,
+        duration_minutes: parseInt(rescheduleDraft.duration_minutes),
       });
-      clearTimeout(timeout);
-      if (res.ok) {
-        const updated = await res.json();
-        setAppt(updated);
-        setRescheduleMode(false);
-        setRescheduleDraft({});
-        setRescheduleStatus('success');
-        setTimeout(() => setRescheduleStatus(null), 4000);
-      } else {
-        setRescheduleStatus('error');
-      }
+      setAppt(updated);
+      setRescheduleMode(false);
+      setRescheduleDraft({});
+      setRescheduleStatus('success');
+      setTimeout(() => setRescheduleStatus(null), 4000);
     } catch {
       setRescheduleStatus('error');
     }
@@ -105,29 +87,27 @@ export default function AppointmentDetail() {
   async function sendReminder() {
     setReminderStatus('sending');
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      const res = await authFetch(`/appointments/${id}/send-reminder`, { method: 'POST', signal: controller.signal });
-      clearTimeout(timeout);
-      if (res.ok) {
-        const updated = await res.json();
-        setAppt(updated);
-        setReminderStatus('sent');
-      } else if (res.status === 400) {
+      const updated = await appointmentService.sendReminder(id);
+      setAppt(updated);
+      setReminderStatus('sent');
+    } catch (err) {
+      if (err.status === 400) {
         setReminderStatus('no-email');
       } else {
         setReminderStatus('error');
       }
-    } catch {
-      setReminderStatus('error');
     }
     setTimeout(() => setReminderStatus(null), 4000);
   }
 
   async function handleDelete() {
     if (!confirm('Delete this appointment?')) return;
-    await authFetch(`/appointments/${id}`, { method: 'DELETE' });
-    navigate('/calendar');
+    try {
+      await appointmentService.delete(id);
+      navigate('/calendar');
+    } catch {
+      // stay on page if delete fails
+    }
   }
 
   if (loading) return <p>Loading...</p>;
@@ -169,7 +149,7 @@ export default function AppointmentDetail() {
           ) : (
             <>
               <button onClick={cancelReschedule} style={outlineBtn('#888')}>Cancel</button>
-              <button onClick={confirmReschedule} disabled={rescheduling} style={solidBtn('#e07b54')}>
+              <button onClick={confirmReschedule} disabled={rescheduling || (conflicts && conflicts.count >= 3)} style={solidBtn('#e07b54')}>
                 {rescheduling ? 'Rescheduling…' : 'Confirm Reschedule'}
               </button>
             </>
@@ -191,6 +171,16 @@ export default function AppointmentDetail() {
       )}
       {rescheduleStatus === 'error' && (
         <p style={{ color: '#cc3333', fontSize: 13, margin: '0 0 12px' }}>Failed to reschedule. Check server logs.</p>
+      )}
+      {rescheduleMode && conflicts && conflicts.count > 0 && conflicts.count < 3 && (
+        <p style={{ color: '#b45309', background: '#fef3c7', padding: '8px', borderRadius: 4, fontSize: 13, margin: '0 0 12px' }}>
+          {conflicts.count} of 3 slots occupied at this time. You can still reschedule.
+        </p>
+      )}
+      {rescheduleMode && conflicts && conflicts.count >= 3 && (
+        <p style={{ color: '#cc3333', background: '#fdecea', padding: '8px', borderRadius: 4, fontSize: 13, margin: '0 0 12px' }}>
+          All 3 slots are occupied at this time. Please choose a different time.
+        </p>
       )}
 
       {/* Status badge */}
@@ -351,9 +341,3 @@ function StatusBadge({ status }) {
   );
 }
 
-function outlineBtn(color) {
-  return { padding: '5px 14px', fontSize: 13, cursor: 'pointer', borderRadius: 4, border: `1px solid ${color}`, background: '#fff', color };
-}
-function solidBtn(color) {
-  return { padding: '5px 14px', fontSize: 13, cursor: 'pointer', borderRadius: 4, border: 'none', background: color, color: '#fff', fontWeight: '600' };
-}

@@ -1,6 +1,6 @@
-import { authFetch } from '../authFetch';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { blockedSlotService } from '../services/blockedSlotService';
 
 export default function BlockTime() {
   const navigate = useNavigate();
@@ -20,19 +20,12 @@ export default function BlockTime() {
       return;
     }
 
-    const res = await authFetch('/blocked-slots', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || 'Something went wrong');
-      return;
+    try {
+      await blockedSlotService.create(form);
+      navigate('/calendar');
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
     }
-
-    navigate('/calendar');
   }
 
   const fieldStyle = { display: 'block', width: '100%', padding: '8px', marginTop: 4, boxSizing: 'border-box' };

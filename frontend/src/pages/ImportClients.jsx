@@ -1,6 +1,6 @@
-import { authFetch } from '../authFetch';
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { clientService } from '../services/clientService';
 
 // Map flexible header names to our field names
 const HEADER_MAP = {
@@ -112,14 +112,11 @@ export default function ImportClients() {
     if (!preview) return;
     setImporting(true);
     try {
-      const res = await authFetch('/clients/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clients: preview.rows }),
-      });
-      const data = await res.json();
+      const data = await clientService.bulkImport(preview.rows);
       setResult(data);
       setPreview(null);
+    } catch (err) {
+      setResult({ imported: 0, errors: [{ row: 0, reason: err.message || 'Import failed' }] });
     } finally {
       setImporting(false);
     }

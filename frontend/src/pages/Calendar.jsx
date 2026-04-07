@@ -1,6 +1,8 @@
-import { authFetch } from '../authFetch';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { appointmentService } from '../services/appointmentService';
+import { blockedSlotService } from '../services/blockedSlotService';
+import { toDateStr, getMondayOf, addDays, timeToMins } from '../utils/dateUtils';
 
 // ── Constants ────────────────────────────────────────────────
 const SLOT_HEIGHT = 48;
@@ -20,30 +22,11 @@ const LABEL_W      = 52;
 function clinicOpensAt(dayIndex) { return dayIndex < 5 ? 11 * 60 : 9 * 60; }
 
 // ── Helpers ──────────────────────────────────────────────────
-function timeToMins(str) {
-  const [h, m] = str.split(':').map(Number);
-  return h * 60 + m;
-}
 function minsToTime(mins) {
   return `${Math.floor(mins / 60).toString().padStart(2, '0')}:${(mins % 60).toString().padStart(2, '0')}`;
 }
-function toDateStr(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
 function today() { return toDateStr(new Date()); }
 
-function getMondayOf(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
-  return d;
-}
-function addDays(date, n) {
-  const d = new Date(date); d.setDate(d.getDate() + n); return d;
-}
 function formatShort(date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
@@ -192,17 +175,18 @@ export default function Calendar() {
   // Fetch data whenever view or date changes
   useEffect(() => {
     setLoading(true);
-    let apptUrl, blockUrl;
+    let apptPromise, blockPromise;
     if (view === 'monthly') {
-      apptUrl  = `/appointments?month=${monthStr}`;
-      blockUrl = `/blocked-slots?month=${monthStr}`;
+      apptPromise  = appointmentService.getByMonth(monthStr);
+      blockPromise = blockedSlotService.getByMonth(monthStr);
     } else {
       const weekParam = toDateStr(weekStart);
-      apptUrl  = `/appointments?week=${weekParam}`;
-      blockUrl = `/blocked-slots?week=${weekParam}`;
+      apptPromise  = appointmentService.getByWeek(weekParam);
+      blockPromise = blockedSlotService.getByWeek(weekParam);
     }
-    Promise.all([authFetch(apptUrl).then(r => r.json()), authFetch(blockUrl).then(r => r.json())])
-      .then(([appts, blocks]) => { setAppointments(appts); setBlockedSlots(blocks); setLoading(false); });
+    Promise.all([apptPromise, blockPromise])
+      .then(([appts, blocks]) => { setAppointments(appts); setBlockedSlots(blocks); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [view, toDateStr(weekStart), monthStr]);
 
   // Navigation
