@@ -233,7 +233,7 @@ export default function ClientDetail() {
         ) : (
           <div style={{ marginBottom: 16 }}>
             {/* Row 1 */}
-            <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #eee', paddingBottom: 8, marginBottom: 8, flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid #eee', paddingBottom: 8, marginBottom: 8, flexWrap: 'wrap', gap: 16 }}>
               <ChartField label="Birthdate" value={client.birthdate ? new Date(client.birthdate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null} />
               <ChartField label="Age" value={calcAge(client.birthdate) != null ? `${calcAge(client.birthdate)} yrs` : null} />
               <ChartField label="Sex" value={client.sex} />
