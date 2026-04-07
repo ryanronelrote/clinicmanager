@@ -13,7 +13,7 @@ export default function Settings() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 28, borderBottom: '1px solid #eee', paddingBottom: 0 }}>
-        {[['clinic', 'Clinic'], ['services', 'Services'], ['notifications', 'Notifications'], ['email', 'Email'], ['appearance', 'Appearance']].map(([key, label]) => (
+        {[['clinic', 'Clinic'], ['services', 'Services'], ['notifications', 'Notifications'], ['email', 'Email'], ['templates', 'Templates'], ['appearance', 'Appearance']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             padding: '8px 18px', fontSize: 14, cursor: 'pointer', border: 'none',
             borderBottom: tab === key ? '2px solid var(--primary)' : '2px solid transparent',
@@ -27,6 +27,7 @@ export default function Settings() {
       {tab === 'services'      && <ServicesTab />}
       {tab === 'notifications' && <NotificationsTab />}
       {tab === 'email'         && <EmailTab />}
+      {tab === 'templates'     && <TemplatesTab />}
       {tab === 'appearance'    && <AppearanceTab />}
     </div>
   );
@@ -354,6 +355,111 @@ function NotificationsTab() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
           {saving ? 'Saving…' : 'Save'}
+        </button>
+        {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
+      </div>
+    </div>
+  );
+}
+
+// ── Templates Tab ─────────────────────────────────────────────
+
+const TEMPLATE_META = [
+  { name: 'booking',           label: 'Booking Email',            vars: ['clientName', 'date', 'time', 'treatments'] },
+  { name: 'reminder_24h',      label: '24h Reminder',             vars: ['clientName', 'date', 'time', 'treatments', 'confirmButton', 'cancelButton'] },
+  { name: 'reminder_same_day', label: 'Same-day Reminder',        vars: ['clientName', 'time', 'confirmButton', 'cancelButton'] },
+  { name: 'confirmed_receipt', label: 'Confirmation Receipt',     vars: ['clientName', 'date', 'time', 'treatments'] },
+  { name: 'rescheduled',       label: 'Rescheduled',              vars: ['clientName', 'date', 'time', 'newDate', 'newTime', 'treatments'] },
+  { name: 'follow_up',         label: 'Follow-up',                vars: ['clientName'] },
+  { name: 'clinic_confirmed',  label: 'Clinic: Client Confirmed', vars: ['clientName', 'date', 'time'] },
+  { name: 'clinic_cancelled',  label: 'Clinic: Client Cancelled', vars: ['clientName', 'date', 'time'] },
+];
+
+function TemplatesTab() {
+  const [templates, setTemplates] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    authFetch('/settings/email-templates').then(r => r.json()).then(setTemplates);
+  }, []);
+
+  function update(name, field, value) {
+    setTemplates(t => ({ ...t, [name]: { ...t[name], [field]: value } }));
+  }
+
+  function reset(name) {
+    setTemplates(t => ({ ...t, [name]: { subject: '', body: '' } }));
+  }
+
+  async function save() {
+    setSaving(true);
+    await authFetch('/settings/email-templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(templates),
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <p style={{ margin: 0, fontSize: 13, color: '#888' }}>
+        Customize email subjects and bodies. Leave blank to use the built-in default. Use <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 3 }}>{'{{variable}}'}</code> placeholders shown below each template.
+      </p>
+
+      {TEMPLATE_META.map(({ name, label, vars }) => {
+        const tpl = templates[name] || { subject: '', body: '' };
+        return (
+          <div key={name} style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ fontWeight: '600', fontSize: 14 }}>{label}</div>
+              <button
+                onClick={() => reset(name)}
+                style={{ fontSize: 12, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+              >
+                Reset to default
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label>
+                <span style={lbl}>Subject</span>
+                <input
+                  style={inp}
+                  value={tpl.subject}
+                  onChange={e => update(name, 'subject', e.target.value)}
+                  placeholder="Leave blank to use default"
+                />
+              </label>
+              <label>
+                <span style={lbl}>Body (HTML)</span>
+                <textarea
+                  style={{ ...inp, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+                  rows={6}
+                  value={tpl.body}
+                  onChange={e => update(name, 'body', e.target.value)}
+                  placeholder="Leave blank to use default"
+                />
+              </label>
+            </div>
+
+            <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {vars.map(v => (
+                <span key={v} style={{ fontSize: 11, background: '#f0f4ff', color: '#3b4cc0', padding: '2px 8px', borderRadius: 4, fontFamily: 'monospace' }}>
+                  {`{{${v}}}`}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+          {saving ? 'Saving…' : 'Save All'}
         </button>
         {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
       </div>

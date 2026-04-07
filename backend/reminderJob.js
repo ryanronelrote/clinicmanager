@@ -45,7 +45,7 @@ async function runReminders() {
       const token = await ensureToken(row);
       const confirmUrl = `${BACKEND_URL}/appointments/${row.id}/confirm?token=${token}`;
       const cancelUrl  = `${BACKEND_URL}/appointments/${row.id}/cancel?token=${token}`;
-      const { subject, html } = appointmentReminder24h(
+      const { subject, html } = await appointmentReminder24h(
         `${row.first_name} ${row.last_name}`, row.date, row.start_time, row.treatments, confirmUrl, cancelUrl
       );
       try {
@@ -71,7 +71,7 @@ async function runReminders() {
       const token = await ensureToken(row);
       const confirmUrl = `${BACKEND_URL}/appointments/${row.id}/confirm?token=${token}`;
       const cancelUrl  = `${BACKEND_URL}/appointments/${row.id}/cancel?token=${token}`;
-      const { subject, html } = appointmentReminderSameDay(
+      const { subject, html } = await appointmentReminderSameDay(
         `${row.first_name} ${row.last_name}`, row.start_time, confirmUrl, cancelUrl
       );
       try {
@@ -92,7 +92,7 @@ async function runReminders() {
       WHERE a.date = $1 AND a.followup_sent = 0 AND c.email IS NOT NULL
     `, [yesterday]);
     for (const row of rows) {
-      const { subject, html } = followUpEmail(`${row.first_name} ${row.last_name}`);
+      const { subject, html } = await followUpEmail(`${row.first_name} ${row.last_name}`);
       try {
         await sendEmail(row.email, subject, html);
         await pool.query(

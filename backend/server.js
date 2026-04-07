@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { pool, initDb } = require('./database');
 const { sendEmail, getEmailConfig, encrypt } = require('./emailService');
-const { appointmentConfirmation, appointmentRescheduled, appointmentReminder24h, clientConfirmedNotification, clientCancelledNotification, attendanceConfirmedReceipt } = require('./emailTemplates');
+const { appointmentConfirmation, appointmentRescheduled, appointmentReminder24h, clientConfirmedNotification, clientCancelledNotification, attendanceConfirmedReceipt, TEMPLATE_REGISTRY } = require('./emailTemplates');
 const { startReminderJob } = require('./reminderJob');
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
@@ -270,7 +270,7 @@ app.post('/appointments', async (req, res) => {
   ]);
   if (notif.confirmation && clientRows.length && clientRows[0].email) {
     const c = clientRows[0];
-    const { subject, html } = appointmentConfirmation(
+    const { subject, html } = await appointmentConfirmation(
       `${c.first_name} ${c.last_name}`, date, start_time, treatments
     );
     try {
@@ -384,7 +384,7 @@ app.post('/appointments/:id/send-reminder', async (req, res) => {
 
   const confirmUrl = `${BACKEND_URL}/appointments/${req.params.id}/confirm?token=${token}`;
   const cancelUrl  = `${BACKEND_URL}/appointments/${req.params.id}/cancel?token=${token}`;
-  const { subject, html } = appointmentReminder24h(
+  const { subject, html } = await appointmentReminder24h(
     `${row.first_name} ${row.last_name}`, row.date, row.start_time, row.treatments, confirmUrl, cancelUrl
   );
 
@@ -426,7 +426,7 @@ app.post('/appointments/:id/reschedule', async (req, res) => {
   );
 
   if (row.email) {
-    const { subject, html } = appointmentRescheduled(
+    const { subject, html } = await appointmentRescheduled(
       `${row.first_name} ${row.last_name}`, row.date, row.start_time, date, start_time, row.treatments
     );
     try { await sendEmail(row.email, subject, html); } catch (err) {
@@ -463,13 +463,13 @@ app.get('/appointments/:id/confirm', async (req, res) => {
     );
     const { clinicEmail } = await getEmailConfig();
     if (clinicEmail) {
-      const { subject, html } = clientConfirmedNotification(
+      const { subject, html } = await clientConfirmedNotification(
         `${row.first_name} ${row.last_name}`, row.date, row.start_time
       );
       try { await sendEmail(clinicEmail, subject, html); } catch (e) {}
     }
     if (row.email) {
-      const { subject, html } = attendanceConfirmedReceipt(
+      const { subject, html } = await attendanceConfirmedReceipt(
         `${row.first_name} ${row.last_name}`, row.date, row.start_time, row.treatments
       );
       try { await sendEmail(row.email, subject, html); } catch (e) {
@@ -518,7 +518,7 @@ app.get('/appointments/:id/cancel', async (req, res) => {
 
   const { clinicEmail } = await getEmailConfig();
   if (clinicEmail) {
-    const { subject, html } = clientCancelledNotification(
+    const { subject, html } = await clientCancelledNotification(
       `${row.first_name} ${row.last_name}`, row.date, row.start_time
     );
     try { await sendEmail(clinicEmail, subject, html); } catch (e) {}
@@ -782,6 +782,39 @@ app.post('/settings/email/test', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── EMAIL TEMPLATES ───────────────────────────────────────────
+
+app.get('/settings/email-templates', async (req, res) => {
+  const keys = TEMPLATE_REGISTRY.flatMap(t => [
+    `email_tpl_${t.name}_subject`,
+    `email_tpl_${t.name}_body`,
+  ]);
+  const { rows } = await pool.query('SELECT key, value FROM settings WHERE key = ANY($1)', [keys]);
+  const stored = Object.fromEntries(rows.map(r => [r.key, r.value]));
+  const result = {};
+  for (const t of TEMPLATE_REGISTRY) {
+    result[t.name] = {
+      subject: stored[`email_tpl_${t.name}_subject`] || '',
+      body:    stored[`email_tpl_${t.name}_body`]    || '',
+    };
+  }
+  res.json(result);
+});
+
+app.post('/settings/email-templates', async (req, res) => {
+  for (const [name, tpl] of Object.entries(req.body)) {
+    for (const field of ['subject', 'body']) {
+      const key = `email_tpl_${name}_${field}`;
+      const val = tpl[field] ?? '';
+      await pool.query(
+        'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+        [key, val]
+      );
+    }
+  }
+  res.json({ ok: true });
 });
 
 // ── SERVICES ──────────────────────────────────────────────────
