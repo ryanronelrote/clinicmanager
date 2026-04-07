@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { pool, initDb } = require('./database');
-const { sendEmail, getEmailConfig } = require('./emailService');
+const { sendEmail, getEmailConfig, encrypt } = require('./emailService');
 const { appointmentConfirmation, appointmentRescheduled, appointmentReminder24h, clientConfirmedNotification, clientCancelledNotification, attendanceConfirmedReceipt } = require('./emailTemplates');
 const { startReminderJob } = require('./reminderJob');
 
@@ -762,7 +762,7 @@ app.post('/settings/email', async (req, res) => {
       ['from_name', fromName || ''],
       ['email_enabled', String(enabled !== false)],
     ];
-    if (apiKey && !apiKey.startsWith('••')) pairs.push(['brevo_api_key', apiKey]);
+    if (apiKey && !apiKey.startsWith('••')) pairs.push(['brevo_api_key', encrypt(apiKey)]);
     for (const [k, v] of pairs) {
       await pool.query(
         'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
