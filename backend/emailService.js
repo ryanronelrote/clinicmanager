@@ -1,36 +1,35 @@
 const { pool } = require('./database');
 const crypto = require('crypto');
 
-function getEncryptionKey() {
+// Derived once at startup; null if ENCRYPTION_SECRET is not set
+const ENCRYPTION_KEY = (() => {
   const secret = process.env.ENCRYPTION_SECRET;
-  if (!secret) return null;
-  return crypto.createHash('sha256').update(secret).digest(); // 32-byte key
-}
+  return secret ? crypto.createHash('sha256').update(secret).digest() : null;
+})();
 
 function encrypt(text) {
-  const key = getEncryptionKey();
-  if (!key || !text) return text;
+  if (!ENCRYPTION_KEY || !text) return text;
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const cipher = crypto.createCipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   const authTag = cipher.getAuthTag();
   return 'enc:' + iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted.toString('hex');
 }
 
 function decrypt(text) {
-  if (!text || !text.startsWith('enc:')) return text; // plaintext or empty
-  const key = getEncryptionKey();
-  if (!key) return ''; // encrypted but no key — return empty
+  if (!text || !text.startsWith('enc:')) return text;
+  if (!ENCRYPTION_KEY) return '';
   try {
-    const parts = text.slice(4).split(':'); // strip 'enc:'
+    const parts = text.slice(4).split(':');
+    if (parts.length !== 3) return '';
     const iv        = Buffer.from(parts[0], 'hex');
     const authTag   = Buffer.from(parts[1], 'hex');
     const encrypted = Buffer.from(parts[2], 'hex');
-    const decipher  = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    const decipher  = crypto.createDecipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
     decipher.setAuthTag(authTag);
     return decipher.update(encrypted).toString('utf8') + decipher.final('utf8');
   } catch {
-    return ''; // corrupted value — return empty
+    return '';
   }
 }
 
