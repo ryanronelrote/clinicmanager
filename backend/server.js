@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const { initDb } = require('./database');
 const { requireAuth } = require('./middleware/requireAuth');
+const { errorHandler } = require('./middleware/errorHandler');
 const { startReminderJob } = require('./reminderJob');
 
 const PORT = process.env.PORT || 3001;
@@ -14,6 +15,16 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'];
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
+
+// ── Request logging ──────────────────────────────────────────
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    console.log(`${req.method} ${req.path} ${res.statusCode} ${ms}ms`);
+  });
+  next();
+});
 
 // ── Static files (production) ────────────────────────────────
 const distPath = path.join(__dirname, '../frontend/dist');
@@ -38,6 +49,9 @@ app.use('/blocked-slots', require('./routes/blockedSlots'));
 app.use('/inventory', require('./routes/inventory'));
 app.use('/settings', require('./routes/settings'));
 app.use('/services', require('./routes/services'));
+
+// ── Global error handler (must be AFTER all routes) ─────────
+app.use(errorHandler);
 
 // ── Start ────────────────────────────────────────────────────
 async function start() {

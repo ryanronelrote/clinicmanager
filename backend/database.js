@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Pool } = require('pg');
+const { runMigrations } = require('./migrations');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -109,6 +110,9 @@ async function initDb() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Run schema migrations (constraints, indexes, triggers)
+  await runMigrations(pool);
 }
 
 module.exports = { pool, initDb };
