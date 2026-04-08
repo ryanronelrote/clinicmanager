@@ -4,49 +4,81 @@ import { appointmentService } from '../services/appointmentService';
 import { blockedSlotService } from '../services/blockedSlotService';
 import { toDateStr, getMondayOf, addDays, timeToMins } from '../utils/dateUtils';
 
-// ── Constants ────────────────────────────────────────────────
-const SLOT_HEIGHT = 48;
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const GRID_START = 9 * 60;
-const GRID_END   = 22 * 60;
-const SLOT_MINS  = 30;
-const TOTAL_SLOTS = (GRID_END - GRID_START) / SLOT_MINS;
-const APPT_COLORS = ['#4a90d9', '#e07b54', '#6dbf67', '#9b6dbd', '#d4a843'];
-const STACK_OFFSET = 30;  // px each overlap level shifts right
-const CLICK_STRIP  = 14;  // px reserved on far right for clicking through
-const SIDEBAR      = 200;
-const MAIN_PADDING = 56;  // 28px left + 28px right
-const LABEL_W      = 52;
+// ── Constants ─────────────────────────────────────────────────
+const HOUR_HEIGHT  = 80;                              // px per 1 hour
+const SLOT_MINS    = 30;
+const SLOT_HEIGHT  = (HOUR_HEIGHT * SLOT_MINS) / 60; // 40px per 30-min slot
+const GRID_START   = 8 * 60;                          // 8:00 AM
+const GRID_END     = 22 * 60;                         // 10:00 PM
+const TOTAL_SLOTS  = (GRID_END - GRID_START) / SLOT_MINS;
+const LABEL_W      = 64;
+const CARD_GAP     = 5;
+const SIDEBAR_W    = 200;
+const PAGE_PAD     = 56;
+const DAYS_SHORT   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// Weekdays open at 11:00, weekends at 09:00
+// Clinic hours: weekdays open at 11 AM, weekends at 9 AM
 function clinicOpensAt(dayIndex) { return dayIndex < 5 ? 11 * 60 : 9 * 60; }
 
-// ── Helpers ──────────────────────────────────────────────────
-function minsToTime(mins) {
-  return `${Math.floor(mins / 60).toString().padStart(2, '0')}:${(mins % 60).toString().padStart(2, '0')}`;
-}
-function today() { return toDateStr(new Date()); }
+// ── Format helpers ────────────────────────────────────────────
+function todayStr() { return toDateStr(new Date()); }
 
-function formatShort(date) {
+function fmtHourLabel(mins) {
+  const h = Math.floor(mins / 60);
+  if (h === 0) return '12 AM';
+  if (h < 12) return `${h} AM`;
+  if (h === 12) return '12 PM';
+  return `${h - 12} PM`;
+}
+
+function fmtTime12(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
+}
+
+function getEndTimeStr(startTime, durationMinutes) {
+  const startMins = timeToMins(startTime);
+  const endMins = startMins + durationMinutes;
+  const h = Math.floor(endMins / 60) % 24;
+  const m = endMins % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
+function fmtDuration(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}min`;
+  return m > 0 ? `${h}hr ${m}min` : `${h}hr`;
+}
+
+function fmtShort(date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
-function formatFull(date) {
+function fmtFull(date) {
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
-function formatMonthYear(date) {
+function fmtMonthYear(date) {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
-// dayIndex: 0=Mon…6=Sun  (JS getDay: 0=Sun,1=Mon…6=Sat)
 function jsDayToIndex(jsDay) { return jsDay === 0 ? 6 : jsDay - 1; }
 
-// ── Column layout for overlapping appointments ───────────────
+// Pre-built slot metadata (isHour used for grid line weight)
+const SLOT_META = Array.from({ length: TOTAL_SLOTS }, (_, i) => ({
+  mins: GRID_START + i * SLOT_MINS,
+  isHour: (GRID_START + i * SLOT_MINS) % 60 === 0,
+}));
+
+// ── Overlap column-layout algorithm ──────────────────────────
+// Tags each appt with .col index and returns maxCols for the day
 function getColumns(appts) {
   const sorted = [...appts].sort((a, b) => timeToMins(a.start_time) - timeToMins(b.start_time));
   const cols = [], colEnds = [];
   for (const appt of sorted) {
     const start = timeToMins(appt.start_time);
-    const end = start + appt.duration_minutes;
-    let placed = false;
+    const end   = start + appt.duration_minutes;
+    let placed  = false;
     for (let c = 0; c < colEnds.length; c++) {
       if (colEnds[c] <= start) {
         cols.push({ ...appt, col: c });
@@ -60,90 +92,194 @@ function getColumns(appts) {
   return { items: cols, maxCols: colEnds.length || 1 };
 }
 
-const timeLabels = Array.from({ length: TOTAL_SLOTS }, (_, i) => minsToTime(GRID_START + i * SLOT_MINS));
-
-// ── Shared time-grid column ──────────────────────────────────
-function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate, stackMode = false }) {
-  const opensAt = clinicOpensAt(dayIndex);
-  const isPast = dateStr < today();
-  const { items: apptCols, maxCols } = getColumns(appts);
+// ── AppointmentCard ───────────────────────────────────────────
+function AppointmentCard({ appt, top, height, left, width, navigate }) {
+  const [hovered, setHovered] = useState(false);
+  const endStr = getEndTimeStr(appt.start_time, appt.duration_minutes);
+  const treatments = appt.treatments ? appt.treatments.split('\n').filter(Boolean) : [];
+  const showDuration = height >= 38;
+  const showTreatments = height >= 58 && treatments.length > 0;
 
   return (
-    <div style={{ width: colWidth, borderLeft: '1px solid #ddd', position: 'relative', flexShrink: 0 }}>
-      {timeLabels.map((label, si) => {
-        const slotMins = GRID_START + si * SLOT_MINS;
-        const outsideHours = slotMins < opensAt;
+    <div
+      title={`${appt.first_name} ${appt.last_name}${appt.therapist ? ` · ${appt.therapist}` : ''}${treatments.length ? `\n${treatments.join(', ')}` : ''}`}
+      onClick={e => { e.stopPropagation(); navigate(`/appointments/${appt.id}`); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'absolute',
+        top: top + 1,
+        left: left + CARD_GAP / 2,
+        width: Math.max(0, width - CARD_GAP),
+        height: Math.max(0, height - 2),
+        background: hovered ? '#15803d' : '#16a34a',
+        borderRadius: 6,
+        padding: '5px 8px',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        zIndex: 2,
+        color: '#fff',
+        lineHeight: 1.35,
+        transition: 'background 0.15s ease',
+        boxShadow: hovered ? '0 2px 8px rgba(21,128,61,0.3)' : '0 1px 2px rgba(0,0,0,0.08)',
+      }}
+    >
+      <div style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {appt.first_name} {appt.last_name}
+      </div>
+      {showDuration && (
+        <div style={{ fontSize: 11, opacity: 0.88, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {fmtDuration(appt.duration_minutes)} · {fmtTime12(appt.start_time)}–{fmtTime12(endStr)}
+        </div>
+      )}
+      {showTreatments && (
+        <div style={{ fontSize: 11, opacity: 0.75, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {treatments[0]}{treatments.length > 1 ? ` +${treatments.length - 1}` : ''}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TimeLabels ────────────────────────────────────────────────
+function TimeLabels() {
+  return (
+    <div style={{ width: LABEL_W, flexShrink: 0 }}>
+      {SLOT_META.map((slot, i) => (
+        <div key={i} style={{
+          height: SLOT_HEIGHT,
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-end',
+          paddingRight: 10,
+          marginTop: slot.isHour ? -7 : 0, // nudge label up to align with hour line
+          color: '#9ca3af',
+          fontSize: 11,
+          fontWeight: 500,
+          boxSizing: 'border-box',
+          userSelect: 'none',
+        }}>
+          {slot.isHour ? fmtHourLabel(slot.mins) : ''}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── DayColumn ─────────────────────────────────────────────────
+function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
+  const td = todayStr();
+  const opensAt = clinicOpensAt(dayIndex);
+  const isPast = dateStr < td;
+  const { items: apptCols, maxCols } = getColumns(appts);
+  const slotColW = colWidth / maxCols;
+
+  return (
+    <div style={{ width: colWidth, borderLeft: '1px solid #e5e7eb', position: 'relative', flexShrink: 0 }}>
+      {/* Slot rows */}
+      {SLOT_META.map((slot, si) => {
+        const outsideHours = slot.mins < opensAt;
         const disabled = outsideHours || isPast;
         return (
           <div
             key={si}
+            data-disabled={disabled}
             style={{
               height: SLOT_HEIGHT,
-              borderTop: '1px solid #eee',
-              background: disabled ? '#f0f0f0' : 'transparent',
+              borderTop: slot.isHour ? '1px solid #e5e7eb' : '1px solid #f3f4f6',
+              background: disabled ? '#fafafa' : 'transparent',
               cursor: disabled ? 'default' : 'pointer',
               boxSizing: 'border-box',
             }}
-            onClick={() => { if (!disabled) navigate(`/appointments/add?date=${dateStr}&time=${label}`); }}
-            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = '#f0f7ff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = disabled ? '#f0f0f0' : 'transparent'; }}
+            onClick={() => {
+              if (!disabled) {
+                const h = Math.floor(slot.mins / 60).toString().padStart(2, '0');
+                const m = (slot.mins % 60).toString().padStart(2, '0');
+                navigate(`/appointments/add?date=${dateStr}&time=${h}:${m}`);
+              }
+            }}
+            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = '#f0fdf4'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = disabled ? '#fafafa' : 'transparent'; }}
           />
         );
       })}
 
+      {/* Blocked slots */}
       {blocks.map(b => {
-        const top = ((timeToMins(b.start_time) - GRID_START) / SLOT_MINS) * SLOT_HEIGHT;
+        const top    = ((timeToMins(b.start_time) - GRID_START) / SLOT_MINS) * SLOT_HEIGHT;
         const height = ((timeToMins(b.end_time) - timeToMins(b.start_time)) / SLOT_MINS) * SLOT_HEIGHT;
         return (
           <div key={b.id} style={{
             position: 'absolute', top, left: 0, width: '100%', height,
-            background: 'repeating-linear-gradient(45deg,#ccc,#ccc 4px,#e8e8e8 4px,#e8e8e8 10px)',
-            border: '1px solid #aaa', boxSizing: 'border-box', overflow: 'hidden',
-            zIndex: 1, padding: '2px 4px', fontSize: 11, color: '#555', pointerEvents: 'none',
+            background: 'repeating-linear-gradient(45deg,#d1d5db,#d1d5db 3px,#e5e7eb 3px,#e5e7eb 10px)',
+            borderLeft: '3px solid #9ca3af',
+            boxSizing: 'border-box', overflow: 'hidden',
+            zIndex: 1, padding: '3px 6px', fontSize: 11, color: '#4b5563',
+            pointerEvents: 'none',
           }}>
-            {b.reason || 'Blocked'}
+            🔒 {b.reason || 'Blocked'}
           </div>
         );
       })}
 
-      {apptCols.map((appt, ai) => {
+      {/* Appointment cards — side-by-side when overlapping */}
+      {apptCols.map(appt => {
         const top    = ((timeToMins(appt.start_time) - GRID_START) / SLOT_MINS) * SLOT_HEIGHT;
         const height = (appt.duration_minutes / SLOT_MINS) * SLOT_HEIGHT;
-        let left, width;
-        if (stackMode) {
-          const step = Math.min(STACK_OFFSET, Math.floor((colWidth - CLICK_STRIP) / maxCols));
-          width = colWidth - CLICK_STRIP - (maxCols - 1) * step;
-          left  = 1 + appt.col * step;
-        } else {
-          const apptWidth = colWidth / maxCols;
-          left  = appt.col * apptWidth + 1;
-          width = apptWidth - 14;
-        }
+        const left   = appt.col * slotColW;
         return (
-          <div key={appt.id}
-            onClick={e => { e.stopPropagation(); navigate(`/appointments/${appt.id}`); }}
-            style={{
-              position: 'absolute', top: top + 1, left,
-              width, height: height - 2,
-              background: APPT_COLORS[ai % APPT_COLORS.length],
-              borderRadius: 4, padding: '3px 5px', boxSizing: 'border-box',
-              overflow: 'hidden', cursor: 'pointer', zIndex: stackMode ? 2 + appt.col : 2,
-              color: '#fff', fontSize: 11, fontWeight: 'bold', lineHeight: 1.3,
-            }}
-          >
-            <div>{appt.first_name} {appt.last_name}</div>
-            {appt.therapist && (
-              <div style={{ fontWeight: 'normal', opacity: 0.8, fontSize: 10 }}>{appt.therapist}</div>
+          <AppointmentCard
+            key={appt.id}
+            appt={appt}
+            top={top}
+            height={height}
+            left={left}
+            width={slotColW}
+            navigate={navigate}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// ── DayHeader ─────────────────────────────────────────────────
+function DayHeader({ days, apptsByDate }) {
+  const td = todayStr();
+  return (
+    <div style={{ display: 'flex', marginLeft: LABEL_W, borderBottom: '2px solid #e5e7eb' }}>
+      {days.map((day, di) => {
+        const ds = toDateStr(day);
+        const isToday = ds === td;
+        const count = (apptsByDate[ds] || []).length;
+        const dayIdx = jsDayToIndex(day.getDay());
+        return (
+          <div key={di} style={{
+            flex: 1, textAlign: 'center', padding: '8px 4px 10px',
+            borderLeft: '1px solid #e5e7eb',
+            background: isToday ? '#f0fdf4' : 'transparent',
+          }}>
+            <div style={{
+              fontSize: 11, color: isToday ? '#15803d' : '#6b7280',
+              fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
+            }}>
+              {DAYS_SHORT[dayIdx]}
+            </div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 34, height: 34, borderRadius: '50%', marginTop: 3,
+              background: isToday ? '#16a34a' : 'transparent',
+              color: isToday ? '#fff' : '#111827',
+              fontSize: 16, fontWeight: isToday ? 700 : 400,
+            }}>
+              {day.getDate()}
+            </div>
+            {count > 0 && (
+              <div style={{ fontSize: 10, color: isToday ? '#15803d' : '#9ca3af', marginTop: 2, fontWeight: 500 }}>
+                {count} appt{count !== 1 ? 's' : ''}
+              </div>
             )}
-            {appt.treatments && (() => {
-              const parts = appt.treatments.split('\n').filter(Boolean);
-              const first = parts[0].length > 18 ? parts[0].slice(0, 18) + '…' : parts[0];
-              return (
-                <div style={{ fontWeight: 'normal', opacity: 0.9 }}>
-                  {first}{parts.length > 1 ? ` +${parts.length - 1}` : ''}
-                </div>
-              );
-            })()}
           </div>
         );
       })}
@@ -151,7 +287,228 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate, stack
   );
 }
 
-// ── Main Calendar component ──────────────────────────────────
+// ── MonthGrid ─────────────────────────────────────────────────
+function MonthGrid({ currentDate, apptsByDate, onDayClick }) {
+  const year  = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const td    = todayStr();
+  const gridStart = getMondayOf(new Date(year, month, 1));
+  const cells     = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+
+  return (
+    <div style={{ marginTop: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid #e5e7eb' }}>
+        {DAYS_SHORT.map(d => (
+          <div key={d} style={{
+            padding: '8px 0', textAlign: 'center', fontSize: 11,
+            fontWeight: 600, color: '#6b7280', letterSpacing: '0.06em', textTransform: 'uppercase',
+          }}>{d}</div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+        {cells.map((day, i) => {
+          const ds = toDateStr(day);
+          const inMonth = day.getMonth() === month;
+          const isToday = ds === td;
+          const count   = (apptsByDate[ds] || []).length;
+          return (
+            <div
+              key={i}
+              onClick={() => onDayClick(day)}
+              style={{
+                minHeight: 88, padding: '8px 10px',
+                border: '1px solid #e5e7eb',
+                background: isToday ? '#f0fdf4' : '#fff',
+                cursor: 'pointer',
+                opacity: inMonth ? 1 : 0.3,
+              }}
+              onMouseEnter={e => { if (inMonth) e.currentTarget.style.background = isToday ? '#dcfce7' : '#f9fafb'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = isToday ? '#f0fdf4' : '#fff'; }}
+            >
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: '50%',
+                background: isToday ? '#16a34a' : 'transparent',
+                color: isToday ? '#fff' : inMonth ? '#111827' : '#9ca3af',
+                fontSize: 13, fontWeight: isToday ? 700 : 400,
+              }}>
+                {day.getDate()}
+              </div>
+              {count > 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  background: '#16a34a', color: '#fff',
+                  borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: 600,
+                  marginLeft: 6, verticalAlign: 'middle',
+                }}>
+                  {count}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── CalendarHeader ────────────────────────────────────────────
+function CalendarHeader({
+  view, currentDate, weekDays, appointmentCount, loading,
+  onPrev, onNext, onToday, onViewChange, onBlockTime,
+  searchQuery, setSearchQuery,
+}) {
+  let periodLabel;
+  if (view === 'daily') periodLabel = fmtFull(currentDate);
+  else if (view === 'weekly') {
+    periodLabel = `${fmtShort(weekDays[0])} – ${fmtShort(weekDays[6])}, ${weekDays[0].getFullYear()}`;
+  } else {
+    periodLabel = fmtMonthYear(currentDate);
+  }
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '10px 0 14px', borderBottom: '1px solid #e5e7eb',
+      marginBottom: 0, gap: 12, flexWrap: 'wrap',
+    }}>
+      {/* LEFT: Period title + appointment count */}
+      <div style={{ minWidth: 200 }}>
+        <div style={{ fontSize: 19, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>
+          {periodLabel}
+        </div>
+        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>
+          {loading ? 'Loading…' : `${appointmentCount} appointment${appointmentCount !== 1 ? 's' : ''}`}
+        </div>
+      </div>
+
+      {/* CENTER: Nav + view tabs */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+        {/* Prev / Today / Next */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <NavBtn onClick={onPrev} title="Previous">‹</NavBtn>
+          <NavBtn onClick={onToday} wide>Today</NavBtn>
+          <NavBtn onClick={onNext} title="Next">›</NavBtn>
+        </div>
+
+        {/* View tabs */}
+        <div style={{
+          display: 'flex', border: '1px solid #e5e7eb', borderRadius: 8,
+          overflow: 'hidden', flexShrink: 0,
+        }}>
+          {[['daily','Day'], ['weekly','Week'], ['monthly','Month']].map(([v, label]) => (
+            <ViewTab key={v} label={label} active={view === v} onClick={() => onViewChange(v)} last={v === 'monthly'} />
+          ))}
+        </div>
+      </div>
+
+      {/* RIGHT: Search + block button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <SearchBox value={searchQuery} onChange={setSearchQuery} />
+        <BlockBtn onClick={onBlockTime} />
+      </div>
+    </div>
+  );
+}
+
+// ── Small reusable header widgets ─────────────────────────────
+function NavBtn({ onClick, title, wide, children }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: wide ? '6px 13px' : '6px 11px',
+        fontSize: wide ? 13 : 18,
+        fontWeight: wide ? 500 : 400,
+        cursor: 'pointer',
+        border: '1px solid #e5e7eb',
+        borderRadius: 7,
+        background: hov ? '#f3f4f6' : '#fff',
+        color: '#374151',
+        lineHeight: 1,
+        transition: 'background 0.12s',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ViewTab({ label, active, onClick, last }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: '6px 14px', fontSize: 13, cursor: 'pointer',
+        border: 'none',
+        borderRight: last ? 'none' : '1px solid #e5e7eb',
+        background: active ? '#f0fdf4' : hov ? '#f9fafb' : '#fff',
+        color: active ? '#15803d' : '#374151',
+        fontWeight: active ? 600 : 400,
+        transition: 'all 0.12s',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function SearchBox({ value, onChange }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{ position: 'relative' }}>
+      <span style={{
+        position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+        color: '#9ca3af', fontSize: 13, pointerEvents: 'none', lineHeight: 1,
+      }}>🔍</span>
+      <input
+        type="text"
+        placeholder="Search"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          paddingLeft: 30, paddingRight: 12, paddingTop: 7, paddingBottom: 7,
+          fontSize: 13, border: `1px solid ${focused ? '#16a34a' : '#e5e7eb'}`,
+          borderRadius: 999, outline: 'none', width: 150,
+          color: '#374151', background: '#f9fafb',
+          transition: 'border-color 0.15s',
+        }}
+      />
+    </div>
+  );
+}
+
+function BlockBtn({ onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: '7px 14px', fontSize: 12, fontWeight: 600,
+        border: '1.5px solid #374151', borderRadius: 7,
+        background: hov ? '#f3f4f6' : 'transparent',
+        color: '#374151', cursor: 'pointer',
+        letterSpacing: '0.04em', whiteSpace: 'nowrap',
+        transition: 'background 0.12s',
+      }}
+    >
+      BLOCK OFF TIME
+    </button>
+  );
+}
+
+// ── Main Calendar ─────────────────────────────────────────────
 export default function Calendar() {
   const navigate = useNavigate();
   const [view, setView] = useState('weekly');
@@ -160,6 +517,7 @@ export default function Calendar() {
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const handler = () => setWindowWidth(window.innerWidth);
@@ -167,36 +525,29 @@ export default function Calendar() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  // Derived period info
   const weekStart = getMondayOf(currentDate);
   const weekDays  = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const monthStr  = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
-  // Fetch data whenever view or date changes
+  // Fetch appointments + blocked slots when view or period changes
   useEffect(() => {
     setLoading(true);
-    let apptPromise, blockPromise;
-    if (view === 'monthly') {
-      apptPromise  = appointmentService.getByMonth(monthStr);
-      blockPromise = blockedSlotService.getByMonth(monthStr);
-    } else {
-      const weekParam = toDateStr(weekStart);
-      apptPromise  = appointmentService.getByWeek(weekParam);
-      blockPromise = blockedSlotService.getByWeek(weekParam);
-    }
-    Promise.all([apptPromise, blockPromise])
+    const weekParam  = toDateStr(weekStart);
+    const apptP  = view === 'monthly' ? appointmentService.getByMonth(monthStr) : appointmentService.getByWeek(weekParam);
+    const blockP = view === 'monthly' ? blockedSlotService.getByMonth(monthStr) : blockedSlotService.getByWeek(weekParam);
+    Promise.all([apptP, blockP])
       .then(([appts, blocks]) => { setAppointments(appts); setBlockedSlots(blocks); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [view, toDateStr(weekStart), monthStr]);
+  }, [view, toDateStr(weekStart), monthStr]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigation
   function prev() {
-    if (view === 'daily')   setCurrentDate(d => addDays(d, -1));
+    if (view === 'daily')       setCurrentDate(d => addDays(d, -1));
     else if (view === 'weekly') setCurrentDate(d => addDays(d, -7));
     else { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }
   }
   function next() {
-    if (view === 'daily')   setCurrentDate(d => addDays(d, 1));
+    if (view === 'daily')       setCurrentDate(d => addDays(d, 1));
     else if (view === 'weekly') setCurrentDate(d => addDays(d, 7));
     else { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }
   }
@@ -204,94 +555,65 @@ export default function Calendar() {
 
   // Group by date
   const apptsByDate = {};
-  for (const a of appointments) {
-    (apptsByDate[a.date] ??= []).push(a);
-  }
+  for (const a of appointments) (apptsByDate[a.date] ??= []).push(a);
+
   const blocksByDate = {};
-  for (const b of blockedSlots) {
-    (blocksByDate[b.date] ??= []).push(b);
-  }
+  for (const b of blockedSlots) (blocksByDate[b.date] ??= []).push(b);
 
-  // Appointment count summary
-  function countSummary() {
-    const n = appointments.length;
-    if (view === 'daily') {
-      const ds = toDateStr(currentDate);
-      const c = (apptsByDate[ds] || []).length;
-      return `${c} appointment${c !== 1 ? 's' : ''} on ${formatFull(currentDate)}`;
+  // Client-side search filter
+  const displayAppts = (() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return apptsByDate;
+    const filtered = {};
+    for (const [date, list] of Object.entries(apptsByDate)) {
+      const hits = list.filter(a =>
+        `${a.first_name} ${a.last_name}`.toLowerCase().includes(q) ||
+        (a.treatments || '').toLowerCase().includes(q) ||
+        (a.therapist  || '').toLowerCase().includes(q)
+      );
+      if (hits.length) filtered[date] = hits;
     }
-    if (view === 'weekly') {
-      return `${n} appointment${n !== 1 ? 's' : ''} this week (${formatShort(weekDays[0])} – ${formatShort(weekDays[6])})`;
-    }
-    return `${n} appointment${n !== 1 ? 's' : ''} in ${formatMonthYear(currentDate)}`;
-  }
+    return filtered;
+  })();
 
-  // Period label
-  function periodLabel() {
-    if (view === 'daily')   return formatFull(currentDate);
-    if (view === 'weekly')  return `${formatShort(weekDays[0])} – ${formatShort(weekDays[6])}, ${weekDays[0].getFullYear()}`;
-    return formatMonthYear(currentDate);
-  }
-
-  const labelWidth = 52;
-  const weekColWidth = Math.max(110, Math.floor((windowWidth - SIDEBAR - MAIN_PADDING - LABEL_W) / 7));
-  const dailyColWidth = 600;
+  // Column widths
+  const available  = windowWidth - SIDEBAR_W - PAGE_PAD - LABEL_W;
+  const weekColW   = Math.max(120, Math.floor(available / 7));
+  const dailyColW  = Math.max(400, Math.min(800, available));
 
   return (
-    <div>
-      {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={prev} style={btn}>{'<'}</button>
-          <button onClick={goToday} style={btn}>Today</button>
-          <button onClick={next} style={btn}>{'>'}</button>
-          <strong style={{ marginLeft: 8, fontSize: 14 }}>{periodLabel()}</strong>
-        </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {['daily', 'weekly', 'monthly'].map(v => (
-            <button key={v} onClick={() => setView(v)} style={{
-              ...btn,
-              background: view === v ? 'var(--primary)' : '#fff',
-              color: view === v ? '#fff' : '#333',
-              borderColor: view === v ? 'var(--primary)' : '#ccc',
-              textTransform: 'capitalize',
-            }}>{v}</button>
-          ))}
-          <button onClick={() => navigate('/block-time')} style={{ ...btn, background: '#555', color: '#fff', marginLeft: 8 }}>
-            + Block time
-          </button>
-        </div>
-      </div>
+    <div style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', color: '#111827' }}>
+      {/* ── Header ── */}
+      <CalendarHeader
+        view={view}
+        currentDate={currentDate}
+        weekDays={weekDays}
+        appointmentCount={appointments.length}
+        loading={loading}
+        onPrev={prev}
+        onNext={next}
+        onToday={goToday}
+        onViewChange={setView}
+        onBlockTime={() => navigate('/block-time')}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
 
-      {/* Appointment count banner */}
-      <div style={{ marginBottom: 14, padding: '6px 12px', background: '#f0f7ff', borderRadius: 6, fontSize: 13, color: 'var(--primary)', display: 'inline-block' }}>
-        {loading ? 'Loading…' : countSummary()}
-      </div>
-
-      {/* ── WEEKLY VIEW ── */}
+      {/* ── Weekly view ── */}
       {view === 'weekly' && (
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ width: labelWidth + weekColWidth * 7, fontFamily: 'sans-serif', fontSize: 12 }}>
-            <div style={{ display: 'flex', marginLeft: labelWidth }}>
-              {weekDays.map((day, di) => (
-                <div key={di} style={{
-                  width: weekColWidth, textAlign: 'center', padding: '4px 0',
-                  fontWeight: 'bold', borderLeft: '1px solid #ddd',
-                  background: toDateStr(day) === today() ? '#e8f4ff' : '#fafafa',
-                }}>
-                  {DAYS[di]} {formatShort(day)}
-                </div>
-              ))}
-            </div>
+        <div style={{ overflowX: 'auto', marginTop: 0 }}>
+          <div style={{ minWidth: LABEL_W + weekColW * 7 }}>
+            <DayHeader days={weekDays} apptsByDate={displayAppts} />
             <div style={{ display: 'flex' }}>
               <TimeLabels />
               {weekDays.map((day, di) => (
-                <DayColumn key={di}
+                <DayColumn
+                  key={di}
                   dateStr={toDateStr(day)}
                   dayIndex={di}
-                  appts={apptsByDate[toDateStr(day)] || []}
+                  appts={displayAppts[toDateStr(day)] || []}
                   blocks={blocksByDate[toDateStr(day)] || []}
-                  colWidth={weekColWidth}
+                  colWidth={weekColW}
                   navigate={navigate}
                 />
               ))}
@@ -300,138 +622,34 @@ export default function Calendar() {
         </div>
       )}
 
-      {/* ── DAILY VIEW ── */}
+      {/* ── Daily view ── */}
       {view === 'daily' && (
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ width: labelWidth + dailyColWidth, fontFamily: 'sans-serif', fontSize: 12 }}>
-            <div style={{ display: 'flex', marginLeft: labelWidth }}>
-              <div style={{
-                width: dailyColWidth, textAlign: 'center', padding: '4px 0',
-                fontWeight: 'bold', borderLeft: '1px solid #ddd',
-                background: toDateStr(currentDate) === today() ? '#e8f4ff' : '#fafafa',
-              }}>
-                {DAYS[jsDayToIndex(currentDate.getDay())]} {formatShort(currentDate)}
-              </div>
-            </div>
+        <div style={{ overflowX: 'auto', marginTop: 0 }}>
+          <div style={{ minWidth: LABEL_W + dailyColW }}>
+            <DayHeader days={[currentDate]} apptsByDate={displayAppts} />
             <div style={{ display: 'flex' }}>
               <TimeLabels />
               <DayColumn
                 dateStr={toDateStr(currentDate)}
                 dayIndex={jsDayToIndex(currentDate.getDay())}
-                appts={apptsByDate[toDateStr(currentDate)] || []}
+                appts={displayAppts[toDateStr(currentDate)] || []}
                 blocks={blocksByDate[toDateStr(currentDate)] || []}
-                colWidth={dailyColWidth}
+                colWidth={dailyColW}
                 navigate={navigate}
-                stackMode
               />
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MONTHLY VIEW ── */}
+      {/* ── Monthly view ── */}
       {view === 'monthly' && (
         <MonthGrid
           currentDate={currentDate}
-          apptsByDate={apptsByDate}
+          apptsByDate={displayAppts}
           onDayClick={date => { setCurrentDate(date); setView('daily'); }}
         />
       )}
     </div>
   );
 }
-
-// ── Time label column (shared) ───────────────────────────────
-function TimeLabels() {
-  return (
-    <div style={{ width: 52, flexShrink: 0 }}>
-      {timeLabels.map((label, i) => (
-        <div key={i} style={{
-          height: SLOT_HEIGHT, borderTop: '1px solid #eee',
-          paddingRight: 6, textAlign: 'right', color: '#888', lineHeight: `${SLOT_HEIGHT}px`, fontSize: 11,
-        }}>
-          {label.endsWith(':00') ? label : ''}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Monthly grid ─────────────────────────────────────────────
-function MonthGrid({ currentDate, apptsByDate, onDayClick }) {
-  const year  = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const todayStr = today();
-
-  // First day of month, find its Mon-aligned grid start
-  const firstOfMonth = new Date(year, month, 1);
-  const gridStart = getMondayOf(firstOfMonth);
-
-  // Build 6-week grid (42 cells)
-  const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
-
-  const cellStyle = (dateStr, inMonth) => ({
-    border: '1px solid #eee',
-    padding: '6px 8px',
-    minHeight: 80,
-    background: dateStr === todayStr ? '#e8f4ff' : inMonth ? '#fff' : '#fafafa',
-    cursor: 'pointer',
-    verticalAlign: 'top',
-    opacity: inMonth ? 1 : 0.4,
-  });
-
-  return (
-    <div style={{ fontFamily: 'sans-serif', fontSize: 13 }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-        <thead>
-          <tr>
-            {DAYS.map(d => (
-              <th key={d} style={{ padding: '6px 0', textAlign: 'center', color: '#888', fontWeight: '600', fontSize: 12, borderBottom: '2px solid #ddd' }}>
-                {d}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: 6 }, (_, row) => (
-            <tr key={row}>
-              {cells.slice(row * 7, row * 7 + 7).map((day, col) => {
-                const ds = toDateStr(day);
-                const inMonth = day.getMonth() === month;
-                const count = (apptsByDate[ds] || []).length;
-                const isPast = ds < todayStr;
-                return (
-                  <td
-                    key={col}
-                    style={{
-                      ...cellStyle(ds, inMonth),
-                      color: isPast && inMonth ? '#aaa' : '#222',
-                    }}
-                    onClick={() => onDayClick(day)}
-                  >
-                    <div style={{ fontWeight: ds === todayStr ? 'bold' : 'normal', marginBottom: 4 }}>
-                      {day.getDate()}
-                    </div>
-                    {count > 0 && (
-                      <div style={{
-                        display: 'inline-block', background: 'var(--primary)', color: '#fff',
-                        borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 'bold',
-                      }}>
-                        {count} appt{count !== 1 ? 's' : ''}
-                      </div>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-const btn = {
-  padding: '4px 10px', cursor: 'pointer',
-  border: '1px solid #ccc', borderRadius: 4, background: '#fff', fontSize: 13,
-};
