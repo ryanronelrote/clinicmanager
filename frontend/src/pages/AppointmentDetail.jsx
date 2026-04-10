@@ -21,6 +21,7 @@ export default function AppointmentDetail() {
   const [rescheduleDraft, setRescheduleDraft] = useState({});
   const [rescheduling, setRescheduling] = useState(false);
   const [rescheduleStatus, setRescheduleStatus] = useState(null); // null | 'success' | 'error'
+  const [confirming, setConfirming] = useState(false);
 
   const conflicts = useConflictCheck(
     rescheduleMode ? rescheduleDraft.date : null,
@@ -34,9 +35,21 @@ export default function AppointmentDetail() {
       therapist:  appt.therapist || '',
       treatments: appt.treatments || '',
       notes:      appt.notes || '',
-      status:     ['confirmed', 'done', 'cancelled'].includes(appt.status) ? appt.status : 'confirmed',
+      status:     ['tentative', 'confirmed', 'done', 'cancelled'].includes(appt.status) ? appt.status : 'confirmed',
     });
     setEditMode(true);
+  }
+
+  async function handleConfirmTentative() {
+    setConfirming(true);
+    try {
+      const updated = await appointmentService.confirm(id);
+      setAppt(updated);
+    } catch {
+      // stay on page if confirm fails
+    } finally {
+      setConfirming(false);
+    }
   }
 
   function cancelEdit() { setEditMode(false); setDraft({}); }
@@ -130,6 +143,16 @@ export default function AppointmentDetail() {
         <div style={{ display: 'flex', gap: 8 }}>
           {!isAnyMode ? (
             <>
+              {appt.status === 'tentative' && (
+                <button
+                  onClick={handleConfirmTentative}
+                  disabled={confirming}
+                  style={solidBtn('#d97706')}
+                  title="Confirm this tentative appointment — sends confirmation email"
+                >
+                  {confirming ? 'Confirming…' : 'Confirm Appointment'}
+                </button>
+              )}
               <button
                 onClick={sendReminder}
                 disabled={reminderStatus === 'sending'}
@@ -239,6 +262,7 @@ export default function AppointmentDetail() {
           {editMode
             ? <select value={draft.status}
                 onChange={e => setDraft(d => ({ ...d, status: e.target.value }))} style={inputStyle}>
+                <option value="tentative">Tentative</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="done">Treatment Done</option>
                 <option value="cancelled">Cancelled</option>
@@ -320,6 +344,7 @@ export default function AppointmentDetail() {
 }
 
 const STATUS_CONFIG = {
+  tentative:            { label: 'Tentative',              color: '#92400e', bg: '#fef3c7' },
   confirmed:            { label: 'Confirmed',             color: 'var(--primary)', bg: 'var(--primary-light)' },
   confirmed_by_client:  { label: 'Confirmed by Client',   color: '#0f9d58', bg: '#e8f5e9' },
   done:                 { label: 'Treatment Done',         color: '#666',    bg: '#f0f0f0' },

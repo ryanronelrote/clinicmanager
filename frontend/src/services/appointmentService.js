@@ -23,6 +23,7 @@ export const appointmentService = {
   delete: (id) => request(`/appointments/${id}`, { method: 'DELETE' }),
   reschedule: (id, data) => request(`/appointments/${id}/reschedule`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data) }),
   sendReminder: (id) => request(`/appointments/${id}/send-reminder`, { method: 'POST' }),
+  confirm: (id) => request(`/appointments/${id}/confirm`, { method: 'PATCH' }),
   checkConflicts: (date, startTime, duration, excludeId) => {
     let url = `/appointments/check-conflicts?date=${date}&start_time=${startTime}&duration=${duration}`;
     if (excludeId) url += `&exclude_id=${excludeId}`;

@@ -99,10 +99,13 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
   const treatments = appt.treatments ? appt.treatments.split('\n').filter(Boolean) : [];
   const showDuration = height >= 38;
   const showTreatments = height >= 58 && treatments.length > 0;
+  const isTentative = appt.status === 'tentative';
+
+  const tooltipBase = `${appt.first_name} ${appt.last_name}${appt.therapist ? ` · ${appt.therapist}` : ''}${treatments.length ? `\n${treatments.join(', ')}` : ''}`;
 
   return (
     <div
-      title={`${appt.first_name} ${appt.last_name}${appt.therapist ? ` · ${appt.therapist}` : ''}${treatments.length ? `\n${treatments.join(', ')}` : ''}`}
+      title={isTentative ? `[Tentative — not yet confirmed]\n${tooltipBase}` : tooltipBase}
       onClick={e => { e.stopPropagation(); navigate(`/appointments/${appt.id}`); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -112,7 +115,11 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
         left: left + CARD_GAP / 2,
         width: Math.max(0, width - CARD_GAP),
         height: Math.max(0, height - 2),
-        background: hovered ? '#15803d' : '#16a34a',
+        background: isTentative
+          ? (hovered ? '#b45309' : '#d97706')
+          : (hovered ? '#15803d' : '#16a34a'),
+        border: isTentative ? '2px dashed rgba(255,255,255,0.6)' : 'none',
+        opacity: isTentative ? 0.85 : 1,
         borderRadius: 6,
         padding: '5px 8px',
         boxSizing: 'border-box',
@@ -122,11 +129,13 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
         color: '#fff',
         lineHeight: 1.35,
         transition: 'background 0.15s ease',
-        boxShadow: hovered ? '0 2px 8px rgba(21,128,61,0.3)' : '0 1px 2px rgba(0,0,0,0.08)',
+        boxShadow: hovered
+          ? (isTentative ? '0 2px 8px rgba(180,83,9,0.3)' : '0 2px 8px rgba(21,128,61,0.3)')
+          : '0 1px 2px rgba(0,0,0,0.08)',
       }}
     >
       <div style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {appt.first_name} {appt.last_name}
+        {isTentative ? '~ ' : ''}{appt.first_name} {appt.last_name}
       </div>
       {showDuration && (
         <div style={{ fontSize: 11, opacity: 0.88, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

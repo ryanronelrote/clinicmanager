@@ -22,6 +22,7 @@ export default function AddAppointment() {
     therapist: '',
     treatments: '',
     notes: '',
+    status: 'confirmed',
   });
   const [error, setError] = useState('');
 
@@ -51,7 +52,8 @@ export default function AddAppointment() {
       return;
     }
 
-    if (conflicts && conflicts.count >= 3) {
+    const isTentative = form.status === 'tentative';
+    if (!isTentative && conflicts && conflicts.count >= 3) {
       setError('All 3 slots are occupied at this time. Please choose a different time.');
       return;
     }
@@ -145,7 +147,18 @@ export default function AddAppointment() {
           Notes
           <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} style={fieldStyle} />
         </label>
-        <button type="submit" disabled={conflicts && conflicts.count >= 3} style={{ padding: '8px 20px' }}>Save Appointment</button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 16 }}>
+          <input
+            type="checkbox"
+            checked={form.status === 'tentative'}
+            onChange={e => setForm(f => ({ ...f, status: e.target.checked ? 'tentative' : 'confirmed' }))}
+          />
+          <span>
+            Book as Tentative
+            <span style={{ fontSize: 12, color: '#888', marginLeft: 6 }}>(no emails, doesn't block slots)</span>
+          </span>
+        </label>
+        <button type="submit" disabled={form.status !== 'tentative' && conflicts && conflicts.count >= 3} style={{ padding: '8px 20px' }}>Save Appointment</button>
       </form>
     </div>
   );

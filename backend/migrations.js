@@ -65,6 +65,14 @@ const migrations = [
         ON appointments(therapist, date) WHERE therapist IS NOT NULL;
     `,
   },
+  {
+    name: '007_add_tentative_status',
+    sql: `
+      ALTER TABLE appointments DROP CONSTRAINT IF EXISTS chk_appointments_status;
+      ALTER TABLE appointments ADD CONSTRAINT chk_appointments_status
+        CHECK (status IN ('tentative','confirmed','confirmed_by_client','done','cancelled','cancelled_by_client'));
+    `,
+  },
 ];
 
 async function runMigrations(pool) {

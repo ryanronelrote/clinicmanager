@@ -27,6 +27,7 @@ async function runReminders() {
       SELECT a.*, c.first_name, c.last_name, c.email
       FROM appointments a JOIN clients c ON a.client_id = c.id
       WHERE a.date = $1 AND a.reminder_24h_sent = 0 AND c.email IS NOT NULL
+      AND a.status != 'tentative'
     `, [tomorrow]);
     for (const row of rows) {
       const token = await ensureToken(row);
@@ -51,6 +52,7 @@ async function runReminders() {
       SELECT a.*, c.first_name, c.last_name, c.email
       FROM appointments a JOIN clients c ON a.client_id = c.id
       WHERE a.date = $1 AND a.reminder_same_day_sent = 0 AND c.email IS NOT NULL
+      AND a.status != 'tentative'
     `, [today]);
     const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
     for (const row of rows) {
@@ -77,6 +79,7 @@ async function runReminders() {
       SELECT a.*, c.first_name, c.last_name, c.email
       FROM appointments a JOIN clients c ON a.client_id = c.id
       WHERE a.date = $1 AND a.followup_sent = 0 AND c.email IS NOT NULL
+      AND a.status != 'tentative'
     `, [yesterday]);
     for (const row of rows) {
       const { subject, html } = await followUpEmail(`${row.first_name} ${row.last_name}`);

@@ -53,7 +53,7 @@ function _checkOverlaps(rows, startTime, durationMinutes, excludeId) {
 async function checkConflicts(date, startTime, durationMinutes, excludeId, txClient) {
   const db = txClient || pool;
   let query = `SELECT id, start_time, duration_minutes, client_id
-               FROM appointments WHERE date = $1 AND status NOT IN ('cancelled', 'cancelled_by_client')`;
+               FROM appointments WHERE date = $1 AND status NOT IN ('cancelled', 'cancelled_by_client', 'tentative')`;
   const params = [date];
 
   if (excludeId) {
@@ -77,7 +77,7 @@ async function checkTherapistConflict(therapist, date, startTime, durationMinute
   let query = `SELECT id, start_time, duration_minutes
                FROM appointments
                WHERE date = $1 AND therapist = $2
-               AND status NOT IN ('cancelled', 'cancelled_by_client')`;
+               AND status NOT IN ('cancelled', 'cancelled_by_client', 'tentative')`;
   const params = [date, therapist];
 
   if (excludeId) {
@@ -92,7 +92,8 @@ async function checkTherapistConflict(therapist, date, startTime, durationMinute
 
 // ── CRUD ─────────────────────────────────────────────────────
 
-async function create({ client_id, date, start_time, duration_minutes, treatments, therapist, notes }) {
+async function create({ client_id, date, start_time, duration_minutes, treatments, therapist, notes, status }) {
+  const apptStatus = status === 'tentative' ? 'tentative' : 'confirmed';
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -103,17 +104,20 @@ async function create({ client_id, date, start_time, duration_minutes, treatment
       [date]
     );
 
-    // Global capacity check (max 3 concurrent)
-    const { count } = await checkConflicts(date, start_time, duration_minutes, null, client);
-    if (count >= 3) {
-      throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
-    }
+    // Conflict checks only apply to confirmed bookings — tentative never blocks slots
+    if (apptStatus !== 'tentative') {
+      // Global capacity check (max 3 concurrent confirmed)
+      const { count } = await checkConflicts(date, start_time, duration_minutes, null, client);
+      if (count >= 3) {
+        throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
+      }
 
-    // Per-therapist conflict check
-    if (therapist) {
-      const hasConflict = await checkTherapistConflict(therapist, date, start_time, duration_minutes, null, client);
-      if (hasConflict) {
-        throw svcError(409, `Schedule conflict: ${therapist} already has an appointment at this time`);
+      // Per-therapist conflict check
+      if (therapist) {
+        const hasConflict = await checkTherapistConflict(therapist, date, start_time, duration_minutes, null, client);
+        if (hasConflict) {
+          throw svcError(409, `Schedule conflict: ${therapist} already has an appointment at this time`);
+        }
       }
     }
 
@@ -121,7 +125,7 @@ async function create({ client_id, date, start_time, duration_minutes, treatment
     const { rows: inserted } = await client.query(
       `INSERT INTO appointments (client_id, date, start_time, duration_minutes, treatments, therapist, notes, confirmation_token, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-      [client_id, date, start_time, duration_minutes, treatments || null, therapist || null, notes || null, confirmationToken, 'confirmed']
+      [client_id, date, start_time, duration_minutes, treatments || null, therapist || null, notes || null, confirmationToken, apptStatus]
     );
     const newId = inserted[0].id;
 
@@ -131,24 +135,26 @@ async function create({ client_id, date, start_time, duration_minutes, treatment
     const { rows: apptRows } = await pool.query(APPT_WITH_CLIENT, [newId]);
     const appt = apptRows[0];
 
-    // Send confirmation email (side-effect, non-blocking)
-    try {
-      const [{ rows: clientRows }, notif] = await Promise.all([
-        pool.query('SELECT * FROM clients WHERE id = $1', [parseInt(client_id)]),
-        getNotifSettings(),
-      ]);
-      if (notif.confirmation && clientRows.length && clientRows[0].email) {
-        const c = clientRows[0];
-        const { subject, html } = await appointmentConfirmation(
-          `${c.first_name} ${c.last_name}`, date, start_time, treatments
-        );
-        await sendEmail(c.email, subject, html);
-        const now = new Date().toISOString();
-        await pool.query('UPDATE appointments SET confirmation_sent_at = $1 WHERE id = $2', [now, newId]);
-        appt.confirmation_sent_at = now;
+    // Send confirmation email only for confirmed bookings
+    if (apptStatus !== 'tentative') {
+      try {
+        const [{ rows: clientRows }, notif] = await Promise.all([
+          pool.query('SELECT * FROM clients WHERE id = $1', [parseInt(client_id)]),
+          getNotifSettings(),
+        ]);
+        if (notif.confirmation && clientRows.length && clientRows[0].email) {
+          const c = clientRows[0];
+          const { subject, html } = await appointmentConfirmation(
+            `${c.first_name} ${c.last_name}`, date, start_time, treatments
+          );
+          await sendEmail(c.email, subject, html);
+          const now = new Date().toISOString();
+          await pool.query('UPDATE appointments SET confirmation_sent_at = $1 WHERE id = $2', [now, newId]);
+          appt.confirmation_sent_at = now;
+        }
+      } catch (e) {
+        console.error('[Email] Confirmation email failed:', e);
       }
-    } catch (e) {
-      console.error('[Email] Confirmation email failed:', e);
     }
 
     return appt;
@@ -246,7 +252,7 @@ async function update(id, updates) {
       }
     }
 
-    const allowedStatuses = ['confirmed', 'done', 'cancelled'];
+    const allowedStatuses = ['tentative', 'confirmed', 'done', 'cancelled'];
     const newStatus = (status && allowedStatuses.includes(status)) ? status : e.status;
 
     await client.query(
@@ -464,6 +470,45 @@ async function cancelByClient(id, token) {
   return { type: 'cancelled', title: 'Appointment Cancelled', row, dateStr };
 }
 
+/**
+ * Staff confirms a tentative appointment → status becomes 'confirmed' + sends confirmation email.
+ */
+async function confirmAppointment(id) {
+  const parsedId = parseInt(id);
+  const { rows } = await pool.query('SELECT * FROM appointments WHERE id = $1', [parsedId]);
+  if (!rows.length) throw svcError(404, 'Appointment not found');
+  const appt = rows[0];
+  if (appt.status !== 'tentative') {
+    throw svcError(409, 'Only tentative appointments can be confirmed this way');
+  }
+
+  await pool.query('UPDATE appointments SET status = $1 WHERE id = $2', ['confirmed', parsedId]);
+
+  // Send confirmation email (same as regular create)
+  try {
+    const [{ rows: clientRows }, notif] = await Promise.all([
+      pool.query('SELECT * FROM clients WHERE id = $1', [appt.client_id]),
+      getNotifSettings(),
+    ]);
+    if (notif.confirmation && clientRows.length && clientRows[0].email) {
+      const c = clientRows[0];
+      const { subject, html } = await appointmentConfirmation(
+        `${c.first_name} ${c.last_name}`, appt.date, appt.start_time, appt.treatments
+      );
+      await sendEmail(c.email, subject, html);
+      await pool.query(
+        'UPDATE appointments SET confirmation_sent_at = $1 WHERE id = $2',
+        [new Date().toISOString(), parsedId]
+      );
+    }
+  } catch (e) {
+    console.error('[Email] Confirmation email failed:', e);
+  }
+
+  const { rows: updated } = await pool.query(APPT_WITH_CLIENT, [parsedId]);
+  return updated[0];
+}
+
 module.exports = {
   checkConflicts,
   checkTherapistConflict,
@@ -476,4 +521,5 @@ module.exports = {
   sendReminder,
   confirmByClient,
   cancelByClient,
+  confirmAppointment,
 };
