@@ -73,6 +73,41 @@ const migrations = [
         CHECK (status IN ('tentative','confirmed','confirmed_by_client','done','cancelled','cancelled_by_client'));
     `,
   },
+  {
+    name: '008_therapists_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS therapists (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `,
+  },
+  {
+    name: '009_therapist_schedules_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS therapist_schedules (
+        id SERIAL PRIMARY KEY,
+        therapist_id INTEGER NOT NULL REFERENCES therapists(id) ON DELETE CASCADE,
+        date TEXT NOT NULL,
+        shift_type TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(therapist_id, date)
+      )
+    `,
+  },
+  {
+    name: '010_therapist_schedules_updated_at_trigger',
+    sql: `
+      DO $$ BEGIN
+        CREATE TRIGGER update_therapist_schedules_updated_at
+          BEFORE UPDATE ON therapist_schedules
+          FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+    `,
+  },
 ];
 
 async function runMigrations(pool) {

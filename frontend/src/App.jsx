@@ -77,6 +77,7 @@ export default function App({ onLogout }) {
         <div style={{ padding: '4px 0' }}>
           <div style={sectionLabelStyle}>Schedule</div>
           <NavLink to="/calendar" style={navLinkStyle}>Calendar</NavLink>
+          <NavLink to="/therapist-schedule" style={navLinkStyle}>Therapist Schedule</NavLink>
         </div>
 
         <div style={{ padding: '4px 0' }}>
