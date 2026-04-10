@@ -160,6 +160,12 @@ export default function AppointmentDetail() {
               >
                 {reminderStatus === 'sending' ? 'Sending…' : 'Send Initial Reminder'}
               </button>
+              <button
+                onClick={() => navigate(`/invoices/create?patient_id=${appt.client_id}&appointment_id=${id}&treatments=${encodeURIComponent(appt.treatments || '')}`)}
+                style={outlineBtn('#7c3aed')}
+              >
+                Create Invoice
+              </button>
               <button onClick={enterReschedule} style={outlineBtn('#e07b54')}>Reschedule</button>
               <button onClick={enterEdit} style={outlineBtn('var(--primary)')}>Edit</button>
               <button onClick={handleDelete} style={outlineBtn('#cc3333')}>Delete</button>

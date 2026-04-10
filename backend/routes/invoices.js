@@ -1,0 +1,78 @@
+const router = require('express').Router();
+const { asyncHandler } = require('../middleware/errorHandler');
+const { validate } = require('../middleware/validate');
+const invoiceService = require('../services/invoiceService');
+const paymentService = require('../services/paymentService');
+
+// ── Validation schemas ──────────────────────────────────────
+
+const createSchema = {
+  body: {
+    patient_id: { required: true, type: 'integer', min: 1 },
+  },
+};
+
+const paymentSchema = {
+  body: {
+    amount:         { required: true, type: 'number', min: 0.01 },
+    payment_method: { required: true, type: 'string' },
+  },
+};
+
+// ── Routes ──────────────────────────────────────────────────
+
+// List invoices (with optional filters)
+router.get('/', asyncHandler(async (req, res) => {
+  const { status, patient_id, from_date, to_date } = req.query;
+  const rows = await invoiceService.listInvoices({ status, patient_id, from_date, to_date });
+  res.json(rows);
+}));
+
+// Get single invoice (with items + payments)
+router.get('/:id', asyncHandler(async (req, res) => {
+  const invoice = await invoiceService.getInvoice(req.params.id);
+  res.json(invoice);
+}));
+
+// Create invoice
+router.post('/', validate(createSchema), asyncHandler(async (req, res) => {
+  const { patient_id, appointment_id, items } = req.body;
+  const invoice = await invoiceService.createInvoice({
+    patient_id: parseInt(patient_id),
+    appointment_id: appointment_id ? parseInt(appointment_id) : null,
+    items: items || [],
+  });
+  res.status(201).json(invoice);
+}));
+
+// Update invoice items
+router.patch('/:id/items', asyncHandler(async (req, res) => {
+  const { items } = req.body;
+  const invoice = await invoiceService.updateInvoiceItems(req.params.id, items || []);
+  res.json(invoice);
+}));
+
+// Add payment to invoice
+router.post('/:id/payments', validate(paymentSchema), asyncHandler(async (req, res) => {
+  const { amount, payment_method } = req.body;
+  const invoice = await paymentService.addPayment({
+    invoice_id: parseInt(req.params.id),
+    amount: parseFloat(amount),
+    payment_method,
+  });
+  res.status(201).json(invoice);
+}));
+
+// Mark as paid shortcut
+router.patch('/:id/mark-paid', asyncHandler(async (req, res) => {
+  const invoice = await paymentService.markAsPaid(req.params.id);
+  res.json(invoice);
+}));
+
+// Delete invoice
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const result = await invoiceService.deleteInvoice(req.params.id);
+  res.json(result);
+}));
+
+module.exports = router;

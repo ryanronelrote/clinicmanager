@@ -87,6 +87,11 @@ export default function App({ onLogout }) {
         </div>
 
         <div style={{ padding: '4px 0' }}>
+          <div style={sectionLabelStyle}>Billing</div>
+          <NavLink to="/invoices" style={navLinkStyle}>Invoices</NavLink>
+        </div>
+
+        <div style={{ padding: '4px 0' }}>
           <div style={sectionLabelStyle}>Items</div>
           <NavLink to="/inventory" style={navLinkStyle}>Stock</NavLink>
         </div>

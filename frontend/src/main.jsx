@@ -20,6 +20,9 @@ import AddInventoryItem from './pages/AddInventoryItem';
 import InventoryDetail from './pages/InventoryDetail';
 import Settings from './pages/Settings';
 import TherapistSchedule from './pages/TherapistSchedule';
+import InvoiceList from './pages/InvoiceList';
+import CreateInvoice from './pages/CreateInvoice';
+import InvoiceDetail from './pages/InvoiceDetail';
 import { useEffect } from 'react';
 
 function AppShell() {
@@ -58,6 +61,9 @@ function AppShell() {
           <Route path="inventory/:id" element={<InventoryDetail />} />
           <Route path="settings" element={<Settings />} />
           <Route path="therapist-schedule" element={<TherapistSchedule />} />
+          <Route path="invoices" element={<InvoiceList />} />
+          <Route path="invoices/create" element={<CreateInvoice />} />
+          <Route path="invoices/:id" element={<InvoiceDetail />} />
         </Route>
       </Routes>
     </BrowserRouter>

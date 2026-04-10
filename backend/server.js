@@ -50,6 +50,7 @@ app.use('/inventory', require('./routes/inventory'));
 app.use('/settings', require('./routes/settings'));
 app.use('/services', require('./routes/services'));
 app.use('/therapist-schedules', require('./routes/therapistSchedule'));
+app.use('/invoices', require('./routes/invoices'));
 
 // ── Global error handler (must be AFTER all routes) ─────────
 app.use(errorHandler);

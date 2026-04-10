@@ -108,6 +108,73 @@ const migrations = [
       END $$;
     `,
   },
+  {
+    name: '011_invoices_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS invoices (
+        id SERIAL PRIMARY KEY,
+        appointment_id INTEGER REFERENCES appointments(id) ON DELETE SET NULL,
+        patient_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+        total_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        amount_paid NUMERIC(12,2) NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'unpaid',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      DO $$ BEGIN
+        ALTER TABLE invoices ADD CONSTRAINT chk_invoices_status
+          CHECK (status IN ('unpaid', 'partial', 'paid'));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+      DO $$ BEGIN
+        CREATE TRIGGER update_invoices_updated_at
+          BEFORE UPDATE ON invoices
+          FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+    `,
+  },
+  {
+    name: '012_invoice_items_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS invoice_items (
+        id SERIAL PRIMARY KEY,
+        invoice_id INTEGER NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        quantity NUMERIC(10,2) NOT NULL DEFAULT 1,
+        unit_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+        total_price NUMERIC(12,2) NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items(invoice_id);
+    `,
+  },
+  {
+    name: '013_payments_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS payments (
+        id SERIAL PRIMARY KEY,
+        invoice_id INTEGER NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+        amount NUMERIC(12,2) NOT NULL,
+        payment_method TEXT NOT NULL DEFAULT 'cash',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      DO $$ BEGIN
+        ALTER TABLE payments ADD CONSTRAINT chk_payments_method
+          CHECK (payment_method IN ('cash', 'gcash', 'card'));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+      CREATE INDEX IF NOT EXISTS idx_payments_invoice_id ON payments(invoice_id);
+    `,
+  },
+  {
+    name: '014_invoices_indexes',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_invoices_patient_id ON invoices(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+      CREATE INDEX IF NOT EXISTS idx_invoices_appointment_id ON invoices(appointment_id);
+      CREATE INDEX IF NOT EXISTS idx_invoices_created_at ON invoices(created_at);
+    `,
+  },
 ];
 
 async function runMigrations(pool) {
