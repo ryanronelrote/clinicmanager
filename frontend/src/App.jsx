@@ -76,20 +76,19 @@ export default function App({ onLogout }) {
 
         <div style={{ padding: '4px 0' }}>
           <div style={sectionLabelStyle}>Schedule</div>
-          <NavLink to="/calendar" style={navLinkStyle}>Calendar</NavLink>
-          <NavLink to="/therapist-schedule" style={navLinkStyle}>Therapist Schedule</NavLink>
+          <NavLink to="/calendar" style={navLinkStyle}>Client Schedule</NavLink>
+          <NavLink to="/therapist-schedule" style={navLinkStyle}>Shift Schedule</NavLink>
         </div>
 
         <div style={{ padding: '4px 0' }}>
           <div style={sectionLabelStyle}>Clients</div>
-          <NavLink to="/clients" style={navLinkStyle}>All Clients</NavLink>
-          <NavLink to="/add" style={subNavLinkStyle}>+ Add Client</NavLink>
+          <NavLink to="/clients" style={navLinkStyle}>Clients</NavLink>
           <NavLink to="/import-clients" style={subNavLinkStyle}>Import CSV</NavLink>
         </div>
 
         <div style={{ padding: '4px 0' }}>
           <div style={sectionLabelStyle}>Inventory</div>
-          <NavLink to="/inventory" style={navLinkStyle}>Stock</NavLink>
+          <NavLink to="/inventory" style={navLinkStyle}>Items</NavLink>
         </div>
 
         <div style={{ padding: '4px 0' }}>

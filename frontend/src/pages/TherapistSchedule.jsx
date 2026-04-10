@@ -296,7 +296,7 @@ export default function TherapistSchedule() {
       {/* ── Page header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 22 }}>Therapist Schedule</h2>
+          <h2 style={{ margin: 0, fontSize: 22 }}>Shift Schedule</h2>
           <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>Click any cell to assign a shift</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

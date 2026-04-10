@@ -14,18 +14,30 @@ export default function ClientList() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>
-          {vipOnly ? '★ VIP Clients' : 'All Clients'}
-        </h2>
-        {vipOnly && (
-          <button
-            onClick={() => navigate('/clients')}
-            style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #ccc', borderRadius: 4, background: '#fff', cursor: 'pointer', color: '#555' }}
-          >
-            ← All Clients
-          </button>
-        )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <h2 style={{ margin: 0 }}>
+            {vipOnly ? '★ VIP Clients' : 'Clients'}
+          </h2>
+          {vipOnly && (
+            <button
+              onClick={() => navigate('/clients')}
+              style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #ccc', borderRadius: 4, background: '#fff', cursor: 'pointer', color: '#555' }}
+            >
+              ← All
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => navigate('/add')}
+          style={{
+            padding: '7px 18px', fontSize: 13, fontWeight: 600,
+            background: 'var(--primary)', color: '#fff',
+            border: 'none', borderRadius: 6, cursor: 'pointer',
+          }}
+        >
+          + Add Client
+        </button>
       </div>
 
       {displayed.length === 0 ? (
