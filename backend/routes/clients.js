@@ -99,4 +99,21 @@ router.get('/:id', async (req, res) => {
   res.json(parseClient(rows[0]));
 });
 
+// DELETE /clients/:id
+// Deletes the client and all their appointments (FK constraint requires appointments removed first)
+router.delete('/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { rows } = await pool.query('SELECT id FROM clients WHERE id = $1', [id]);
+    if (!rows.length) return res.status(404).json({ error: 'Client not found' });
+
+    await pool.query('DELETE FROM appointments WHERE client_id = $1', [id]);
+    await pool.query('DELETE FROM clients WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Delete client]', err.message);
+    res.status(500).json({ error: 'Failed to delete client' });
+  }
+});
+
 module.exports = router;

@@ -19,4 +19,5 @@ export const clientService = {
   create: (data) => request('/clients', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data) }),
   update: (id, data) => request(`/clients/${id}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(data) }),
   bulkImport: (clients) => request('/clients/bulk', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ clients }) }),
+  delete: (id) => request(`/clients/${id}`, { method: 'DELETE' }),
 };

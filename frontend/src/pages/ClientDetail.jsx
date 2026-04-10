@@ -28,6 +28,33 @@ export default function ClientDetail() {
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleConfirmDelete() {
+    setDeleting(true);
+    setPasswordError('');
+    try {
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: confirmPassword }),
+      });
+      if (!res.ok) {
+        setPasswordError('Incorrect password');
+        setDeleting(false);
+        return;
+      }
+      await clientService.delete(id);
+      navigate('/clients');
+    } catch {
+      setPasswordError('Something went wrong. Try again.');
+      setDeleting(false);
+    }
+  }
+
   const [newPast, setNewPast] = useState({ date: '', therapist: '', treatments: '', notes: '' });
   const [addingPast, setAddingPast] = useState(false);
 
@@ -165,8 +192,23 @@ export default function ClientDetail() {
               <button onClick={saveEdit} disabled={saving} style={solidBtn('var(--primary)')}>{saving ? 'Saving…' : 'Save'}</button>
             </>
           )}
+          <button onClick={() => { setShowDeleteModal(true); setConfirmPassword(''); setPasswordError(''); }} style={outlineBtn('#cc3333')}>
+            Delete client
+          </button>
         </div>
       </div>
+
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          clientName={`${client.first_name} ${client.last_name}`}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          passwordError={passwordError}
+          deleting={deleting}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => { setShowDeleteModal(false); setConfirmPassword(''); setPasswordError(''); }}
+        />
+      )}
 
       {/* ── Patient Chart ── */}
       <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
@@ -527,3 +569,64 @@ function ApptRow({ appt, i, editMode, treatmentDrafts, setTreatmentDrafts, thera
 }
 
 const lblStyle = { fontSize: 12, color: '#888', display: 'block', marginBottom: 3 };
+
+function DeleteConfirmModal({ clientName, confirmPassword, setConfirmPassword, passwordError, deleting, onConfirm, onCancel }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+        padding: '28px 32px', maxWidth: 420, width: '90%',
+      }}>
+        <div style={{ fontSize: 18, fontWeight: '700', color: '#cc3333', marginBottom: 12 }}>
+          ⚠️ Delete Client
+        </div>
+        <p style={{ margin: '0 0 8px', fontSize: 14, color: '#333', lineHeight: 1.5 }}>
+          You are about to permanently delete <strong>{clientName}</strong> and all their appointment records.
+        </p>
+        <p style={{ margin: '0 0 18px', fontSize: 13, color: '#888' }}>
+          This cannot be undone.
+        </p>
+        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#555' }}>
+          Enter clinic password to confirm:
+        </label>
+        <input
+          type="password"
+          value={confirmPassword}
+          onChange={e => setConfirmPassword(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && !deleting && onConfirm()}
+          placeholder="Password"
+          autoFocus
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6,
+            fontSize: 14, marginBottom: 6,
+          }}
+        />
+        {passwordError && (
+          <div style={{ fontSize: 12, color: '#cc3333', marginBottom: 10 }}>
+            ⛔ {passwordError}
+          </div>
+        )}
+        {!passwordError && <div style={{ marginBottom: 10 }} />}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+          <button onClick={onCancel} style={outlineBtn('#888')}>Cancel</button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting || !confirmPassword}
+            style={{
+              ...solidBtn('#cc3333'),
+              opacity: deleting || !confirmPassword ? 0.6 : 1,
+              cursor: deleting || !confirmPassword ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {deleting ? 'Deleting…' : 'Delete permanently'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
