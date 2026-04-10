@@ -197,7 +197,7 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
             style={{
               height: SLOT_HEIGHT,
               borderTop: slot.isHour ? '1px solid #e5e7eb' : '1px solid #f3f4f6',
-              background: disabled ? '#fafafa' : 'transparent',
+              background: disabled ? '#fdf8f4' : 'transparent',
               cursor: disabled ? 'default' : 'pointer',
               boxSizing: 'border-box',
             }}
@@ -208,8 +208,8 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
                 navigate(`/appointments/add?date=${dateStr}&time=${h}:${m}`);
               }
             }}
-            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = '#f0fdf4'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = disabled ? '#fafafa' : 'transparent'; }}
+            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = '#fef6ee'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = disabled ? '#fdf8f4' : 'transparent'; }}
           />
         );
       })}
@@ -221,10 +221,10 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
         return (
           <div key={b.id} style={{
             position: 'absolute', top, left: 0, width: '100%', height,
-            background: 'repeating-linear-gradient(45deg,#d1d5db,#d1d5db 3px,#e5e7eb 3px,#e5e7eb 10px)',
-            borderLeft: '3px solid #9ca3af',
+            background: 'repeating-linear-gradient(45deg,#fde68a,#fde68a 3px,#fef3c7 3px,#fef3c7 10px)',
+            borderLeft: '3px solid #f59e0b',
             boxSizing: 'border-box', overflow: 'hidden',
-            zIndex: 1, padding: '3px 6px', fontSize: 11, color: '#4b5563',
+            zIndex: 1, padding: '3px 6px', fontSize: 11, color: '#92400e',
             pointerEvents: 'none',
           }}>
             🔒 {b.reason || 'Blocked'}
@@ -267,10 +267,10 @@ function DayHeader({ days, apptsByDate }) {
           <div key={di} style={{
             flex: 1, textAlign: 'center', padding: '8px 4px 10px',
             borderLeft: '1px solid #e5e7eb',
-            background: isToday ? '#f0fdf4' : 'transparent',
+            background: isToday ? '#fef9f0' : 'transparent',
           }}>
             <div style={{
-              fontSize: 11, color: isToday ? '#15803d' : '#6b7280',
+              fontSize: 11, color: isToday ? '#b45309' : '#6b7280',
               fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
             }}>
               {DAYS_SHORT[dayIdx]}
@@ -278,14 +278,14 @@ function DayHeader({ days, apptsByDate }) {
             <div style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: 34, height: 34, borderRadius: '50%', marginTop: 3,
-              background: isToday ? '#16a34a' : 'transparent',
+              background: isToday ? '#f59e0b' : 'transparent',
               color: isToday ? '#fff' : '#111827',
               fontSize: 16, fontWeight: isToday ? 700 : 400,
             }}>
               {day.getDate()}
             </div>
             {count > 0 && (
-              <div style={{ fontSize: 10, color: isToday ? '#15803d' : '#9ca3af', marginTop: 2, fontWeight: 500 }}>
+              <div style={{ fontSize: 10, color: isToday ? '#b45309' : '#9ca3af', marginTop: 2, fontWeight: 500 }}>
                 {count} appt{count !== 1 ? 's' : ''}
               </div>
             )}
@@ -327,17 +327,17 @@ function MonthGrid({ currentDate, apptsByDate, onDayClick }) {
               style={{
                 minHeight: 88, padding: '8px 10px',
                 border: '1px solid #e5e7eb',
-                background: isToday ? '#f0fdf4' : '#fff',
+                background: isToday ? '#fef9f0' : '#fff',
                 cursor: 'pointer',
                 opacity: inMonth ? 1 : 0.3,
               }}
-              onMouseEnter={e => { if (inMonth) e.currentTarget.style.background = isToday ? '#dcfce7' : '#f9fafb'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = isToday ? '#f0fdf4' : '#fff'; }}
+              onMouseEnter={e => { if (inMonth) e.currentTarget.style.background = isToday ? '#fef3c7' : '#fdf8f4'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = isToday ? '#fef9f0' : '#fff'; }}
             >
               <div style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 28, height: 28, borderRadius: '50%',
-                background: isToday ? '#16a34a' : 'transparent',
+                background: isToday ? '#f59e0b' : 'transparent',
                 color: isToday ? '#fff' : inMonth ? '#111827' : '#9ca3af',
                 fontSize: 13, fontWeight: isToday ? 700 : 400,
               }}>
@@ -346,7 +346,7 @@ function MonthGrid({ currentDate, apptsByDate, onDayClick }) {
               {count > 0 && (
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  background: '#16a34a', color: '#fff',
+                  background: '#f59e0b', color: '#fff',
                   borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: 600,
                   marginLeft: 6, verticalAlign: 'middle',
                 }}>
@@ -458,8 +458,8 @@ function ViewTab({ label, active, onClick, last }) {
         padding: '6px 14px', fontSize: 13, cursor: 'pointer',
         border: 'none',
         borderRight: last ? 'none' : '1px solid #e5e7eb',
-        background: active ? '#f0fdf4' : hov ? '#f9fafb' : '#fff',
-        color: active ? '#15803d' : '#374151',
+        background: active ? '#fef9f0' : hov ? '#fdf8f4' : '#fff',
+        color: active ? '#b45309' : '#374151',
         fontWeight: active ? 600 : 400,
         transition: 'all 0.12s',
       }}
