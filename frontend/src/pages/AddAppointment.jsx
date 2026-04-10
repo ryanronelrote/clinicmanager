@@ -147,16 +147,12 @@ export default function AddAppointment() {
           Notes
           <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} style={fieldStyle} />
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 16 }}>
-          <input
-            type="checkbox"
-            checked={form.status === 'tentative'}
-            onChange={e => setForm(f => ({ ...f, status: e.target.checked ? 'tentative' : 'confirmed' }))}
-          />
-          <span>
-            Book as Tentative
-            <span style={{ fontSize: 12, color: '#888', marginLeft: 6 }}>(no emails, doesn't block slots)</span>
-          </span>
+        <label style={labelStyle}>
+          Status
+          <select name="status" value={form.status} onChange={handleChange} style={fieldStyle}>
+            <option value="confirmed">Confirmed</option>
+            <option value="tentative">Tentative (no emails, doesn't block slots)</option>
+          </select>
         </label>
         <button type="submit" disabled={form.status !== 'tentative' && conflicts && conflicts.count >= 3} style={{ padding: '8px 20px' }}>Save Appointment</button>
       </form>
