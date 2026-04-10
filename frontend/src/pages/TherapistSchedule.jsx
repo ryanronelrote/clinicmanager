@@ -12,7 +12,8 @@ const DEFAULT_COLORS = {
   OFF: '#e5e7eb',   // light gray
 };
 
-const STORAGE_KEY = 'clinic_shift_colors_v1';
+const STORAGE_KEY        = 'clinic_shift_colors_v1';
+const CUSTOM_SHIFTS_KEY  = 'clinic_custom_shifts_v1';
 
 function loadColors() {
   try {
@@ -25,6 +26,25 @@ function loadColors() {
 
 function saveColors(c) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(c));
+}
+
+function loadCustomShifts() {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOM_SHIFTS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomShifts(arr) {
+  localStorage.setItem(CUSTOM_SHIFTS_KEY, JSON.stringify(arr));
+}
+
+/** Pick a pleasant auto-color for a new custom shift. */
+function autoHexColor(shiftType) {
+  const hash = [...shiftType].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const palette = ['#fde68a', '#a7f3d0', '#bfdbfe', '#ddd6fe', '#fbcfe8', '#fed7aa', '#cffafe', '#d1fae5'];
+  return palette[hash % palette.length];
 }
 
 /** Relative luminance (0 = black, 1 = white). */
@@ -97,11 +117,16 @@ export default function TherapistSchedule() {
   const [activeCell,   setActiveCell]   = useState(null); // { therapistId, date, x, y }
   const [colorMap,     setColorMap]     = useState(loadColors);
   const [showColors,   setShowColors]   = useState(false);
+  const [customShifts, setCustomShifts] = useState(loadCustomShifts);
+  const [newShiftName, setNewShiftName] = useState('');
 
   const [newName,      setNewName]      = useState('');
   const [savingName,   setSavingName]   = useState(false);
 
   const popupRef = useRef(null);
+
+  // All shift types available in the selector (preset + user-defined)
+  const allShifts = [...PRESET_SHIFTS, ...customShifts];
 
   const monthStr  = toMonthStr(curYear, curMonth);
   const numDays   = daysInMonth(curYear, curMonth);
@@ -151,7 +176,7 @@ export default function TherapistSchedule() {
     const rect = e.currentTarget.getBoundingClientRect();
     // Show popup below the cell, clamped to viewport
     const x = Math.min(rect.left, window.innerWidth - 165);
-    const popupH = PRESET_SHIFTS.length * 38 + 48; // approximate
+    const popupH = allShifts.length * 38 + 48; // approximate
     const y = rect.bottom + 6 + popupH > window.innerHeight
       ? rect.top - popupH - 4
       : rect.bottom + 4;
@@ -210,6 +235,23 @@ export default function TherapistSchedule() {
     saveColors(DEFAULT_COLORS);
   }
 
+  function addCustomShift() {
+    const name = newShiftName.trim().toUpperCase();
+    if (!name || allShifts.includes(name)) return;
+    const updated = [...customShifts, name];
+    setCustomShifts(updated);
+    saveCustomShifts(updated);
+    // Auto-assign a color if none exists yet
+    if (!colorMap[name]) updateColor(name, autoHexColor(name));
+    setNewShiftName('');
+  }
+
+  function removeCustomShift(name) {
+    const updated = customShifts.filter(s => s !== name);
+    setCustomShifts(updated);
+    saveCustomShifts(updated);
+  }
+
   // ── Therapist management ─────────────────────────────────────
   async function handleAddTherapist() {
     const name = newName.trim();
@@ -244,7 +286,7 @@ export default function TherapistSchedule() {
 
   // ── All unique shift types in current view (for legend) ─────
   const visibleShifts = [
-    ...new Set([...PRESET_SHIFTS, ...Object.values(scheduleMap)]),
+    ...new Set([...allShifts, ...Object.values(scheduleMap)]),
   ];
 
   // ── Render ───────────────────────────────────────────────────
@@ -275,35 +317,80 @@ export default function TherapistSchedule() {
       {/* ── Color config panel ── */}
       {showColors && (
         <div style={{
-          marginBottom: 16, padding: '12px 18px',
+          marginBottom: 16, padding: '14px 18px',
           border: '1px solid #e5e7eb', borderRadius: 10,
           background: '#fafafa',
-          display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center',
         }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>Shift colors:</span>
-          {PRESET_SHIFTS.map(shift => {
-            const { bg, text } = shiftColors(colorMap, shift);
-            return (
-              <label key={shift} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
-                <input
-                  type="color"
-                  value={colorMap[shift] || '#e5e7eb'}
-                  onChange={e => updateColor(shift, e.target.value)}
-                  style={{ width: 30, height: 30, padding: 0, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer' }}
-                  title={`Change color for ${shift}`}
-                />
-                <span style={{ background: bg, color: text, padding: '3px 12px', borderRadius: 6, fontWeight: 700, fontSize: 13 }}>
-                  {shift}
-                </span>
-              </label>
-            );
-          })}
-          <button
-            onClick={resetColors}
-            style={{ fontSize: 12, color: '#888', background: 'none', border: '1px solid #ddd', borderRadius: 5, padding: '4px 10px', cursor: 'pointer' }}
-          >
-            Reset defaults
-          </button>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>Shift types:</span>
+
+            {/* All shifts — preset (no delete) + custom (with delete) */}
+            {allShifts.map(shift => {
+              const { bg, text } = shiftColors(colorMap, shift);
+              const isCustom = !PRESET_SHIFTS.includes(shift);
+              return (
+                <div key={shift} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                    <input
+                      type="color"
+                      value={colorMap[shift] || '#e5e7eb'}
+                      onChange={e => updateColor(shift, e.target.value)}
+                      style={{ width: 30, height: 30, padding: 0, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer' }}
+                      title={`Change color for ${shift}`}
+                    />
+                    <span style={{ background: bg, color: text, padding: '3px 12px', borderRadius: 6, fontWeight: 700, fontSize: 13 }}>
+                      {shift}
+                    </span>
+                  </label>
+                  {isCustom && (
+                    <button
+                      onClick={() => removeCustomShift(shift)}
+                      title={`Remove ${shift} shift`}
+                      style={{ fontSize: 13, color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#cc3333'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#d1d5db'}
+                    >×</button>
+                  )}
+                </div>
+              );
+            })}
+
+            <button
+              onClick={resetColors}
+              style={{ fontSize: 12, color: '#888', background: 'none', border: '1px solid #ddd', borderRadius: 5, padding: '4px 10px', cursor: 'pointer' }}
+            >
+              Reset colors
+            </button>
+          </div>
+
+          {/* Add custom shift */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 10, borderTop: '1px solid #e5e7eb' }}>
+            <span style={{ fontSize: 12, color: '#888' }}>Add custom shift:</span>
+            <input
+              type="text"
+              placeholder="e.g. NIGHT"
+              value={newShiftName}
+              onChange={e => setNewShiftName(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && addCustomShift()}
+              maxLength={12}
+              style={{ padding: '5px 10px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13, width: 110 }}
+            />
+            <button
+              onClick={addCustomShift}
+              disabled={!newShiftName.trim() || allShifts.includes(newShiftName.trim().toUpperCase())}
+              style={{
+                padding: '5px 14px', fontSize: 13, fontWeight: 600,
+                background: 'var(--primary)', color: '#fff',
+                border: 'none', borderRadius: 6, cursor: 'pointer',
+                opacity: !newShiftName.trim() || allShifts.includes(newShiftName.trim().toUpperCase()) ? 0.5 : 1,
+              }}
+            >
+              + Add
+            </button>
+            {allShifts.includes(newShiftName.trim().toUpperCase()) && newShiftName.trim() && (
+              <span style={{ fontSize: 12, color: '#e07b54' }}>Already exists</span>
+            )}
+          </div>
         </div>
       )}
 
@@ -437,7 +524,7 @@ export default function TherapistSchedule() {
             minWidth: 130,
           }}
         >
-          {PRESET_SHIFTS.map(shift => {
+          {allShifts.map(shift => {
             const { bg, text } = shiftColors(colorMap, shift);
             const isActive = scheduleMap[`${activeCell.therapistId}-${activeCell.date}`] === shift;
             return (
