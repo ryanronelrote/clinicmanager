@@ -167,12 +167,40 @@ export default function Home() {
                 <div style={{ fontSize: 12, color: '#aaa', whiteSpace: 'nowrap' }}>
                   {appt.duration_minutes} min
                 </div>
+
+                {/* Status badge */}
+                <ApptStatusBadge status={appt.status} />
               </div>
             ))}
           </div>
         </div>
       ))}
     </div>
+  );
+}
+
+const STATUS_BADGE_CONFIG = {
+  tentative:           { label: 'Tentative',           color: '#92400e', bg: '#fef3c7', border: '#fbbf24' },
+  confirmed:           { label: 'Confirmed',           color: '#166534', bg: '#dcfce7', border: '#86efac' },
+  confirmed_by_client: { label: 'Client Confirmed',   color: '#166534', bg: '#dcfce7', border: '#86efac' },
+  done:                { label: 'Done',                color: '#555',    bg: '#f0f0f0', border: '#ccc' },
+  cancelled:           { label: 'Cancelled',           color: '#cc3333', bg: '#fdecea', border: '#f8b4b4' },
+  cancelled_by_client: { label: 'Cancelled',           color: '#e07b54', bg: '#fff3ee', border: '#fbd0be' },
+};
+
+function ApptStatusBadge({ status }) {
+  const cfg = STATUS_BADGE_CONFIG[status] || STATUS_BADGE_CONFIG.confirmed;
+  // Don't show badge for plain "confirmed" — it's the default, no need to clutter
+  if (status === 'confirmed') return null;
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
+      padding: '2px 8px', borderRadius: 10,
+      color: cfg.color, background: cfg.bg,
+      border: `1px solid ${cfg.border}`,
+    }}>
+      {cfg.label}
+    </span>
   );
 }
 
