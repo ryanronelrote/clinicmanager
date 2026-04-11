@@ -16,6 +16,7 @@ export default defineConfig({
     host: true,
     port: 5173,
     proxy: {
+      '/api':           apiProxy('http://localhost:3001'),
       '/clients':       apiProxy('http://localhost:3001'),
       '/appointments':  apiProxy('http://localhost:3001'),
       '/blocked-slots': apiProxy('http://localhost:3001'),

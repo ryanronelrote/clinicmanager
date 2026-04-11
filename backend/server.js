@@ -52,6 +52,7 @@ app.use('/services', require('./routes/services'));
 app.use('/staff', require('./routes/staff'));
 app.use('/therapist-schedules', require('./routes/therapistSchedule'));
 app.use('/invoices', require('./routes/invoices'));
+app.use('/api/dashboard', require('./routes/dashboard'));
 
 // ── Global error handler (must be AFTER all routes) ─────────
 app.use(errorHandler);
