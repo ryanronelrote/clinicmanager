@@ -114,7 +114,7 @@ export default function InvoiceList() {
               <th style={{ padding: '8px' }}>Paid</th>
               <th style={{ padding: '8px' }}>Balance</th>
               <th style={{ padding: '8px' }}>Status</th>
-              <th style={{ padding: '8px' }}>Date</th>
+              <th style={{ padding: '8px' }}>Invoice date</th>
             </tr>
           </thead>
           <tbody>
@@ -139,7 +139,7 @@ export default function InvoiceList() {
                   </td>
                   <td style={{ padding: '8px' }}><InvoiceStatusBadge status={inv.status} /></td>
                   <td style={{ padding: '8px', fontSize: 13, color: '#7a6a5f' }}>
-                    {new Date(inv.created_at).toLocaleDateString()}
+                    {formatInvoiceDate(inv.invoice_date)}
                   </td>
                 </tr>
               );
@@ -149,6 +149,20 @@ export default function InvoiceList() {
       )}
     </div>
   );
+}
+
+function formatInvoiceDate(v) {
+  if (v == null || v === '') return '—';
+  const s = typeof v === 'string' ? v.slice(0, 10) : new Date(v).toISOString().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-');
+    return `${m}/${d}/${y}`;
+  }
+  try {
+    return new Date(v).toLocaleDateString();
+  } catch {
+    return String(v);
+  }
 }
 
 function SummaryCard({ label, value, color }) {

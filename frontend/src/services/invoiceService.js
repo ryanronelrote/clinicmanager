@@ -27,7 +27,21 @@ export const invoiceService = {
   create:      (data) => request('/invoices', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data) }),
   updateItems: (id, items) => request(`/invoices/${id}/items`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ items }) }),
   addPayment:  (id, data) => request(`/invoices/${id}/payments`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data) }),
-  markPaid:    (id, receivedBy) => request(`/invoices/${id}/mark-paid`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ received_by: receivedBy }) }),
+  markPaid:    (id, receivedBy, paymentDate) =>
+    request(`/invoices/${id}/mark-paid`, {
+      method: 'PATCH',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({
+        received_by: receivedBy,
+        ...(paymentDate ? { payment_date: paymentDate } : {}),
+      }),
+    }),
+  updateInvoiceDate: (id, invoiceDate) =>
+    request(`/invoices/${id}/invoice-date`, {
+      method: 'PATCH',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ invoice_date: invoiceDate }),
+    }),
   delete:      (id) => request(`/invoices/${id}`, { method: 'DELETE' }),
   getStats:    () => request('/invoices/stats'),
 };

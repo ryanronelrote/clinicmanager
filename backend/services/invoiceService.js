@@ -25,7 +25,35 @@ function computeStatus(totalAmount, amountPaid) {
   return 'paid';
 }
 
-async function createInvoice({ patient_id, appointment_id, items, created_by }) {
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function manilaTodayDateString() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
+
+/** Returns YYYY-MM-DD or throws svcError. */
+function parseBusinessDate(value, fieldLabel) {
+  if (value === undefined || value === null || value === '') {
+    throw svcError(400, `${fieldLabel} is required`);
+  }
+  if (typeof value !== 'string' || !ISO_DATE.test(value)) {
+    throw svcError(400, `${fieldLabel} must be YYYY-MM-DD`);
+  }
+  const [y, m, d] = value.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {
+    throw svcError(400, `Invalid ${fieldLabel}`);
+  }
+  return value;
+}
+
+/** Optional business date: returns string or null (caller supplies default). */
+function parseOptionalBusinessDate(value, fieldLabel) {
+  if (value === undefined || value === null || value === '') return null;
+  return parseBusinessDate(value, fieldLabel);
+}
+
+async function createInvoice({ patient_id, appointment_id, items, created_by, invoice_date }) {
   if (!created_by || !created_by.trim()) throw svcError(400, 'created_by is required');
   if (!items || items.length === 0) {
     throw svcError(400, 'Invoice must have at least 1 item');
@@ -63,11 +91,13 @@ async function createInvoice({ patient_id, appointment_id, items, created_by }) 
     });
     totalAmount = Math.round(totalAmount * 100) / 100;
 
+    const invoiceDateStr = parseOptionalBusinessDate(invoice_date, 'invoice_date') || manilaTodayDateString();
+
     // Insert invoice
     const { rows: invoiceRows } = await client.query(
-      `INSERT INTO invoices (appointment_id, patient_id, total_amount, amount_paid, status, created_by)
-       VALUES ($1, $2, $3, 0, 'unpaid', $4) RETURNING id`,
-      [appointment_id ? parseInt(appointment_id) : null, parseInt(patient_id), totalAmount, created_by.trim()]
+      `INSERT INTO invoices (appointment_id, patient_id, total_amount, amount_paid, status, created_by, invoice_date)
+       VALUES ($1, $2, $3, 0, 'unpaid', $4, $5::date) RETURNING id`,
+      [appointment_id ? parseInt(appointment_id) : null, parseInt(patient_id), totalAmount, created_by.trim(), invoiceDateStr]
     );
     const invoiceId = invoiceRows[0].id;
 
@@ -106,7 +136,7 @@ async function getInvoice(id) {
 
   // Get payments
   const { rows: payments } = await pool.query(
-    'SELECT * FROM payments WHERE invoice_id = $1 ORDER BY created_at DESC',
+    'SELECT * FROM payments WHERE invoice_id = $1 ORDER BY payment_date DESC, created_at DESC',
     [parsedId]
   );
 
@@ -128,18 +158,18 @@ async function listInvoices({ status, patient_id, from_date, to_date }) {
     params.push(parseInt(patient_id));
   }
   if (from_date) {
-    conditions.push(`i.created_at >= $${idx++}`);
+    conditions.push(`i.invoice_date >= $${idx++}::date`);
     params.push(from_date);
   }
   if (to_date) {
-    conditions.push(`i.created_at < ($${idx++}::date + interval '1 day')`);
+    conditions.push(`i.invoice_date < ($${idx++}::date + interval '1 day')`);
     params.push(to_date);
   }
 
   if (conditions.length > 0) {
     query += ' WHERE ' + conditions.join(' AND ');
   }
-  query += ' ORDER BY i.created_at DESC';
+  query += ' ORDER BY i.invoice_date DESC, i.created_at DESC';
 
   const { rows } = await pool.query(query, params);
   return rows;
@@ -219,10 +249,31 @@ async function getMonthlyStats() {
     SELECT COALESCE(SUM(amount_paid), 0) AS monthly_sales,
            COUNT(*) AS invoice_count
     FROM invoices
-    WHERE DATE_TRUNC('month', created_at AT TIME ZONE 'Asia/Manila')
-          = DATE_TRUNC('month', CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')
+    WHERE EXTRACT(YEAR FROM invoice_date) = EXTRACT(YEAR FROM (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)
+      AND EXTRACT(MONTH FROM invoice_date) = EXTRACT(MONTH FROM (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)
   `);
   return { monthly_sales: parseFloat(rows[0].monthly_sales), invoice_count: parseInt(rows[0].invoice_count) };
 }
 
-module.exports = { createInvoice, getInvoice, listInvoices, updateInvoiceItems, deleteInvoice, computeStatus, getMonthlyStats };
+async function updateInvoiceDate(invoiceId, invoice_date) {
+  const parsedId = parseInt(invoiceId);
+  if (!parsedId || isNaN(parsedId)) throw svcError(400, 'Invalid invoice id');
+  const dateStr = parseBusinessDate(invoice_date, 'invoice_date');
+  const { rowCount } = await pool.query('UPDATE invoices SET invoice_date = $1::date WHERE id = $2', [dateStr, parsedId]);
+  if (!rowCount) throw svcError(404, 'Invoice not found');
+  return getInvoice(parsedId);
+}
+
+module.exports = {
+  createInvoice,
+  getInvoice,
+  listInvoices,
+  updateInvoiceItems,
+  deleteInvoice,
+  computeStatus,
+  getMonthlyStats,
+  updateInvoiceDate,
+  manilaTodayDateString,
+  parseOptionalBusinessDate,
+  parseBusinessDate,
+};

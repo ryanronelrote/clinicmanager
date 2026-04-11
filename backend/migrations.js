@@ -194,6 +194,22 @@ const migrations = [
       );
     `,
   },
+  {
+    name: '018_invoice_and_payment_dates',
+    sql: `
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS invoice_date DATE;
+      UPDATE invoices SET invoice_date = (created_at AT TIME ZONE 'Asia/Manila')::date WHERE invoice_date IS NULL;
+      ALTER TABLE invoices ALTER COLUMN invoice_date SET DEFAULT ((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date);
+      ALTER TABLE invoices ALTER COLUMN invoice_date SET NOT NULL;
+
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_date DATE;
+      UPDATE payments SET payment_date = (created_at AT TIME ZONE 'Asia/Manila')::date WHERE payment_date IS NULL;
+      ALTER TABLE payments ALTER COLUMN payment_date SET DEFAULT ((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date);
+      ALTER TABLE payments ALTER COLUMN payment_date SET NOT NULL;
+
+      CREATE INDEX IF NOT EXISTS idx_invoices_invoice_date ON invoices(invoice_date);
+    `,
+  },
 ];
 
 async function runMigrations(pool) {

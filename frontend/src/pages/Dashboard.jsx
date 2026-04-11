@@ -280,8 +280,8 @@ export default function Dashboard() {
       <header style={{ marginBottom: 28 }}>
         <h1 style={{ margin: 0, fontSize: 34, color: 'var(--text-primary)' }}>Sales KPIs</h1>
         <p style={{ margin: '10px 0 0', fontSize: 15, color: 'var(--label-color)', maxWidth: 560, lineHeight: 1.5 }}>
-          Revenue from paid invoice amounts, appointment volume, and performance by treatment and therapist. Dates use{' '}
-          <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Asia/Manila</strong> for invoice timing.
+          Revenue from paid invoice amounts, appointment volume, and performance by treatment and therapist. Revenue and treatments use each invoice’s{' '}
+          <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>invoice date</strong>; appointment metrics use scheduled appointment dates.
         </p>
       </header>
 

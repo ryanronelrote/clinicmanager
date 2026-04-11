@@ -2,7 +2,7 @@ const { pool } = require('../database');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const APPT_ACTIVE = `a.status NOT IN ('cancelled', 'cancelled_by_client')`;
-const INVOICE_DAY = `(i.created_at AT TIME ZONE 'Asia/Manila')::date`;
+const INVOICE_DAY = `i.invoice_date`;
 const APPT_DAY = `a.date::date`;
 
 function svcError(statusCode, message) {
@@ -223,7 +223,8 @@ async function therapistStats(startDate, endDate) {
               COALESCE(SUM(COALESCE(i.amount_paid, 0)), 0)::float8 AS revenue
        FROM invoices i
        JOIN appointments a ON a.id = i.appointment_id
-       WHERE ${APPT_DAY} BETWEEN $1::date AND $2::date
+       WHERE ${INVOICE_DAY} BETWEEN $1::date AND $2::date
+         AND ${APPT_DAY} BETWEEN $1::date AND $2::date
          AND ${APPT_ACTIVE}
        GROUP BY 1
      )

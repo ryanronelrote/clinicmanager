@@ -7,6 +7,10 @@ import { staffService } from '../services/staffService';
 import { authFetch } from '../authFetch';
 import { solidBtn, outlineBtn } from '../utils/styleUtils';
 
+function manilaTodayYmd() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
+
 export default function CreateInvoice() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -33,6 +37,7 @@ export default function CreateInvoice() {
     return [{ name: '', quantity: '1', unit_price: '' }];
   });
   const [createdBy, setCreatedBy] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState(manilaTodayYmd);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -106,6 +111,7 @@ export default function CreateInvoice() {
           unit_price: parseFloat(i.unit_price) || 0,
         })),
         created_by: createdBy.trim(),
+        invoice_date: invoiceDate,
       });
       navigate(`/invoices/${invoice.id}`);
     } catch (err) {
@@ -149,6 +155,20 @@ export default function CreateInvoice() {
             Linked to Appointment #{appointmentId}
           </div>
         )}
+
+        <label style={labelStyle}>
+          <strong>Invoice date *</strong>
+          <input
+            type="date"
+            value={invoiceDate}
+            onChange={e => setInvoiceDate(e.target.value)}
+            style={fieldStyle}
+            required
+          />
+          <span style={{ fontSize: 12, color: '#7a6a5f', display: 'block', marginTop: 4 }}>
+            Business date for reporting (use for backdated or migrated invoices).
+          </span>
+        </label>
 
         {/* Line items */}
         <div style={{ marginBottom: 16 }}>

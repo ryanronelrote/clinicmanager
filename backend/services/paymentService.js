@@ -1,5 +1,5 @@
 const { pool } = require('../database');
-const { computeStatus } = require('./invoiceService');
+const { computeStatus, parseOptionalBusinessDate, manilaTodayDateString } = require('./invoiceService');
 
 function svcError(statusCode, message) {
   const err = new Error(message);
@@ -9,7 +9,7 @@ function svcError(statusCode, message) {
 
 const ALLOWED_METHODS = ['cash', 'gcash', 'card'];
 
-async function addPayment({ invoice_id, amount, payment_method, received_by }) {
+async function addPayment({ invoice_id, amount, payment_method, received_by, payment_date }) {
   const parsedInvoiceId = parseInt(invoice_id);
   const parsedAmount = parseFloat(amount);
 
@@ -46,10 +46,12 @@ async function addPayment({ invoice_id, amount, payment_method, received_by }) {
     const finalAmount = Math.min(parsedAmount, remaining);
     const roundedAmount = Math.round(finalAmount * 100) / 100;
 
+    const payDateStr = parseOptionalBusinessDate(payment_date, 'payment_date') || manilaTodayDateString();
+
     // Insert payment
     await client.query(
-      'INSERT INTO payments (invoice_id, amount, payment_method, received_by) VALUES ($1, $2, $3, $4)',
-      [parsedInvoiceId, roundedAmount, payment_method, received_by.trim()]
+      'INSERT INTO payments (invoice_id, amount, payment_method, received_by, payment_date) VALUES ($1, $2, $3, $4, $5::date)',
+      [parsedInvoiceId, roundedAmount, payment_method, received_by.trim(), payDateStr]
     );
 
     // Update invoice
@@ -73,7 +75,7 @@ async function addPayment({ invoice_id, amount, payment_method, received_by }) {
   }
 }
 
-async function markAsPaid(invoiceId, received_by) {
+async function markAsPaid(invoiceId, received_by, payment_date) {
   const parsedId = parseInt(invoiceId);
   const { rows: invRows } = await pool.query('SELECT * FROM invoices WHERE id = $1', [parsedId]);
   if (!invRows.length) throw svcError(404, 'Invoice not found');
@@ -85,14 +87,16 @@ async function markAsPaid(invoiceId, received_by) {
 
   if (remaining <= 0) throw svcError(409, 'Invoice is already fully paid');
 
+  const payDateStr = parseOptionalBusinessDate(payment_date, 'payment_date') || manilaTodayDateString();
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
     // Insert a payment for the remaining balance
     await client.query(
-      'INSERT INTO payments (invoice_id, amount, payment_method, received_by) VALUES ($1, $2, $3, $4)',
-      [parsedId, remaining, 'cash', (received_by || '').trim()]
+      'INSERT INTO payments (invoice_id, amount, payment_method, received_by, payment_date) VALUES ($1, $2, $3, $4, $5::date)',
+      [parsedId, remaining, 'cash', (received_by || '').trim(), payDateStr]
     );
 
     // Mark as paid
@@ -116,7 +120,7 @@ async function markAsPaid(invoiceId, received_by) {
 async function getPaymentsByInvoice(invoiceId) {
   const parsedId = parseInt(invoiceId);
   const { rows } = await pool.query(
-    'SELECT * FROM payments WHERE invoice_id = $1 ORDER BY created_at DESC',
+    'SELECT * FROM payments WHERE invoice_id = $1 ORDER BY payment_date DESC, created_at DESC',
     [parsedId]
   );
   return rows;

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAsync } from '../hooks/useAsync';
 import { invoiceService } from '../services/invoiceService';
@@ -25,6 +25,20 @@ function StatusBadge({ status }) {
   );
 }
 
+function manilaTodayYmd() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
+
+function toInputDate(v) {
+  if (v == null || v === '') return '';
+  if (typeof v === 'string') return v.slice(0, 10);
+  try {
+    return new Date(v).toISOString().slice(0, 10);
+  } catch {
+    return '';
+  }
+}
+
 export default function InvoiceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -32,10 +46,17 @@ export default function InvoiceDetail() {
   const { data: invoice, loading, setData: setInvoice } = useAsync(() => invoiceService.getById(id), [id]);
   const { data: staffList = [] } = useAsync(() => staffService.getAll(), []);
 
+  useEffect(() => {
+    if (invoice?.invoice_date != null) {
+      setInvoiceDateDraft(toInputDate(invoice.invoice_date));
+    }
+  }, [invoice?.id, invoice?.invoice_date]);
+
   // Payment form
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
   const [payReceivedBy, setPayReceivedBy] = useState('');
+  const [payPaymentDate, setPayPaymentDate] = useState(manilaTodayYmd);
   const [payError, setPayError] = useState('');
   const [paying, setPaying] = useState(false);
 
@@ -43,6 +64,11 @@ export default function InvoiceDetail() {
   const [marking, setMarking] = useState(false);
   const [markPaidMode, setMarkPaidMode] = useState(false);
   const [markPaidReceivedBy, setMarkPaidReceivedBy] = useState('');
+  const [markPaidPaymentDate, setMarkPaidPaymentDate] = useState(manilaTodayYmd);
+
+  const [invoiceDateDraft, setInvoiceDateDraft] = useState('');
+  const [invoiceDateSaving, setInvoiceDateSaving] = useState(false);
+  const [invoiceDateError, setInvoiceDateError] = useState('');
 
   // Edit items
   const [editMode, setEditMode] = useState(false);
@@ -63,10 +89,16 @@ export default function InvoiceDetail() {
     }
     setPaying(true);
     try {
-      const updated = await invoiceService.addPayment(id, { amount, payment_method: payMethod, received_by: payReceivedBy.trim() });
+      const updated = await invoiceService.addPayment(id, {
+        amount,
+        payment_method: payMethod,
+        received_by: payReceivedBy.trim(),
+        payment_date: payPaymentDate,
+      });
       setInvoice(updated);
       setPayAmount('');
       setPayReceivedBy('');
+      setPayPaymentDate(manilaTodayYmd());
     } catch (err) {
       setPayError(err.message || 'Payment failed');
     } finally {
@@ -77,10 +109,11 @@ export default function InvoiceDetail() {
   async function handleMarkPaid() {
     setMarking(true);
     try {
-      const updated = await invoiceService.markPaid(id, markPaidReceivedBy.trim());
+      const updated = await invoiceService.markPaid(id, markPaidReceivedBy.trim(), markPaidPaymentDate);
       setInvoice(updated);
       setMarkPaidMode(false);
       setMarkPaidReceivedBy('');
+      setMarkPaidPaymentDate(manilaTodayYmd());
     } catch {
       // stay on page
     } finally {
@@ -124,6 +157,23 @@ export default function InvoiceDetail() {
       // keep edit mode
     } finally {
       setEditSaving(false);
+    }
+  }
+
+  async function saveInvoiceDate() {
+    setInvoiceDateError('');
+    if (!invoiceDateDraft || !/^\d{4}-\d{2}-\d{2}$/.test(invoiceDateDraft)) {
+      setInvoiceDateError('Enter a valid invoice date');
+      return;
+    }
+    setInvoiceDateSaving(true);
+    try {
+      const updated = await invoiceService.updateInvoiceDate(id, invoiceDateDraft);
+      setInvoice(updated);
+    } catch (e) {
+      setInvoiceDateError(e.message || 'Update failed');
+    } finally {
+      setInvoiceDateSaving(false);
     }
   }
 
@@ -225,6 +275,10 @@ export default function InvoiceDetail() {
               />
             )}
           </label>
+          <label style={{ flex: '0 1 160px' }}>
+            <span style={{ fontSize: 12, color: '#3d5c41', fontWeight: 600, display: 'block', marginBottom: 4 }}>Payment date</span>
+            <input type="date" value={markPaidPaymentDate} onChange={e => setMarkPaidPaymentDate(e.target.value)} style={inputStyle} />
+          </label>
           <button
             onClick={handleMarkPaid}
             disabled={marking || !markPaidReceivedBy.trim()}
@@ -232,7 +286,7 @@ export default function InvoiceDetail() {
           >
             {marking ? 'Processing…' : 'Confirm Payment'}
           </button>
-          <button onClick={() => { setMarkPaidMode(false); setMarkPaidReceivedBy(''); }} style={outlineBtn('#7a6a5f')}>
+          <button onClick={() => { setMarkPaidMode(false); setMarkPaidReceivedBy(''); setMarkPaidPaymentDate(manilaTodayYmd()); }} style={outlineBtn('#7a6a5f')}>
             Cancel
           </button>
         </div>
@@ -257,9 +311,24 @@ export default function InvoiceDetail() {
               <Link to={`/appointments/${invoice.appointment_id}`}>View Appointment #{invoice.appointment_id}</Link>
             </div>
           )}
+          <div style={{ ...rowStyle, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={labelStyle}>Invoice date</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', flex: 1 }}>
+              <input
+                type="date"
+                value={invoiceDateDraft}
+                onChange={e => setInvoiceDateDraft(e.target.value)}
+                style={{ ...inputStyle, maxWidth: 200 }}
+              />
+              <button type="button" onClick={saveInvoiceDate} disabled={invoiceDateSaving} style={{ ...solidBtn('var(--primary)'), padding: '6px 14px', fontSize: 13 }}>
+                {invoiceDateSaving ? 'Saving…' : 'Update date'}
+              </button>
+              {invoiceDateError && <span style={{ fontSize: 12, color: '#c97b7b' }}>{invoiceDateError}</span>}
+            </div>
+          </div>
           <div style={rowStyle}>
-            <span style={labelStyle}>Created</span>
-            <span>{new Date(invoice.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</span>
+            <span style={labelStyle}>Recorded</span>
+            <span style={{ fontSize: 13, color: '#7a6a5f' }}>{new Date(invoice.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' })} (system)</span>
           </div>
           <div style={rowStyle}>
             <span style={labelStyle}>Created by</span>
@@ -400,6 +469,10 @@ export default function InvoiceDetail() {
                 />
               )}
             </label>
+            <label style={{ flex: '0 1 150px' }}>
+              <span style={{ fontSize: 12, color: '#7a6a5f' }}>Payment date</span>
+              <input type="date" value={payPaymentDate} onChange={e => setPayPaymentDate(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} />
+            </label>
             <button type="submit" disabled={paying} style={{ ...solidBtn('var(--primary)'), padding: '8px 20px', marginBottom: 0 }}>
               {paying ? 'Processing…' : 'Record Payment'}
             </button>
@@ -414,7 +487,8 @@ export default function InvoiceDetail() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ textAlign: 'left', borderBottom: '2px solid #e8dfd6' }}>
-                <th style={{ padding: '8px' }}>Date</th>
+                <th style={{ padding: '8px' }}>Payment date</th>
+                <th style={{ padding: '8px' }}>Recorded</th>
                 <th style={{ padding: '8px' }}>Amount</th>
                 <th style={{ padding: '8px' }}>Method</th>
                 <th style={{ padding: '8px' }}>Received by</th>
@@ -424,6 +498,9 @@ export default function InvoiceDetail() {
               {payments.map(p => (
                 <tr key={p.id} style={{ borderBottom: '1px solid #e8dfd6' }}>
                   <td style={{ padding: '8px', fontSize: 13 }}>
+                    {p.payment_date ? toInputDate(p.payment_date) : '—'}
+                  </td>
+                  <td style={{ padding: '8px', fontSize: 12, color: '#7a6a5f' }}>
                     {new Date(p.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}
                   </td>
                   <td style={{ padding: '8px', fontWeight: 600, color: '#6b8f71' }}>
