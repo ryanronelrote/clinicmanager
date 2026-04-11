@@ -53,6 +53,10 @@ export default function AddAppointment() {
     }
 
     const isTentative = form.status === 'tentative';
+    if (conflicts && conflicts.blocked) {
+      setError('This time overlaps a blocked period. Please choose a different time.');
+      return;
+    }
     if (!isTentative && conflicts && conflicts.count >= 3) {
       setError('All 3 slots are occupied at this time. Please choose a different time.');
       return;
@@ -78,12 +82,17 @@ export default function AddAppointment() {
       <button onClick={() => navigate('/calendar')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', padding: 0, fontSize: 14 }}>← Back to Calendar</button>
       <h2>Add Appointment</h2>
       {error && <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8 }}>{error}</p>}
-      {conflicts && conflicts.count > 0 && conflicts.count < 3 && (
+      {conflicts && conflicts.blocked && (
+        <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8, fontSize: 13 }}>
+          This time overlaps a blocked period. Please choose a different time.
+        </p>
+      )}
+      {conflicts && !conflicts.blocked && conflicts.count > 0 && conflicts.count < 3 && (
         <p style={{ color: '#7a5c2e', background: '#fdf3e3', padding: '8px', borderRadius: 8, fontSize: 13 }}>
           {conflicts.count} of 3 slots occupied at this time. You can still book.
         </p>
       )}
-      {conflicts && conflicts.count >= 3 && (
+      {conflicts && !conflicts.blocked && conflicts.count >= 3 && (
         <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8, fontSize: 13 }}>
           All 3 slots are occupied at this time. Please choose a different time.
         </p>
@@ -154,7 +163,7 @@ export default function AddAppointment() {
             <option value="tentative">Tentative (no emails, doesn't block slots)</option>
           </select>
         </label>
-        <button type="submit" disabled={form.status !== 'tentative' && conflicts && conflicts.count >= 3} style={{ padding: '9px 22px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Appointment</button>
+        <button type="submit" disabled={conflicts && (conflicts.blocked || (form.status !== 'tentative' && conflicts.count >= 3))} style={{ padding: '9px 22px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Appointment</button>
       </form>
     </div>
   );

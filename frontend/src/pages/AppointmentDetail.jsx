@@ -184,7 +184,7 @@ export default function AppointmentDetail() {
           ) : (
             <>
               <button onClick={cancelReschedule} style={outlineBtn('#888')}>Cancel</button>
-              <button onClick={confirmReschedule} disabled={rescheduling || (conflicts && conflicts.count >= 3)} style={solidBtn('#d6a45c')}>
+              <button onClick={confirmReschedule} disabled={rescheduling || (conflicts && (conflicts.blocked || conflicts.count >= 3))} style={solidBtn('#d6a45c')}>
                 {rescheduling ? 'Rescheduling…' : 'Confirm Reschedule'}
               </button>
             </>
@@ -207,12 +207,17 @@ export default function AppointmentDetail() {
       {rescheduleStatus === 'error' && (
         <p style={{ color: '#c97b7b', fontSize: 13, margin: '0 0 12px' }}>Failed to reschedule. Check server logs.</p>
       )}
-      {rescheduleMode && conflicts && conflicts.count > 0 && conflicts.count < 3 && (
+      {rescheduleMode && conflicts && conflicts.blocked && (
+        <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8, fontSize: 13, margin: '0 0 12px' }}>
+          This time overlaps a blocked period. Please choose a different time.
+        </p>
+      )}
+      {rescheduleMode && conflicts && !conflicts.blocked && conflicts.count > 0 && conflicts.count < 3 && (
         <p style={{ color: '#7a5c2e', background: '#fdf3e3', padding: '8px', borderRadius: 8, fontSize: 13, margin: '0 0 12px' }}>
           {conflicts.count} of 3 slots occupied at this time. You can still reschedule.
         </p>
       )}
-      {rescheduleMode && conflicts && conflicts.count >= 3 && (
+      {rescheduleMode && conflicts && !conflicts.blocked && conflicts.count >= 3 && (
         <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8, fontSize: 13, margin: '0 0 12px' }}>
           All 3 slots are occupied at this time. Please choose a different time.
         </p>

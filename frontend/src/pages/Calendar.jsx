@@ -94,12 +94,12 @@ function getColumns(appts) {
 
 // ── Status indicator colors ───────────────────────────────────
 const STATUS_DOT_COLOR = {
-  tentative:            '#fdf3e3',
-  confirmed:            'rgba(255,255,255,0.8)',
-  confirmed_by_client:  '#edf4ee',
-  done:                 '#f3eeea',
-  cancelled:            '#faeaea',
-  cancelled_by_client:  '#faeaea',
+  tentative:            '#d6a45c',   // amber
+  confirmed:            'rgba(255,255,255,0.85)',  // white
+  confirmed_by_client:  '#a8d9b0',   // bright mint
+  done:                 '#c8bdb7',   // warm taupe
+  cancelled:            '#e07070',   // red
+  cancelled_by_client:  '#e07070',   // red
 };
 
 // ── AppointmentCard ───────────────────────────────────────────

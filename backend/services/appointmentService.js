@@ -63,7 +63,21 @@ async function checkConflicts(date, startTime, durationMinutes, excludeId, txCli
 
   const { rows } = await db.query(query, params);
   const overlapping = _checkOverlaps(rows, startTime, durationMinutes, null);
-  return { count: overlapping.length, max: 3, conflicts: overlapping };
+
+  // Check blocked slots
+  const { rows: blocks } = await db.query(
+    `SELECT start_time, end_time FROM blocked_slots WHERE date = $1`,
+    [date]
+  );
+  const startMins = timeToMinutes(startTime);
+  const endMins = startMins + parseInt(durationMinutes);
+  const blocked = blocks.some(b => {
+    const bStart = timeToMinutes(b.start_time);
+    const bEnd = timeToMinutes(b.end_time);
+    return startMins < bEnd && endMins > bStart;
+  });
+
+  return { count: overlapping.length, max: 3, conflicts: overlapping, blocked };
 }
 
 /**
@@ -104,10 +118,14 @@ async function create({ client_id, date, start_time, duration_minutes, treatment
       [date]
     );
 
-    // Conflict checks only apply to confirmed bookings — tentative never blocks slots
+    // Blocked slot check applies to all appointments (including tentative)
+    const { count, blocked } = await checkConflicts(date, start_time, duration_minutes, null, client);
+    if (blocked) {
+      throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
+    }
+
+    // Slot capacity and therapist checks only apply to confirmed bookings
     if (apptStatus !== 'tentative') {
-      // Global capacity check (max 3 concurrent confirmed)
-      const { count } = await checkConflicts(date, start_time, duration_minutes, null, client);
       if (count >= 3) {
         throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
       }
@@ -240,7 +258,8 @@ async function update(id, updates) {
       );
 
       if (timeChanged) {
-        const { count } = await checkConflicts(newDate, newStart, newDuration, parsedId, client);
+        const { count, blocked } = await checkConflicts(newDate, newStart, newDuration, parsedId, client);
+        if (blocked) throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
         if (count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
       }
 
@@ -301,8 +320,9 @@ async function reschedule(id, { date, start_time, duration_minutes }) {
       [date, parsedId]
     );
 
-    // Global capacity check
-    const { count } = await checkConflicts(date, start_time, duration_minutes, parsedId, client);
+    // Global capacity + blocked slot check
+    const { count, blocked } = await checkConflicts(date, start_time, duration_minutes, parsedId, client);
+    if (blocked) throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
     if (count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
 
     // Per-therapist check (use existing therapist from the appointment)
