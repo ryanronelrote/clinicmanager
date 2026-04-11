@@ -28,12 +28,30 @@ git push origin main
 ### Backend
 ```
 backend/
-  server.js          # Express app; mounts all routes after requireAuth middleware
-  migrations.js      # Idempotent migration runner; runs on startup; tracks in schema_migrations
-  database.js        # pg Pool export
-  reminderJob.js     # node-cron hourly job for 24h / same-day / follow-up reminder emails
-  routes/            # Thin controllers — validate inputs, call service, return JSON
-  services/          # All SQL and business logic
+  server.js                      # Express app; mounts all routes after requireAuth middleware
+  migrations.js                  # Idempotent migration runner; runs on startup; tracks in schema_migrations
+  database.js                    # pg Pool export
+  reminderJob.js                 # node-cron hourly job for 24h / same-day / follow-up reminder emails
+  emailService.js                # Nodemailer SMTP helpers
+  emailTemplates.js              # HTML email template builders
+  routes/
+    appointments.js
+    auth.js
+    blockedSlots.js
+    clients.js
+    dashboard.js                 # KPI / sales dashboard endpoints
+    inventory.js
+    invoices.js                  # Invoice CRUD + payment recording
+    services.js
+    settings.js
+    staff.js                     # Staff (non-therapist) management
+    therapistSchedule.js
+  services/                      # All SQL and business logic
+    appointmentService.js
+    invoiceService.js
+    kpiDashboardService.js
+    paymentService.js
+    therapistScheduleService.js
   middleware/
     validate.js      # validate(schema) — body/query/params; rules: required, type, min/max, pattern
     errorHandler.js  # asyncHandler(fn) + global handler mapping PG codes 23503/23514/23505
@@ -45,8 +63,19 @@ frontend/src/
   main.jsx           # BrowserRouter + all Route definitions
   App.jsx            # Fixed sidebar nav + <Outlet />
   pages/             # One file per route
+    Calendar.jsx, AddAppointment.jsx, AppointmentDetail.jsx, BlockTime.jsx
+    ClientList.jsx, AddClient.jsx, ClientDetail.jsx, ImportClients.jsx
+    InvoiceList.jsx, CreateInvoice.jsx, InvoiceDetail.jsx
+    Dashboard.jsx                # Sales KPI dashboard
+    InventoryList.jsx, AddInventoryItem.jsx, InventoryDetail.jsx
+    Home.jsx, Login.jsx, Settings.jsx, TherapistSchedule.jsx
   services/          # API modules (one per resource); all use authFetch
-  hooks/             # useAsync, useClients, useAppointments, useConflictCheck, useServices…
+    appointmentService.js, blockedSlotService.js, clientService.js
+    dashboardService.js, inventoryService.js, invoiceService.js
+    serviceService.js, settingsService.js, staffService.js
+    therapistScheduleService.js
+  hooks/             # useAsync, useClients, useAppointments, useConflictCheck, useServices
+                     # useClient, useInventory, useInventoryItem, useSettings
   context/           # AuthContext, SettingsContext
   utils/
     styleUtils.jsx   # MUST be .jsx — contains JSX (VIP badges). Exports outlineBtn, solidBtn, VIP_BADGE
@@ -65,7 +94,7 @@ frontend/src/
 
 Migrations run automatically on server start via `runMigrations(pool)` in `migrations.js`. Add new entries to the `migrations` array — they are skipped if already recorded in `schema_migrations`.
 
-Current range: 001–010 (updated_at trigger, FK constraints, status CHECK, indexes, therapists + therapist_schedules tables).
+Current range: 001–018 (updated_at trigger, FK constraints, status CHECK, indexes, therapists + therapist_schedules, invoices + invoice_items + payments, staff, invoice/payment date columns).
 
 ### Appointment status values
 `tentative | confirmed | confirmed_by_client | done | cancelled | cancelled_by_client`
@@ -82,6 +111,21 @@ Two checks run inside a transaction with `SELECT ... FOR UPDATE` row-locking:
 
 Both checks are **skipped entirely** when `apptStatus === 'tentative'`.
 
+## Invoices / Billing Module
+
+- **DB tables**: `invoices`, `invoice_items`, `payments`, `staff` (all created via migrations 011–018).
+- `invoices` has `invoice_date DATE` (Manila local date, not UTC timestamp) and `created_by TEXT`.
+- `payments` has `payment_date DATE` and `received_by TEXT`.
+- `invoice_items` stores line items with `quantity`, `unit_price`, `subtotal`.
+- Backend: `routes/invoices.js` → `services/invoiceService.js`; payments are sub-resources (`POST /invoices/:id/payments`).
+- KPI dashboard: `routes/dashboard.js` → `services/kpiDashboardService.js`; frontend at `/dashboard`.
+
+## Staff Module
+
+- **DB table**: `staff(id, name, role, created_at)` — distinct from `therapists` table.
+- Route: `routes/staff.js`; frontend service: `staffService.js`.
+- Used for populating `created_by` / `received_by` dropdowns on invoice/payment forms.
+
 ## Therapist / Shift Schedule Module
 
 - **DB**: `therapists(id, name)` + `therapist_schedules(therapist_id FK, date TEXT, shift_type TEXT, UNIQUE(therapist_id, date))`.
@@ -91,14 +135,17 @@ Both checks are **skipped entirely** when `apptStatus === 'tentative'`.
 
 ## Sidebar Navigation (App.jsx)
 
-| Section | Nav link | Route |
-|---|---|---|
-| Schedule | Client Schedule | `/calendar` |
-| Schedule | Shift Schedule | `/therapist-schedule` |
-| Clients | Clients | `/clients` |
-| Clients | Import CSV | `/import-clients` |
-| Items | Stock | `/inventory` |
-| System | Settings | `/settings` |
+| Section | Nav link | Route | Style |
+|---|---|---|---|
+| *(top)* | Home | `/` | navLink |
+| Schedule | Client Schedule | `/calendar` | navLink |
+| Schedule | Shift Schedule | `/therapist-schedule` | navLink |
+| Clients | Clients | `/clients` | navLink |
+| Clients | Import CSV | `/import-clients` | subNavLink (indented) |
+| Billing | Invoices | `/invoices` | navLink |
+| Billing | Sales KPIs | `/dashboard` | subNavLink (indented) |
+| Items | Stock | `/inventory` | navLink |
+| System | Settings | `/settings` | navLink |
 
 "+ Add Client" is a button on `ClientList.jsx`, **not** in the sidebar.
 
