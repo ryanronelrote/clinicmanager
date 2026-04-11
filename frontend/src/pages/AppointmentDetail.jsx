@@ -166,6 +166,12 @@ export default function AppointmentDetail() {
               >
                 Create Invoice
               </button>
+              <button
+                onClick={() => navigate(`/appointments/add?client_id=${appt.client_id}`)}
+                style={solidBtn('var(--primary)')}
+              >
+                Schedule Next
+              </button>
               <button onClick={enterReschedule} style={outlineBtn('#d6a45c')}>Reschedule</button>
               <button onClick={enterEdit} style={outlineBtn('var(--primary)')}>Edit</button>
               <button onClick={handleDelete} style={outlineBtn('#c97b7b')}>Delete</button>

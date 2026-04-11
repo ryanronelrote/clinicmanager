@@ -92,6 +92,16 @@ function getColumns(appts) {
   return { items: cols, maxCols: colEnds.length || 1 };
 }
 
+// ── Status indicator colors ───────────────────────────────────
+const STATUS_DOT_COLOR = {
+  tentative:            '#fdf3e3',
+  confirmed:            'rgba(255,255,255,0.8)',
+  confirmed_by_client:  '#edf4ee',
+  done:                 '#f3eeea',
+  cancelled:            '#faeaea',
+  cancelled_by_client:  '#faeaea',
+};
+
 // ── AppointmentCard ───────────────────────────────────────────
 function AppointmentCard({ appt, top, height, left, width, navigate }) {
   const [hovered, setHovered] = useState(false);
@@ -134,7 +144,12 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
           : '0 1px 2px rgba(0,0,0,0.06)',
       }}
     >
-      <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{
+        position: 'absolute', top: 5, right: 5,
+        width: 8, height: 8, borderRadius: 2,
+        background: STATUS_DOT_COLOR[appt.status] || 'rgba(255,255,255,0.8)',
+      }} />
+      <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>
         {isTentative ? '~ ' : ''}{appt.first_name} {appt.last_name}
       </div>
       {showDuration && (
