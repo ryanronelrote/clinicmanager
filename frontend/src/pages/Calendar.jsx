@@ -97,7 +97,7 @@ const STATUS_DOT_COLOR = {
   tentative:            '#d6a45c',   // amber
   confirmed:            'rgba(255,255,255,0.85)',  // white
   confirmed_by_client:  '#a8d9b0',   // bright mint
-  done:                 '#c8bdb7',   // warm taupe
+  done:                 '#8B5E3C',   // brown
   cancelled:            '#e07070',   // red
   cancelled_by_client:  '#e07070',   // red
 };
