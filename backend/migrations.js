@@ -175,6 +175,14 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_invoices_created_at ON invoices(created_at);
     `,
   },
+  {
+    name: '015_invoices_created_by',
+    sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS created_by TEXT NOT NULL DEFAULT '';`,
+  },
+  {
+    name: '016_payments_received_by',
+    sql: `ALTER TABLE payments ADD COLUMN IF NOT EXISTS received_by TEXT NOT NULL DEFAULT '';`,
+  },
 ];
 
 async function runMigrations(pool) {

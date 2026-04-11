@@ -30,6 +30,7 @@ export default function CreateInvoice() {
     }
     return [{ name: '', quantity: '1', unit_price: '' }];
   });
+  const [createdBy, setCreatedBy] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -70,6 +71,10 @@ export default function CreateInvoice() {
       setError('Please select a patient');
       return;
     }
+    if (!createdBy.trim()) {
+      setError('Please enter who is creating this invoice');
+      return;
+    }
 
     const validItems = items.filter(i => i.name.trim());
     if (validItems.length === 0) {
@@ -98,6 +103,7 @@ export default function CreateInvoice() {
           quantity: parseFloat(i.quantity),
           unit_price: parseFloat(i.unit_price) || 0,
         })),
+        created_by: createdBy.trim(),
       });
       navigate(`/invoices/${invoice.id}`);
     } catch (err) {
@@ -232,10 +238,23 @@ export default function CreateInvoice() {
           </div>
         </div>
 
+        {/* Created by */}
+        <label style={labelStyle}>
+          <strong>Created by *</strong>
+          <input
+            type="text"
+            value={createdBy}
+            onChange={e => setCreatedBy(e.target.value)}
+            placeholder="Staff name"
+            style={fieldStyle}
+            required
+          />
+        </label>
+
         {/* Submit */}
         <button
           type="submit"
-          disabled={submitting || !patientId}
+          disabled={submitting || !patientId || !createdBy.trim()}
           style={{
             ...solidBtn('var(--primary)'),
             padding: '10px 28px', fontSize: 14, opacity: submitting ? 0.6 : 1,

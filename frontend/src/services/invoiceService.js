@@ -27,6 +27,6 @@ export const invoiceService = {
   create:      (data) => request('/invoices', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data) }),
   updateItems: (id, items) => request(`/invoices/${id}/items`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ items }) }),
   addPayment:  (id, data) => request(`/invoices/${id}/payments`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data) }),
-  markPaid:    (id) => request(`/invoices/${id}/mark-paid`, { method: 'PATCH' }),
+  markPaid:    (id, receivedBy) => request(`/invoices/${id}/mark-paid`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ received_by: receivedBy }) }),
   delete:      (id) => request(`/invoices/${id}`, { method: 'DELETE' }),
 };

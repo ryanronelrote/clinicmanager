@@ -8,7 +8,8 @@ const paymentService = require('../services/paymentService');
 
 const createSchema = {
   body: {
-    patient_id: { required: true, type: 'integer', min: 1 },
+    patient_id: { required: true,  type: 'integer', min: 1 },
+    created_by: { required: true,  type: 'string',  maxLength: 100 },
   },
 };
 
@@ -16,6 +17,7 @@ const paymentSchema = {
   body: {
     amount:         { required: true, type: 'number', min: 0.01 },
     payment_method: { required: true, type: 'string' },
+    received_by:    { required: true, type: 'string', maxLength: 100 },
   },
 };
 
@@ -36,11 +38,12 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // Create invoice
 router.post('/', validate(createSchema), asyncHandler(async (req, res) => {
-  const { patient_id, appointment_id, items } = req.body;
+  const { patient_id, appointment_id, items, created_by } = req.body;
   const invoice = await invoiceService.createInvoice({
     patient_id: parseInt(patient_id),
     appointment_id: appointment_id ? parseInt(appointment_id) : null,
     items: items || [],
+    created_by,
   });
   res.status(201).json(invoice);
 }));
@@ -54,18 +57,23 @@ router.patch('/:id/items', asyncHandler(async (req, res) => {
 
 // Add payment to invoice
 router.post('/:id/payments', validate(paymentSchema), asyncHandler(async (req, res) => {
-  const { amount, payment_method } = req.body;
+  const { amount, payment_method, received_by } = req.body;
   const invoice = await paymentService.addPayment({
     invoice_id: parseInt(req.params.id),
     amount: parseFloat(amount),
     payment_method,
+    received_by,
   });
   res.status(201).json(invoice);
 }));
 
 // Mark as paid shortcut
 router.patch('/:id/mark-paid', asyncHandler(async (req, res) => {
-  const invoice = await paymentService.markAsPaid(req.params.id);
+  const { received_by } = req.body;
+  if (!received_by || !received_by.trim()) {
+    return res.status(400).json({ error: 'received_by is required' });
+  }
+  const invoice = await paymentService.markAsPaid(req.params.id, received_by);
   res.json(invoice);
 }));
 

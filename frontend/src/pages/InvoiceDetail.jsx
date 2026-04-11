@@ -33,11 +33,14 @@ export default function InvoiceDetail() {
   // Payment form
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
+  const [payReceivedBy, setPayReceivedBy] = useState('');
   const [payError, setPayError] = useState('');
   const [paying, setPaying] = useState(false);
 
   // Mark as paid
   const [marking, setMarking] = useState(false);
+  const [markPaidMode, setMarkPaidMode] = useState(false);
+  const [markPaidReceivedBy, setMarkPaidReceivedBy] = useState('');
 
   // Edit items
   const [editMode, setEditMode] = useState(false);
@@ -52,11 +55,16 @@ export default function InvoiceDetail() {
       setPayError('Enter a valid amount');
       return;
     }
+    if (!payReceivedBy.trim()) {
+      setPayError('Enter who received this payment');
+      return;
+    }
     setPaying(true);
     try {
-      const updated = await invoiceService.addPayment(id, { amount, payment_method: payMethod });
+      const updated = await invoiceService.addPayment(id, { amount, payment_method: payMethod, received_by: payReceivedBy.trim() });
       setInvoice(updated);
       setPayAmount('');
+      setPayReceivedBy('');
     } catch (err) {
       setPayError(err.message || 'Payment failed');
     } finally {
@@ -67,8 +75,10 @@ export default function InvoiceDetail() {
   async function handleMarkPaid() {
     setMarking(true);
     try {
-      const updated = await invoiceService.markPaid(id);
+      const updated = await invoiceService.markPaid(id, markPaidReceivedBy.trim());
       setInvoice(updated);
+      setMarkPaidMode(false);
+      setMarkPaidReceivedBy('');
     } catch {
       // stay on page
     } finally {
@@ -177,9 +187,9 @@ export default function InvoiceDetail() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h2 style={{ margin: 0 }}>INV-{String(invoice.id).padStart(4, '0')}</h2>
         <div style={{ display: 'flex', gap: 8 }}>
-          {invoice.status !== 'paid' && !editMode && (
-            <button onClick={handleMarkPaid} disabled={marking} style={solidBtn('#6b8f71')}>
-              {marking ? 'Processing…' : 'Mark as Paid'}
+          {invoice.status !== 'paid' && !editMode && !markPaidMode && (
+            <button onClick={() => setMarkPaidMode(true)} style={solidBtn('#6b8f71')}>
+              Mark as Paid
             </button>
           )}
           <button onClick={handlePrint} style={outlineBtn('var(--primary)')}>Print</button>
@@ -189,6 +199,33 @@ export default function InvoiceDetail() {
           <button onClick={handleDelete} style={outlineBtn('#c97b7b')}>Delete</button>
         </div>
       </div>
+
+      {/* Mark as Paid inline confirmation */}
+      {markPaidMode && (
+        <div style={{ marginBottom: 16, padding: '12px 16px', background: '#edf4ee', border: '1px solid #6b8f71', borderRadius: 8, display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <label style={{ flex: '1 1 180px' }}>
+            <span style={{ fontSize: 12, color: '#3d5c41', fontWeight: 600, display: 'block', marginBottom: 4 }}>Received by *</span>
+            <input
+              autoFocus
+              type="text"
+              value={markPaidReceivedBy}
+              onChange={e => setMarkPaidReceivedBy(e.target.value)}
+              placeholder="Staff name"
+              style={inputStyle}
+            />
+          </label>
+          <button
+            onClick={handleMarkPaid}
+            disabled={marking || !markPaidReceivedBy.trim()}
+            style={solidBtn('#6b8f71')}
+          >
+            {marking ? 'Processing…' : 'Confirm Payment'}
+          </button>
+          <button onClick={() => { setMarkPaidMode(false); setMarkPaidReceivedBy(''); }} style={outlineBtn('#7a6a5f')}>
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Printable section */}
       <div ref={printRef}>
@@ -212,6 +249,10 @@ export default function InvoiceDetail() {
           <div style={rowStyle}>
             <span style={labelStyle}>Created</span>
             <span>{new Date(invoice.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</span>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Created by</span>
+            <span>{invoice.created_by || '—'}</span>
           </div>
         </div>
 
@@ -328,6 +369,17 @@ export default function InvoiceDetail() {
                 <option value="card">Card</option>
               </select>
             </label>
+            <label style={{ flex: '1 1 120px' }}>
+              <span style={{ fontSize: 12, color: '#7a6a5f' }}>Received by *</span>
+              <input
+                type="text"
+                value={payReceivedBy}
+                onChange={e => setPayReceivedBy(e.target.value)}
+                placeholder="Staff name"
+                style={{ ...inputStyle, marginTop: 4 }}
+                required
+              />
+            </label>
             <button type="submit" disabled={paying} style={{ ...solidBtn('var(--primary)'), padding: '8px 20px', marginBottom: 0 }}>
               {paying ? 'Processing…' : 'Record Payment'}
             </button>
@@ -345,6 +397,7 @@ export default function InvoiceDetail() {
                 <th style={{ padding: '8px' }}>Date</th>
                 <th style={{ padding: '8px' }}>Amount</th>
                 <th style={{ padding: '8px' }}>Method</th>
+                <th style={{ padding: '8px' }}>Received by</th>
               </tr>
             </thead>
             <tbody>
@@ -365,6 +418,9 @@ export default function InvoiceDetail() {
                     }}>
                       {p.payment_method}
                     </span>
+                  </td>
+                  <td style={{ padding: '8px', fontSize: 13, color: '#7a6a5f' }}>
+                    {p.received_by || '—'}
                   </td>
                 </tr>
               ))}

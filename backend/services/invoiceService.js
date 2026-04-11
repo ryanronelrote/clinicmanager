@@ -25,7 +25,8 @@ function computeStatus(totalAmount, amountPaid) {
   return 'paid';
 }
 
-async function createInvoice({ patient_id, appointment_id, items }) {
+async function createInvoice({ patient_id, appointment_id, items, created_by }) {
+  if (!created_by || !created_by.trim()) throw svcError(400, 'created_by is required');
   if (!items || items.length === 0) {
     throw svcError(400, 'Invoice must have at least 1 item');
   }
@@ -64,9 +65,9 @@ async function createInvoice({ patient_id, appointment_id, items }) {
 
     // Insert invoice
     const { rows: invoiceRows } = await client.query(
-      `INSERT INTO invoices (appointment_id, patient_id, total_amount, amount_paid, status)
-       VALUES ($1, $2, $3, 0, 'unpaid') RETURNING id`,
-      [appointment_id ? parseInt(appointment_id) : null, parseInt(patient_id), totalAmount]
+      `INSERT INTO invoices (appointment_id, patient_id, total_amount, amount_paid, status, created_by)
+       VALUES ($1, $2, $3, 0, 'unpaid', $4) RETURNING id`,
+      [appointment_id ? parseInt(appointment_id) : null, parseInt(patient_id), totalAmount, created_by.trim()]
     );
     const invoiceId = invoiceRows[0].id;
 

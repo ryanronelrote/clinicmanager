@@ -9,7 +9,7 @@ function svcError(statusCode, message) {
 
 const ALLOWED_METHODS = ['cash', 'gcash', 'card'];
 
-async function addPayment({ invoice_id, amount, payment_method }) {
+async function addPayment({ invoice_id, amount, payment_method, received_by }) {
   const parsedInvoiceId = parseInt(invoice_id);
   const parsedAmount = parseFloat(amount);
 
@@ -19,6 +19,7 @@ async function addPayment({ invoice_id, amount, payment_method }) {
   if (!ALLOWED_METHODS.includes(payment_method)) {
     throw svcError(400, `Invalid payment method. Allowed: ${ALLOWED_METHODS.join(', ')}`);
   }
+  if (!received_by || !received_by.trim()) throw svcError(400, 'received_by is required');
 
   const client = await pool.connect();
   try {
@@ -47,8 +48,8 @@ async function addPayment({ invoice_id, amount, payment_method }) {
 
     // Insert payment
     await client.query(
-      'INSERT INTO payments (invoice_id, amount, payment_method) VALUES ($1, $2, $3)',
-      [parsedInvoiceId, roundedAmount, payment_method]
+      'INSERT INTO payments (invoice_id, amount, payment_method, received_by) VALUES ($1, $2, $3, $4)',
+      [parsedInvoiceId, roundedAmount, payment_method, received_by.trim()]
     );
 
     // Update invoice
@@ -72,7 +73,7 @@ async function addPayment({ invoice_id, amount, payment_method }) {
   }
 }
 
-async function markAsPaid(invoiceId) {
+async function markAsPaid(invoiceId, received_by) {
   const parsedId = parseInt(invoiceId);
   const { rows: invRows } = await pool.query('SELECT * FROM invoices WHERE id = $1', [parsedId]);
   if (!invRows.length) throw svcError(404, 'Invoice not found');
@@ -90,8 +91,8 @@ async function markAsPaid(invoiceId) {
 
     // Insert a payment for the remaining balance
     await client.query(
-      'INSERT INTO payments (invoice_id, amount, payment_method) VALUES ($1, $2, $3)',
-      [parsedId, remaining, 'cash']
+      'INSERT INTO payments (invoice_id, amount, payment_method, received_by) VALUES ($1, $2, $3, $4)',
+      [parsedId, remaining, 'cash', (received_by || '').trim()]
     );
 
     // Mark as paid
