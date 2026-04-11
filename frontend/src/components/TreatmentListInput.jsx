@@ -75,7 +75,7 @@ export default function TreatmentListInput({ value, onChange, inputStyle, placeh
             onClick={() => remove(i)}
             style={{
               padding: '0 6px', background: 'none', border: 'none', cursor: 'pointer',
-              color: '#ccc', fontSize: 18, lineHeight: 1, flexShrink: 0, fontWeight: 'bold',
+              color: '#c8bdb7', fontSize: 18, lineHeight: 1, flexShrink: 0, fontWeight: 'bold',
             }}
             title="Remove"
           >×</button>

@@ -13,17 +13,17 @@ export default function InventoryList() {
         <button onClick={() => navigate('/inventory/add')} style={solidBtn('var(--primary)')}>+ Add Item</button>
       </div>
 
-      {loading && <p style={{ color: '#888' }}>Loading…</p>}
+      {loading && <p style={{ color: '#b8a99e' }}>Loading…</p>}
 
       {!loading && (items || []).length === 0 && (
-        <div style={{ padding: 32, textAlign: 'center', color: '#888', border: '1px dashed #ddd', borderRadius: 8 }}>
+        <div style={{ padding: 32, textAlign: 'center', color: '#7a6a5f', border: '1px dashed #e8dfd6', borderRadius: 8 }}>
           No inventory items yet.
         </div>
       )}
 
       {!loading && (items || []).length > 0 && (
-        <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 80px', background: '#fafafa', borderBottom: '1px solid #eee', padding: '8px 16px', fontSize: 12, fontWeight: '700', color: '#888', textTransform: 'uppercase' }}>
+        <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 80px', background: '#fdfaf6', borderBottom: '1px solid #e8dfd6', padding: '8px 16px', fontSize: 12, fontWeight: '700', color: '#b8a99e', textTransform: 'uppercase' }}>
             <span>Item</span>
             <span style={{ textAlign: 'right' }}>Stock</span>
             <span style={{ textAlign: 'right' }}>Unit</span>
@@ -37,20 +37,21 @@ export default function InventoryList() {
                 style={{
                   display: 'grid', gridTemplateColumns: '1fr 80px 80px 80px',
                   alignItems: 'center', padding: '10px 16px',
-                  borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
-                  background: low ? '#fff8f0' : '#fff',
+                  borderTop: i > 0 ? '1px solid #e8dfd6' : 'none',
+                  background: low ? '#fdf3e3' : '#fff',
                   cursor: 'pointer',
+                  transition: 'background 0.15s ease',
                 }}>
                 <div>
                   <div style={{ fontWeight: '600', fontSize: 14, color: 'var(--primary)' }}>{item.name}</div>
-                  {item.category && <div style={{ fontSize: 12, color: '#aaa' }}>{item.category}</div>}
+                  {item.category && <div style={{ fontSize: 12, color: '#b8a99e' }}>{item.category}</div>}
                 </div>
-                <div style={{ textAlign: 'right', fontWeight: '700', fontSize: 15, color: low ? '#e07b54' : '#222' }}>
+                <div style={{ textAlign: 'right', fontWeight: '700', fontSize: 15, color: low ? '#c97b7b' : '#3e2f25' }}>
                   {item.stock_quantity}
-                  {low && <span style={{ fontSize: 10, marginLeft: 4, color: '#e07b54' }}>▼LOW</span>}
+                  {low && <span style={{ fontSize: 10, marginLeft: 4, color: '#c97b7b' }}>▼LOW</span>}
                 </div>
-                <div style={{ textAlign: 'right', fontSize: 13, color: '#888' }}>{item.unit || '—'}</div>
-                <div style={{ textAlign: 'right', fontSize: 13, color: '#bbb' }}>{item.low_stock_threshold || '—'}</div>
+                <div style={{ textAlign: 'right', fontSize: 13, color: '#7a6a5f' }}>{item.unit || '—'}</div>
+                <div style={{ textAlign: 'right', fontSize: 13, color: '#c8bdb7' }}>{item.low_stock_threshold || '—'}</div>
               </div>
             );
           })}

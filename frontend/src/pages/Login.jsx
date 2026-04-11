@@ -28,15 +28,16 @@ export default function Login() {
       minHeight: '100vh', background: 'var(--page-bg)', fontFamily: 'sans-serif',
     }}>
       <div style={{
-        background: '#fff', borderRadius: 12, padding: '40px 36px',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.1)', width: '100%', maxWidth: 360,
+        background: '#fdfaf6', borderRadius: 12, padding: '40px 36px',
+        boxShadow: '0 2px 20px rgba(62,47,37,0.08)', width: '100%', maxWidth: 360,
+        border: '1px solid #e8dfd6',
       }}>
-        <h2 style={{ margin: '0 0 6px', fontSize: 22 }}>Clinic Manager</h2>
-        <p style={{ margin: '0 0 28px', color: '#888', fontSize: 14 }}>Enter your password to continue</p>
+        <h2 style={{ margin: '0 0 6px', fontSize: 22, color: '#3e2f25' }}>Clinic Manager</h2>
+        <p style={{ margin: '0 0 28px', color: '#7a6a5f', fontSize: 14 }}>Enter your password to continue</p>
 
         <form onSubmit={handleSubmit}>
           <label style={{ display: 'block', marginBottom: 16 }}>
-            <span style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Password</span>
+            <span style={{ fontSize: 12, color: '#7a6a5f', display: 'block', marginBottom: 4 }}>Password</span>
             <input
               autoFocus
               type="password"
@@ -44,17 +45,18 @@ export default function Login() {
               onChange={e => setPassword(e.target.value)}
               style={{
                 width: '100%', padding: '9px 12px', fontSize: 15,
-                border: '1px solid #ccc', borderRadius: 6, boxSizing: 'border-box',
+                border: '1px solid #e8dfd6', borderRadius: 8, boxSizing: 'border-box',
+                outline: 'none',
               }}
             />
           </label>
-          {error && <p style={{ color: '#cc3333', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
+          {error && <p style={{ color: '#c97b7b', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
           <button
             type="submit"
             disabled={loading || !password}
             style={{
               width: '100%', padding: '10px', fontSize: 15, fontWeight: '600',
-              background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 6,
+              background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8,
               cursor: loading || !password ? 'not-allowed' : 'pointer',
               opacity: loading || !password ? 0.7 : 1,
             }}

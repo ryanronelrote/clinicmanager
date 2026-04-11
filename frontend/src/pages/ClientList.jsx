@@ -22,7 +22,7 @@ export default function ClientList() {
           {vipOnly && (
             <button
               onClick={() => navigate('/clients')}
-              style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #ccc', borderRadius: 4, background: '#fff', cursor: 'pointer', color: '#555' }}
+              style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #e8dfd6', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#7a6a5f', transition: 'background 0.15s ease' }}
             >
               ← All
             </button>
@@ -32,8 +32,9 @@ export default function ClientList() {
           onClick={() => navigate('/add')}
           style={{
             padding: '7px 18px', fontSize: 13, fontWeight: 600,
-            background: 'var(--primary)', color: '#fff',
-            border: 'none', borderRadius: 6, cursor: 'pointer',
+            background: 'var(--primary)', color: '#3e2f25',
+            border: 'none', borderRadius: 8, cursor: 'pointer',
+            transition: 'opacity 0.15s ease',
           }}
         >
           + Add Client
@@ -41,13 +42,13 @@ export default function ClientList() {
       </div>
 
       {displayed.length === 0 ? (
-        <div style={{ padding: 32, textAlign: 'center', color: '#888', border: '1px dashed #ddd', borderRadius: 8 }}>
+        <div style={{ padding: 32, textAlign: 'center', color: '#7a6a5f', border: '1px dashed #e8dfd6', borderRadius: 8 }}>
           {vipOnly ? 'No VIP clients yet.' : 'No clients yet.'}
         </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '2px solid #ccc' }}>
+            <tr style={{ textAlign: 'left', borderBottom: '2px solid #e8dfd6' }}>
               <th style={{ padding: '8px' }}>Name</th>
               <th style={{ padding: '8px' }}>Phone</th>
               <th style={{ padding: '8px' }}>Email</th>
@@ -59,7 +60,7 @@ export default function ClientList() {
               <tr
                 key={client.id}
                 onClick={() => navigate(`/clients/${client.id}`)}
-                style={{ borderBottom: '1px solid #eee', cursor: 'pointer' }}
+                style={{ borderBottom: '1px solid #e8dfd6', cursor: 'pointer', transition: 'background 0.15s ease' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--hover-bg)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '')}
               >

@@ -127,13 +127,13 @@ export default function AppointmentDetail() {
   if (!appt) return <p>Appointment not found. <button onClick={() => navigate('/calendar')}>Back to Calendar</button></p>;
 
   const isAnyMode = editMode || rescheduleMode;
-  const rowStyle = { borderBottom: '1px solid #eee', padding: '10px 0', display: 'flex', gap: 16, alignItems: 'flex-start' };
-  const labelStyle = { fontWeight: 'bold', width: 130, flexShrink: 0, paddingTop: isAnyMode ? 6 : 0 };
-  const inputStyle = { padding: '6px 8px', border: '1px solid #ccc', borderRadius: 4, fontSize: 14, width: '100%', boxSizing: 'border-box' };
+  const rowStyle = { borderBottom: '1px solid #e8dfd6', padding: '10px 0', display: 'flex', gap: 16, alignItems: 'flex-start' };
+  const labelStyle = { fontWeight: 'bold', width: 130, flexShrink: 0, paddingTop: isAnyMode ? 6 : 0, color: '#7a6a5f' };
+  const inputStyle = { padding: '6px 8px', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 14, width: '100%', boxSizing: 'border-box' };
 
   return (
     <div style={{ maxWidth: 600 }}>
-      <button onClick={() => navigate('/calendar')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#555', padding: 0 }}>
+      <button onClick={() => navigate('/calendar')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', padding: 0, fontSize: 14 }}>
         ← Back to Calendar
       </button>
 
@@ -147,7 +147,7 @@ export default function AppointmentDetail() {
                 <button
                   onClick={handleConfirmTentative}
                   disabled={confirming}
-                  style={solidBtn('#d97706')}
+                  style={solidBtn('#d6a45c')}
                   title="Confirm this tentative appointment — sends confirmation email"
                 >
                   {confirming ? 'Confirming…' : 'Confirm Appointment'}
@@ -156,29 +156,29 @@ export default function AppointmentDetail() {
               <button
                 onClick={sendReminder}
                 disabled={reminderStatus === 'sending'}
-                style={outlineBtn('#0f9d58')}
+                style={outlineBtn('#6b8f71')}
               >
                 {reminderStatus === 'sending' ? 'Sending…' : 'Send Initial Reminder'}
               </button>
               <button
                 onClick={() => navigate(`/invoices/create?patient_id=${appt.client_id}&appointment_id=${id}&treatments=${encodeURIComponent(appt.treatments || '')}`)}
-                style={outlineBtn('#7c3aed')}
+                style={outlineBtn('#7a6a5f')}
               >
                 Create Invoice
               </button>
-              <button onClick={enterReschedule} style={outlineBtn('#e07b54')}>Reschedule</button>
+              <button onClick={enterReschedule} style={outlineBtn('#d6a45c')}>Reschedule</button>
               <button onClick={enterEdit} style={outlineBtn('var(--primary)')}>Edit</button>
-              <button onClick={handleDelete} style={outlineBtn('#cc3333')}>Delete</button>
+              <button onClick={handleDelete} style={outlineBtn('#c97b7b')}>Delete</button>
             </>
           ) : editMode ? (
             <>
-              <button onClick={cancelEdit} style={outlineBtn('#888')}>Cancel</button>
+              <button onClick={cancelEdit} style={outlineBtn('#7a6a5f')}>Cancel</button>
               <button onClick={saveEdit} disabled={saving} style={solidBtn('var(--primary)')}>{saving ? 'Saving…' : 'Save'}</button>
             </>
           ) : (
             <>
               <button onClick={cancelReschedule} style={outlineBtn('#888')}>Cancel</button>
-              <button onClick={confirmReschedule} disabled={rescheduling || (conflicts && conflicts.count >= 3)} style={solidBtn('#e07b54')}>
+              <button onClick={confirmReschedule} disabled={rescheduling || (conflicts && conflicts.count >= 3)} style={solidBtn('#d6a45c')}>
                 {rescheduling ? 'Rescheduling…' : 'Confirm Reschedule'}
               </button>
             </>
@@ -187,27 +187,27 @@ export default function AppointmentDetail() {
       </div>
 
       {reminderStatus === 'sent' && (
-        <p style={{ color: '#0f9d58', fontSize: 13, margin: '0 0 12px' }}>Reminder email sent successfully.</p>
+        <p style={{ color: '#6b8f71', fontSize: 13, margin: '0 0 12px' }}>Reminder email sent successfully.</p>
       )}
       {reminderStatus === 'no-email' && (
-        <p style={{ color: '#e07b54', fontSize: 13, margin: '0 0 12px' }}>This client has no email address on file.</p>
+        <p style={{ color: '#d6a45c', fontSize: 13, margin: '0 0 12px' }}>This client has no email address on file.</p>
       )}
       {reminderStatus === 'error' && (
-        <p style={{ color: '#cc3333', fontSize: 13, margin: '0 0 12px' }}>Failed to send email. Check server logs.</p>
+        <p style={{ color: '#c97b7b', fontSize: 13, margin: '0 0 12px' }}>Failed to send email. Check server logs.</p>
       )}
       {rescheduleStatus === 'success' && (
-        <p style={{ color: '#0f9d58', fontSize: 13, margin: '0 0 12px' }}>Appointment rescheduled. Notification email sent.</p>
+        <p style={{ color: '#6b8f71', fontSize: 13, margin: '0 0 12px' }}>Appointment rescheduled. Notification email sent.</p>
       )}
       {rescheduleStatus === 'error' && (
-        <p style={{ color: '#cc3333', fontSize: 13, margin: '0 0 12px' }}>Failed to reschedule. Check server logs.</p>
+        <p style={{ color: '#c97b7b', fontSize: 13, margin: '0 0 12px' }}>Failed to reschedule. Check server logs.</p>
       )}
       {rescheduleMode && conflicts && conflicts.count > 0 && conflicts.count < 3 && (
-        <p style={{ color: '#b45309', background: '#fef3c7', padding: '8px', borderRadius: 4, fontSize: 13, margin: '0 0 12px' }}>
+        <p style={{ color: '#7a5c2e', background: '#fdf3e3', padding: '8px', borderRadius: 8, fontSize: 13, margin: '0 0 12px' }}>
           {conflicts.count} of 3 slots occupied at this time. You can still reschedule.
         </p>
       )}
       {rescheduleMode && conflicts && conflicts.count >= 3 && (
-        <p style={{ color: '#cc3333', background: '#fdecea', padding: '8px', borderRadius: 4, fontSize: 13, margin: '0 0 12px' }}>
+        <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8, fontSize: 13, margin: '0 0 12px' }}>
           All 3 slots are occupied at this time. Please choose a different time.
         </p>
       )}
@@ -311,7 +311,7 @@ export default function AppointmentDetail() {
 
         {/* Email Log */}
         <div style={{ ...rowStyle, border: 'none', flexDirection: 'column', gap: 8 }}>
-          <span style={{ ...labelStyle, width: 'auto', fontWeight: 'bold', fontSize: 13, color: '#555' }}>Email Log</span>
+          <span style={{ ...labelStyle, width: 'auto', fontWeight: 'bold', fontSize: 13, color: '#7a6a5f' }}>Email Log</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {[
               { label: 'Booking Email', sentAt: appt.confirmation_sent_at },
@@ -322,19 +322,19 @@ export default function AppointmentDetail() {
               { label: 'Client Cancelled', sentAt: appt.cancelled_at },
             ].map(({ label, sentAt, confirmed }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-                <span style={{ color: sentAt ? '#0f9d58' : '#ccc', fontWeight: 'bold', fontSize: 15 }}>
+                <span style={{ color: sentAt ? '#6b8f71' : '#c8bdb7', fontWeight: 'bold', fontSize: 15 }}>
                   {sentAt ? '✓' : '○'}
                 </span>
-                <span style={{ width: 120, color: '#555' }}>{label}</span>
-                <span style={{ color: sentAt ? '#555' : '#bbb' }}>
+                <span style={{ width: 120, color: '#7a6a5f' }}>{label}</span>
+                <span style={{ color: sentAt ? '#7a6a5f' : '#c8bdb7' }}>
                   {sentAt ? new Date(sentAt).toLocaleString('en-US', { timeZone: 'Asia/Manila' }) : 'Not sent'}
                 </span>
                 {sentAt && confirmed !== undefined && (
                   <span style={{
                     marginLeft: 8, fontSize: 11, fontWeight: 'bold',
-                    color: confirmed ? '#0f9d58' : '#bbb',
-                    background: confirmed ? '#e8f5e9' : 'var(--hover-bg)',
-                    border: `1px solid ${confirmed ? '#a5d6a7' : '#ddd'}`,
+                    color: confirmed ? '#6b8f71' : '#c8bdb7',
+                    background: confirmed ? '#edf4ee' : 'var(--hover-bg)',
+                    border: `1px solid ${confirmed ? '#6b8f71' : '#e8dfd6'}`,
                     borderRadius: 10, padding: '1px 8px',
                   }}>
                     {confirmed ? '✓ Confirmed by client' : 'Awaiting confirmation'}
@@ -350,12 +350,12 @@ export default function AppointmentDetail() {
 }
 
 const STATUS_CONFIG = {
-  tentative:            { label: 'Tentative',              color: '#92400e', bg: '#fef3c7' },
+  tentative:            { label: 'Tentative',              color: '#7a5c2e', bg: '#fdf3e3' },
   confirmed:            { label: 'Confirmed',             color: 'var(--primary)', bg: 'var(--primary-light)' },
-  confirmed_by_client:  { label: 'Confirmed by Client',   color: '#0f9d58', bg: '#e8f5e9' },
-  done:                 { label: 'Treatment Done',         color: '#666',    bg: '#f0f0f0' },
-  cancelled:            { label: 'Cancelled',              color: '#cc3333', bg: '#fdecea' },
-  cancelled_by_client:  { label: 'Cancelled by Client',   color: '#e07b54', bg: '#fff3ee' },
+  confirmed_by_client:  { label: 'Confirmed by Client',   color: '#3d5c41', bg: '#edf4ee' },
+  done:                 { label: 'Treatment Done',         color: '#7a6a5f', bg: '#f3eeea' },
+  cancelled:            { label: 'Cancelled',              color: '#8b3a3a', bg: '#faeaea' },
+  cancelled_by_client:  { label: 'Cancelled by Client',   color: '#8b3a3a', bg: '#faeaea' },
 };
 
 function StatusBadge({ status }) {

@@ -19,6 +19,7 @@ const brandStyle = {
   padding: '20px 16px 16px',
   fontWeight: 'bold',
   fontSize: 16,
+  letterSpacing: '0.3px',
   borderBottom: '1px solid var(--sidebar-border)',
   color: 'var(--brand-text)',
 };
@@ -39,10 +40,11 @@ function navLinkStyle({ isActive }) {
     textDecoration: 'none',
     color: isActive ? 'var(--sidebar-active-text)' : 'var(--sidebar-text)',
     background: isActive ? 'var(--sidebar-active-bg)' : 'transparent',
-    borderRadius: 4,
+    borderRadius: 8,
     margin: '1px 8px',
     fontWeight: isActive ? '600' : 'normal',
     fontSize: 14,
+    transition: 'background 0.15s ease',
   };
 }
 
@@ -53,10 +55,11 @@ function subNavLinkStyle({ isActive }) {
     textDecoration: 'none',
     color: isActive ? 'var(--sidebar-active-text)' : 'var(--sidebar-sub-text)',
     background: isActive ? 'var(--sidebar-active-bg)' : 'transparent',
-    borderRadius: 4,
+    borderRadius: 8,
     margin: '1px 8px',
     fontWeight: isActive ? '600' : 'normal',
     fontSize: 13,
+    transition: 'background 0.15s ease',
   };
 }
 
@@ -106,8 +109,9 @@ export default function App({ onLogout }) {
             onClick={onLogout}
             style={{
               width: '100%', padding: '7px 16px', fontSize: 13,
-              background: 'none', border: '1px solid var(--signout-border)', borderRadius: 4,
+              background: 'none', border: '1px solid var(--signout-border)', borderRadius: 8,
               color: 'var(--signout-color)', cursor: 'pointer', textAlign: 'left',
+              transition: 'background 0.15s ease',
             }}
           >
             Sign Out

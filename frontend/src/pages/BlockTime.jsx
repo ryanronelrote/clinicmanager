@@ -28,15 +28,15 @@ export default function BlockTime() {
     }
   }
 
-  const fieldStyle = { display: 'block', width: '100%', padding: '8px', marginTop: 4, boxSizing: 'border-box' };
+  const fieldStyle = { display: 'block', width: '100%', padding: '8px', marginTop: 4, boxSizing: 'border-box', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 14 };
   const labelStyle = { display: 'block', marginBottom: 12 };
 
   return (
     <div style={{ maxWidth: 400 }}>
-      <button onClick={() => navigate('/calendar')} style={{ marginBottom: 16 }}>← Back to Calendar</button>
+      <button onClick={() => navigate('/calendar')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', padding: 0, fontSize: 14 }}>← Back to Calendar</button>
       <h2>Block Time</h2>
-      <p style={{ color: '#666', marginTop: 0 }}>Mark a time range as unavailable (e.g. lunch break, staff meeting).</p>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <p style={{ color: '#7a6a5f', marginTop: 0 }}>Mark a time range as unavailable (e.g. lunch break, staff meeting).</p>
+      {error && <p style={{ color: '#c97b7b' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
         <label style={labelStyle}>
           Date *
@@ -55,7 +55,7 @@ export default function BlockTime() {
           <input name="reason" type="text" value={form.reason} onChange={handleChange}
             placeholder="e.g. Lunch break" style={fieldStyle} />
         </label>
-        <button type="submit" style={{ padding: '8px 20px' }}>Block Time</button>
+        <button type="submit" style={{ padding: '9px 22px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Block Time</button>
       </form>
     </div>
   );

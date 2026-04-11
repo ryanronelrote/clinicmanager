@@ -107,19 +107,19 @@ export default function CreateInvoice() {
     }
   }
 
-  const fieldStyle = { display: 'block', width: '100%', padding: '8px', marginTop: 4, boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: 4, fontSize: 14 };
+  const fieldStyle = { display: 'block', width: '100%', padding: '8px', marginTop: 4, boxSizing: 'border-box', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 14 };
   const labelStyle = { display: 'block', marginBottom: 12 };
 
   return (
     <div style={{ maxWidth: 700 }}>
-      <button onClick={() => navigate('/invoices')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#555', padding: 0 }}>
+      <button onClick={() => navigate('/invoices')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', padding: 0, fontSize: 14 }}>
         ← Back to Invoices
       </button>
 
       <h2 style={{ margin: '0 0 20px' }}>Create Invoice</h2>
 
       {error && (
-        <p style={{ color: '#cc3333', background: '#fdecea', padding: '8px 12px', borderRadius: 4, fontSize: 13, marginBottom: 12 }}>
+        <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px 12px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
           {error}
         </p>
       )}
@@ -137,7 +137,7 @@ export default function CreateInvoice() {
         </label>
 
         {appointmentId && (
-          <div style={{ fontSize: 13, color: '#555', marginBottom: 12, padding: '6px 10px', background: 'var(--hover-bg)', borderRadius: 4 }}>
+          <div style={{ fontSize: 13, color: '#7a6a5f', marginBottom: 12, padding: '6px 10px', background: 'var(--hover-bg)', borderRadius: 8 }}>
             Linked to Appointment #{appointmentId}
           </div>
         )}
@@ -152,7 +152,7 @@ export default function CreateInvoice() {
           </div>
 
           {/* Header row */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, fontWeight: 600, color: '#555' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, fontWeight: 600, color: '#7a6a5f' }}>
             {services.length > 0 && <div style={{ width: 120 }}>Service</div>}
             <div style={{ flex: 2 }}>Name</div>
             <div style={{ width: 70 }}>Qty</div>
@@ -169,7 +169,7 @@ export default function CreateInvoice() {
                   <select
                     value=""
                     onChange={e => applyService(index, e.target.value)}
-                    style={{ ...fieldStyle, width: 120, marginTop: 0, fontSize: 12, padding: '6px', color: '#555' }}
+                    style={{ ...fieldStyle, width: 120, marginTop: 0, fontSize: 12, padding: '6px', color: '#7a6a5f' }}
                     title="Auto-fill from service"
                   >
                     <option value="">Quick fill…</option>
@@ -213,7 +213,7 @@ export default function CreateInvoice() {
                   type="button"
                   onClick={() => removeItem(index)}
                   disabled={items.length <= 1}
-                  style={{ width: 30, border: 'none', background: 'none', cursor: items.length > 1 ? 'pointer' : 'default', fontSize: 16, color: items.length > 1 ? '#cc3333' : '#ddd' }}
+                  style={{ width: 30, border: 'none', background: 'none', cursor: items.length > 1 ? 'pointer' : 'default', fontSize: 16, color: items.length > 1 ? '#c97b7b' : '#c8bdb7' }}
                   title="Remove item"
                 >
                   ×
@@ -225,7 +225,7 @@ export default function CreateInvoice() {
           {/* Grand total */}
           <div style={{
             display: 'flex', justifyContent: 'flex-end', paddingTop: 10,
-            borderTop: '2px solid #ccc', marginTop: 8,
+            borderTop: '2px solid #e8dfd6', marginTop: 8,
           }}>
             <span style={{ fontWeight: 700, fontSize: 16, marginRight: 8 }}>Total:</span>
             <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--primary)' }}>{grandTotal.toFixed(2)}</span>

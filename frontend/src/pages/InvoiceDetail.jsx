@@ -5,9 +5,9 @@ import { invoiceService } from '../services/invoiceService';
 import { solidBtn, outlineBtn } from '../utils/styleUtils';
 
 const STATUS_CONFIG = {
-  unpaid:  { label: 'Unpaid',  color: '#cc3333', bg: '#fdecea' },
-  partial: { label: 'Partial', color: '#92400e', bg: '#fef3c7' },
-  paid:    { label: 'Paid',    color: '#166534', bg: '#dcfce7' },
+  unpaid:  { label: 'Unpaid',  color: '#8b3a3a', bg: '#faeaea' },
+  partial: { label: 'Partial', color: '#7a5c2e', bg: '#fdf3e3' },
+  paid:    { label: 'Paid',    color: '#3d5c41', bg: '#edf4ee' },
 };
 
 function StatusBadge({ status }) {
@@ -139,9 +139,9 @@ export default function InvoiceDetail() {
         th { font-weight: 600; border-bottom: 2px solid #999; }
         .total-row { font-weight: 700; font-size: 16px; }
         .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
-        .unpaid { color: #cc3333; background: #fdecea; }
-        .partial { color: #92400e; background: #fef3c7; }
-        .paid { color: #166534; background: #dcfce7; }
+        .unpaid { color: #8b3a3a; background: #faeaea; }
+        .partial { color: #7a5c2e; background: #fdf3e3; }
+        .paid { color: #3d5c41; background: #edf4ee; }
         @media print { button { display: none; } }
       </style>
       </head>
@@ -163,13 +163,13 @@ export default function InvoiceDetail() {
   const items    = invoice.items || [];
   const payments = invoice.payments || [];
 
-  const rowStyle = { borderBottom: '1px solid #eee', padding: '10px 0', display: 'flex', gap: 16, alignItems: 'flex-start' };
-  const labelStyle = { fontWeight: 'bold', width: 140, flexShrink: 0 };
-  const inputStyle = { padding: '6px 8px', border: '1px solid #ccc', borderRadius: 4, fontSize: 14, width: '100%', boxSizing: 'border-box' };
+  const rowStyle = { borderBottom: '1px solid #e8dfd6', padding: '10px 0', display: 'flex', gap: 16, alignItems: 'flex-start' };
+  const labelStyle = { fontWeight: '600', width: 140, flexShrink: 0 };
+  const inputStyle = { padding: '6px 8px', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 14, width: '100%', boxSizing: 'border-box' };
 
   return (
     <div style={{ maxWidth: 700 }}>
-      <button onClick={() => navigate('/invoices')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#555', padding: 0 }}>
+      <button onClick={() => navigate('/invoices')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', padding: 0, fontSize: 14 }}>
         ← Back to Invoices
       </button>
 
@@ -178,7 +178,7 @@ export default function InvoiceDetail() {
         <h2 style={{ margin: 0 }}>INV-{String(invoice.id).padStart(4, '0')}</h2>
         <div style={{ display: 'flex', gap: 8 }}>
           {invoice.status !== 'paid' && !editMode && (
-            <button onClick={handleMarkPaid} disabled={marking} style={solidBtn('#166534')}>
+            <button onClick={handleMarkPaid} disabled={marking} style={solidBtn('#6b8f71')}>
               {marking ? 'Processing…' : 'Mark as Paid'}
             </button>
           )}
@@ -186,7 +186,7 @@ export default function InvoiceDetail() {
           {!editMode && invoice.status !== 'paid' && (
             <button onClick={enterEditItems} style={outlineBtn('var(--primary)')}>Edit Items</button>
           )}
-          <button onClick={handleDelete} style={outlineBtn('#cc3333')}>Delete</button>
+          <button onClick={handleDelete} style={outlineBtn('#c97b7b')}>Delete</button>
         </div>
       </div>
 
@@ -219,7 +219,7 @@ export default function InvoiceDetail() {
         <h3 style={{ marginTop: 24, marginBottom: 8 }}>Items</h3>
         {editMode ? (
           <div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, fontWeight: 600, color: '#555' }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, fontWeight: 600, color: '#7a6a5f' }}>
               <div style={{ flex: 2 }}>Name</div>
               <div style={{ width: 70 }}>Qty</div>
               <div style={{ width: 100 }}>Price</div>
@@ -240,13 +240,13 @@ export default function InvoiceDetail() {
                     style={{ ...inputStyle, width: 100 }} min="0" step="0.01" />
                   <div style={{ width: 80, textAlign: 'right', fontWeight: 600 }}>{lineTotal.toFixed(2)}</div>
                   <button type="button" onClick={() => removeEditItem(index)} disabled={editItems.length <= 1}
-                    style={{ width: 30, border: 'none', background: 'none', cursor: editItems.length > 1 ? 'pointer' : 'default', fontSize: 16, color: editItems.length > 1 ? '#cc3333' : '#ddd' }}>×</button>
+                    style={{ width: 30, border: 'none', background: 'none', cursor: editItems.length > 1 ? 'pointer' : 'default', fontSize: 16, color: editItems.length > 1 ? '#c97b7b' : '#c8bdb7' }}>×</button>
                 </div>
               );
             })}
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button type="button" onClick={addEditItem} style={{ ...outlineBtn('var(--primary)'), fontSize: 12, padding: '3px 10px' }}>+ Add Item</button>
-              <button onClick={() => setEditMode(false)} style={outlineBtn('#888')}>Cancel</button>
+              <button onClick={() => setEditMode(false)} style={outlineBtn('#7a6a5f')}>Cancel</button>
               <button onClick={saveEditItems} disabled={editSaving} style={solidBtn('var(--primary)')}>
                 {editSaving ? 'Saving…' : 'Save Items'}
               </button>
@@ -255,7 +255,7 @@ export default function InvoiceDetail() {
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '2px solid #ccc' }}>
+              <tr style={{ textAlign: 'left', borderBottom: '2px solid #e8dfd6' }}>
                 <th style={{ padding: '8px' }}>Treatment / Service</th>
                 <th style={{ padding: '8px', width: 60 }}>Qty</th>
                 <th style={{ padding: '8px', width: 100 }}>Price</th>
@@ -264,7 +264,7 @@ export default function InvoiceDetail() {
             </thead>
             <tbody>
               {items.map(item => (
-                <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
+                <tr key={item.id} style={{ borderBottom: '1px solid #e8dfd6' }}>
                   <td style={{ padding: '8px' }}>{item.name}</td>
                   <td style={{ padding: '8px' }}>{parseFloat(item.quantity)}</td>
                   <td style={{ padding: '8px' }}>{parseFloat(item.unit_price).toFixed(2)}</td>
@@ -276,19 +276,19 @@ export default function InvoiceDetail() {
         )}
 
         {/* Totals summary */}
-        <div style={{ marginTop: 16, padding: '12px 16px', background: '#f9f9f9', borderRadius: 8, border: '1px solid #eee' }}>
+        <div style={{ marginTop: 16, padding: '12px 16px', background: '#fdfaf6', borderRadius: 8, border: '1px solid #e8dfd6' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 14 }}>
             <span>Total Amount</span>
             <span style={{ fontWeight: 600 }}>{total.toFixed(2)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 14, color: '#166534' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 14, color: '#6b8f71' }}>
             <span>Amount Paid</span>
             <span style={{ fontWeight: 600 }}>{paid.toFixed(2)}</span>
           </div>
           <div style={{
             display: 'flex', justifyContent: 'space-between',
-            paddingTop: 8, borderTop: '2px solid #ccc', fontSize: 16,
-            color: balance > 0 ? '#cc3333' : '#166534', fontWeight: 700,
+            paddingTop: 8, borderTop: '2px solid #e8dfd6', fontSize: 16,
+            color: balance > 0 ? '#c97b7b' : '#6b8f71', fontWeight: 700,
           }}>
             <span>Remaining Balance</span>
             <span>{balance.toFixed(2)}</span>
@@ -298,16 +298,16 @@ export default function InvoiceDetail() {
 
       {/* Payment section */}
       {invoice.status !== 'paid' && (
-        <div style={{ marginTop: 28, padding: '20px', background: '#fafafa', borderRadius: 8, border: '1px solid #eee' }}>
+        <div style={{ marginTop: 28, padding: '20px', background: '#fdfaf6', borderRadius: 8, border: '1px solid #e8dfd6' }}>
           <h3 style={{ margin: '0 0 12px' }}>Add Payment</h3>
           {payError && (
-            <p style={{ color: '#cc3333', background: '#fdecea', padding: '6px 10px', borderRadius: 4, fontSize: 13, marginBottom: 8 }}>
+            <p style={{ color: '#c97b7b', background: '#faeaea', padding: '6px 10px', borderRadius: 8, fontSize: 13, marginBottom: 8 }}>
               {payError}
             </p>
           )}
           <form onSubmit={handleAddPayment} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <label style={{ flex: '1 1 120px' }}>
-              <span style={{ fontSize: 12, color: '#555' }}>Amount</span>
+              <span style={{ fontSize: 12, color: '#7a6a5f' }}>Amount</span>
               <input
                 type="number"
                 min="0.01"
@@ -321,7 +321,7 @@ export default function InvoiceDetail() {
               />
             </label>
             <label style={{ flex: '1 1 120px' }}>
-              <span style={{ fontSize: 12, color: '#555' }}>Method</span>
+              <span style={{ fontSize: 12, color: '#7a6a5f' }}>Method</span>
               <select value={payMethod} onChange={e => setPayMethod(e.target.value)} style={{ ...inputStyle, marginTop: 4 }}>
                 <option value="cash">Cash</option>
                 <option value="gcash">GCash</option>
@@ -341,7 +341,7 @@ export default function InvoiceDetail() {
           <h3 style={{ marginBottom: 8 }}>Payment History</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '2px solid #ccc' }}>
+              <tr style={{ textAlign: 'left', borderBottom: '2px solid #e8dfd6' }}>
                 <th style={{ padding: '8px' }}>Date</th>
                 <th style={{ padding: '8px' }}>Amount</th>
                 <th style={{ padding: '8px' }}>Method</th>
@@ -349,19 +349,19 @@ export default function InvoiceDetail() {
             </thead>
             <tbody>
               {payments.map(p => (
-                <tr key={p.id} style={{ borderBottom: '1px solid #eee' }}>
+                <tr key={p.id} style={{ borderBottom: '1px solid #e8dfd6' }}>
                   <td style={{ padding: '8px', fontSize: 13 }}>
                     {new Date(p.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}
                   </td>
-                  <td style={{ padding: '8px', fontWeight: 600, color: '#166534' }}>
+                  <td style={{ padding: '8px', fontWeight: 600, color: '#6b8f71' }}>
                     {parseFloat(p.amount).toFixed(2)}
                   </td>
                   <td style={{ padding: '8px' }}>
                     <span style={{
                       fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
                       padding: '2px 8px', borderRadius: 10,
-                      background: p.payment_method === 'cash' ? '#e8f5e9' : p.payment_method === 'gcash' ? '#e3f2fd' : '#f3e5f5',
-                      color: p.payment_method === 'cash' ? '#2e7d32' : p.payment_method === 'gcash' ? '#1565c0' : '#7b1fa2',
+                      background: p.payment_method === 'cash' ? '#edf4ee' : p.payment_method === 'gcash' ? '#f5ede4' : '#f3eeea',
+                      color: p.payment_method === 'cash' ? '#3d5c41' : p.payment_method === 'gcash' ? '#7a5c2e' : '#7a6a5f',
                     }}>
                       {p.payment_method}
                     </span>

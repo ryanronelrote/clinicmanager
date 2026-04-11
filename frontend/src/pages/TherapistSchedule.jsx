@@ -7,9 +7,9 @@ import { therapistScheduleService } from '../services/therapistScheduleService';
 // Any unknown shift_type gets a deterministic generated color — future-proof.
 
 const DEFAULT_COLORS = {
-  AM:  '#bbf7d0',   // soft green
-  PM:  '#bfdbfe',   // soft blue
-  OFF: '#e5e7eb',   // light gray
+  AM:  '#c8e6ca',   // muted sage green
+  PM:  '#bfd8d2',   // muted teal-sage
+  OFF: '#e8dfd6',   // warm beige
 };
 
 const STORAGE_KEY        = 'clinic_shift_colors_v1';
@@ -291,13 +291,13 @@ export default function TherapistSchedule() {
 
   // ── Render ───────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', color: '#111827' }}>
+    <div style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', color: '#3e2f25' }}>
 
       {/* ── Page header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 22 }}>Shift Schedule</h2>
-          <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>Click any cell to assign a shift</div>
+          <div style={{ fontSize: 13, color: '#7a6a5f', marginTop: 2 }}>Click any cell to assign a shift</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={prev} style={NAV_BTN}>‹</button>
@@ -307,7 +307,7 @@ export default function TherapistSchedule() {
           <button onClick={next} style={NAV_BTN}>›</button>
           <button
             onClick={() => setShowColors(v => !v)}
-            style={{ ...NAV_BTN, padding: '6px 12px', fontSize: 13, marginLeft: 6, background: showColors ? '#fef9f0' : '#fff', color: showColors ? '#b45309' : '#374151' }}
+            style={{ ...NAV_BTN, padding: '6px 12px', fontSize: 13, marginLeft: 6, background: showColors ? '#f5ede4' : '#fdfaf6', color: showColors ? '#7a5c2e' : '#3e2f25' }}
           >
             🎨 Colors
           </button>
@@ -318,11 +318,11 @@ export default function TherapistSchedule() {
       {showColors && (
         <div style={{
           marginBottom: 16, padding: '14px 18px',
-          border: '1px solid #e5e7eb', borderRadius: 10,
-          background: '#fafafa',
+          border: '1px solid #e8dfd6', borderRadius: 10,
+          background: '#fdfaf6',
         }}>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>Shift types:</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#7a6a5f' }}>Shift types:</span>
 
             {/* All shifts — preset (no delete) + custom (with delete) */}
             {allShifts.map(shift => {
@@ -335,7 +335,7 @@ export default function TherapistSchedule() {
                       type="color"
                       value={colorMap[shift] || '#e5e7eb'}
                       onChange={e => updateColor(shift, e.target.value)}
-                      style={{ width: 30, height: 30, padding: 0, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer' }}
+                      style={{ width: 30, height: 30, padding: 0, border: '1px solid #e8dfd6', borderRadius: 6, cursor: 'pointer' }}
                       title={`Change color for ${shift}`}
                     />
                     <span style={{ background: bg, color: text, padding: '3px 12px', borderRadius: 6, fontWeight: 700, fontSize: 13 }}>
@@ -347,7 +347,7 @@ export default function TherapistSchedule() {
                       onClick={() => removeCustomShift(shift)}
                       title={`Remove ${shift} shift`}
                       style={{ fontSize: 13, color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#cc3333'}
+                      onMouseEnter={e => e.currentTarget.style.color = '#c97b7b'}
                       onMouseLeave={e => e.currentTarget.style.color = '#d1d5db'}
                     >×</button>
                   )}
@@ -357,15 +357,15 @@ export default function TherapistSchedule() {
 
             <button
               onClick={resetColors}
-              style={{ fontSize: 12, color: '#888', background: 'none', border: '1px solid #ddd', borderRadius: 5, padding: '4px 10px', cursor: 'pointer' }}
+              style={{ fontSize: 12, color: '#7a6a5f', background: 'none', border: '1px solid #e8dfd6', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
             >
               Reset colors
             </button>
           </div>
 
           {/* Add custom shift */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 10, borderTop: '1px solid #e5e7eb' }}>
-            <span style={{ fontSize: 12, color: '#888' }}>Add custom shift:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 10, borderTop: '1px solid #e8dfd6' }}>
+            <span style={{ fontSize: 12, color: '#7a6a5f' }}>Add custom shift:</span>
             <input
               type="text"
               placeholder="e.g. NIGHT"
@@ -373,22 +373,22 @@ export default function TherapistSchedule() {
               onChange={e => setNewShiftName(e.target.value.toUpperCase())}
               onKeyDown={e => e.key === 'Enter' && addCustomShift()}
               maxLength={12}
-              style={{ padding: '5px 10px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13, width: 110 }}
+              style={{ padding: '5px 10px', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 13, width: 110 }}
             />
             <button
               onClick={addCustomShift}
               disabled={!newShiftName.trim() || allShifts.includes(newShiftName.trim().toUpperCase())}
               style={{
                 padding: '5px 14px', fontSize: 13, fontWeight: 600,
-                background: 'var(--primary)', color: '#fff',
-                border: 'none', borderRadius: 6, cursor: 'pointer',
+                background: 'var(--primary)', color: '#3e2f25',
+                border: 'none', borderRadius: 8, cursor: 'pointer',
                 opacity: !newShiftName.trim() || allShifts.includes(newShiftName.trim().toUpperCase()) ? 0.5 : 1,
               }}
             >
               + Add
             </button>
             {allShifts.includes(newShiftName.trim().toUpperCase()) && newShiftName.trim() && (
-              <span style={{ fontSize: 12, color: '#e07b54' }}>Already exists</span>
+              <span style={{ fontSize: 12, color: '#d6a45c' }}>Already exists</span>
             )}
           </div>
         </div>
@@ -396,13 +396,13 @@ export default function TherapistSchedule() {
 
       {/* ── Grid ── */}
       {loading ? (
-        <p style={{ color: '#888', padding: '32px 0' }}>Loading…</p>
+        <p style={{ color: '#b8a99e', padding: '32px 0' }}>Loading…</p>
       ) : therapists.length === 0 ? (
-        <div style={{ padding: '40px', textAlign: 'center', color: '#aaa', border: '1px dashed #ddd', borderRadius: 10 }}>
+        <div style={{ padding: '40px', textAlign: 'center', color: '#b8a99e', border: '1px dashed #e8dfd6', borderRadius: 10 }}>
           No therapists yet. Add one below to get started.
         </div>
       ) : (
-        <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+        <div style={{ overflowX: 'auto', border: '1px solid #e8dfd6', borderRadius: 10, boxShadow: '0 1px 4px rgba(62,47,37,0.06)' }}>
           <table style={{ borderCollapse: 'collapse', minWidth: '100%', tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: 150 }} />
@@ -412,15 +412,15 @@ export default function TherapistSchedule() {
             {/* Header row */}
             <thead>
               <tr>
-                <th style={{ ...TH, position: 'sticky', left: 0, zIndex: 3, background: '#f9fafb', textAlign: 'left', paddingLeft: 14, borderRight: '2px solid #e5e7eb' }}>
+                <th style={{ ...TH, position: 'sticky', left: 0, zIndex: 3, background: '#fdfaf6', textAlign: 'left', paddingLeft: 14, borderRight: '2px solid #e8dfd6' }}>
                   Therapist
                 </th>
                 {dayMeta.map(({ day, dow, isToday, isWeekend, ds }) => (
                   <th key={day} style={{
                     ...TH,
-                    background: isToday ? '#fef9f0' : isWeekend ? '#fafafa' : '#f9fafb',
-                    color:      isToday ? '#b45309' : isWeekend ? '#9ca3af' : '#6b7280',
-                    borderBottom: isToday ? '3px solid #f59e0b' : '2px solid #e5e7eb',
+                    background: isToday ? '#f5ede4' : isWeekend ? '#fdfaf6' : '#fdfaf6',
+                    color:      isToday ? '#7a5c2e' : isWeekend ? '#b8a99e' : '#7a6a5f',
+                    borderBottom: isToday ? '3px solid #c8a97e' : '2px solid #e8dfd6',
                     fontWeight: isToday ? 700 : 500,
                   }}>
                     <div style={{ fontSize: 10, lineHeight: 1.2 }}>{DAY_ABBR[dow]}</div>
@@ -433,26 +433,26 @@ export default function TherapistSchedule() {
             {/* Therapist rows */}
             <tbody>
               {therapists.map((t, ti) => {
-                const rowBg = ti % 2 === 0 ? '#ffffff' : '#fafafa';
+                const rowBg = ti % 2 === 0 ? '#fdfaf6' : '#f8f5f0';
                 return (
                   <tr key={t.id}>
                     {/* Sticky name cell */}
                     <td style={{
                       position: 'sticky', left: 0, zIndex: 2,
                       background: rowBg,
-                      borderRight: '2px solid #e5e7eb',
-                      borderTop: '1px solid #f0f0f0',
+                      borderRight: '2px solid #e8dfd6',
+                      borderTop: '1px solid #e8dfd6',
                       padding: '0 8px 0 14px',
                       height: 40,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
-                        <span style={{ fontWeight: 600, fontSize: 13, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontWeight: 600, fontSize: 13, color: '#3e2f25', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {t.name}
                         </span>
                         <button
                           onClick={() => handleRemoveTherapist(t.id, t.name)}
                           style={{ fontSize: 14, color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
-                          onMouseEnter={e => e.currentTarget.style.color = '#cc3333'}
+                          onMouseEnter={e => e.currentTarget.style.color = '#c97b7b'}
                           onMouseLeave={e => e.currentTarget.style.color = '#d1d5db'}
                           title="Remove therapist"
                         >×</button>
@@ -464,7 +464,7 @@ export default function TherapistSchedule() {
                       const key   = `${t.id}-${ds}`;
                       const shift = scheduleMap[key];
                       const { bg: shiftBg, text: shiftText } = shift ? shiftColors(colorMap, shift) : {};
-                      const baseBg = isToday ? '#fefdf8' : isWeekend ? '#fdf8f4' : rowBg;
+                      const baseBg = isToday ? '#f5ede4' : isWeekend ? '#fdfaf6' : rowBg;
 
                       return (
                         <td
@@ -473,13 +473,13 @@ export default function TherapistSchedule() {
                           style={{
                             height: 40,
                             padding: 3,
-                            borderLeft: '1px solid #f0f0f0',
-                            borderTop: '1px solid #f0f0f0',
+                            borderLeft: '1px solid #e8dfd6',
+                            borderTop: '1px solid #e8dfd6',
                             cursor: 'pointer',
                             background: baseBg,
                             transition: 'background 0.1s',
                           }}
-                          onMouseEnter={e => { e.currentTarget.style.background = shift ? baseBg : '#fef3c7'; }}
+                          onMouseEnter={e => { e.currentTarget.style.background = shift ? baseBg : '#f0e8de'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = baseBg; }}
                         >
                           {shift && (
@@ -516,10 +516,10 @@ export default function TherapistSchedule() {
             left: activeCell.x,
             top: activeCell.y,
             zIndex: 1000,
-            background: '#fff',
-            border: '1px solid #e5e7eb',
+            background: '#fdfaf6',
+            border: '1px solid #e8dfd6',
             borderRadius: 10,
-            boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
+            boxShadow: '0 4px 16px rgba(62,47,37,0.10)',
             padding: 6,
             minWidth: 130,
           }}
@@ -547,16 +547,16 @@ export default function TherapistSchedule() {
               </button>
             );
           })}
-          <div style={{ height: 1, background: '#f0f0f0', margin: '4px 0' }} />
+          <div style={{ height: 1, background: '#e8dfd6', margin: '4px 0' }} />
           <button
             onClick={() => assignShift(null)}
             style={{
               display: 'block', width: '100%', textAlign: 'left',
-              background: 'none', border: 'none', color: '#9ca3af',
+              background: 'none', border: 'none', color: '#b8a99e',
               fontSize: 12, padding: '5px 14px', cursor: 'pointer', borderRadius: 5,
             }}
-            onMouseEnter={e => e.currentTarget.style.color = '#cc3333'}
-            onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+            onMouseEnter={e => e.currentTarget.style.color = '#c97b7b'}
+            onMouseLeave={e => e.currentTarget.style.color = '#b8a99e'}
           >
             Clear
           </button>
@@ -571,15 +571,15 @@ export default function TherapistSchedule() {
           value={newName}
           onChange={e => setNewName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAddTherapist()}
-          style={{ padding: '8px 12px', border: '1px solid #ddd', borderRadius: 7, fontSize: 13, width: 220 }}
+          style={{ padding: '8px 12px', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 13, width: 220 }}
         />
         <button
           onClick={handleAddTherapist}
           disabled={!newName.trim() || savingName}
           style={{
             padding: '8px 18px', fontSize: 13, fontWeight: 600,
-            background: 'var(--primary)', color: '#fff',
-            border: 'none', borderRadius: 7, cursor: 'pointer',
+            background: 'var(--primary)', color: '#3e2f25',
+            border: 'none', borderRadius: 8, cursor: 'pointer',
             opacity: !newName.trim() || savingName ? 0.6 : 1,
           }}
         >
@@ -590,7 +590,7 @@ export default function TherapistSchedule() {
       {/* ── Legend ── */}
       {!loading && (
         <div style={{ marginTop: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, color: '#9ca3af' }}>Legend:</span>
+          <span style={{ fontSize: 12, color: '#b8a99e' }}>Legend:</span>
           {visibleShifts.map(shift => {
             const { bg, text } = shiftColors(colorMap, shift);
             return (
@@ -599,7 +599,7 @@ export default function TherapistSchedule() {
               </span>
             );
           })}
-          <span style={{ fontSize: 12, color: '#d1d5db', marginLeft: 6 }}>· 🎨 click Colors to customize</span>
+          <span style={{ fontSize: 12, color: '#c8bdb7', marginLeft: 6 }}>· 🎨 click Colors to customize</span>
         </div>
       )}
     </div>
@@ -610,14 +610,14 @@ export default function TherapistSchedule() {
 
 const NAV_BTN = {
   padding: '6px 13px', fontSize: 18, cursor: 'pointer',
-  border: '1px solid #e5e7eb', borderRadius: 7,
-  background: '#fff', color: '#374151', lineHeight: 1,
+  border: '1px solid #e8dfd6', borderRadius: 8,
+  background: '#fdfaf6', color: '#3e2f25', lineHeight: 1,
   transition: 'background 0.12s',
 };
 
 const TH = {
   padding: '6px 2px', textAlign: 'center',
-  borderBottom: '2px solid #e5e7eb',
+  borderBottom: '2px solid #e8dfd6',
   fontSize: 12, fontWeight: 600,
   userSelect: 'none', whiteSpace: 'nowrap',
 };

@@ -5,9 +5,9 @@ import { invoiceService } from '../services/invoiceService';
 import { solidBtn, outlineBtn } from '../utils/styleUtils';
 
 const STATUS_CONFIG = {
-  unpaid:  { label: 'Unpaid',  color: '#cc3333', bg: '#fdecea', border: '#f8b4b4' },
-  partial: { label: 'Partial', color: '#92400e', bg: '#fef3c7', border: '#fbbf24' },
-  paid:    { label: 'Paid',    color: '#166534', bg: '#dcfce7', border: '#86efac' },
+  unpaid:  { label: 'Unpaid',  color: '#8b3a3a', bg: '#faeaea', border: '#c97b7b' },
+  partial: { label: 'Partial', color: '#7a5c2e', bg: '#fdf3e3', border: '#d6a45c' },
+  paid:    { label: 'Paid',    color: '#3d5c41', bg: '#edf4ee', border: '#6b8f71' },
 };
 
 function InvoiceStatusBadge({ status }) {
@@ -52,8 +52,9 @@ export default function InvoiceList() {
           onClick={() => navigate('/invoices/create')}
           style={{
             padding: '7px 18px', fontSize: 13, fontWeight: 600,
-            background: 'var(--primary)', color: '#fff',
-            border: 'none', borderRadius: 6, cursor: 'pointer',
+            background: 'var(--primary)', color: '#3e2f25',
+            border: 'none', borderRadius: 8, cursor: 'pointer',
+            transition: 'opacity 0.15s ease',
           }}
         >
           + New Invoice
@@ -63,8 +64,8 @@ export default function InvoiceList() {
       {/* Summary cards */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
         <SummaryCard label="Total Billed" value={totals.total.toFixed(2)} color="var(--primary)" />
-        <SummaryCard label="Total Collected" value={totals.paid.toFixed(2)} color="#166534" />
-        <SummaryCard label="Outstanding" value={outstanding.toFixed(2)} color={outstanding > 0 ? '#cc3333' : '#166534'} />
+        <SummaryCard label="Total Collected" value={totals.paid.toFixed(2)} color="#6b8f71" />
+        <SummaryCard label="Outstanding" value={outstanding.toFixed(2)} color={outstanding > 0 ? '#c97b7b' : '#6b8f71'} />
       </div>
 
       {/* Filters */}
@@ -72,7 +73,7 @@ export default function InvoiceList() {
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          style={{ padding: '6px 10px', borderRadius: 4, border: '1px solid #ccc', fontSize: 13 }}
+          style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13 }}
         >
           <option value="">All Statuses</option>
           <option value="unpaid">Unpaid</option>
@@ -80,19 +81,19 @@ export default function InvoiceList() {
           <option value="paid">Paid</option>
         </select>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 13, color: '#555' }}>From:</label>
+          <label style={{ fontSize: 13, color: '#7a6a5f' }}>From:</label>
           <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
-            style={{ padding: '5px 8px', borderRadius: 4, border: '1px solid #ccc', fontSize: 13 }} />
+            style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13 }} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 13, color: '#555' }}>To:</label>
+          <label style={{ fontSize: 13, color: '#7a6a5f' }}>To:</label>
           <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
-            style={{ padding: '5px 8px', borderRadius: 4, border: '1px solid #ccc', fontSize: 13 }} />
+            style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13 }} />
         </div>
         {(statusFilter || fromDate || toDate) && (
           <button
             onClick={() => { setStatusFilter(''); setFromDate(''); setToDate(''); }}
-            style={{ ...outlineBtn('#888'), fontSize: 12, padding: '4px 10px' }}
+            style={{ ...outlineBtn('#7a6a5f'), fontSize: 12, padding: '4px 10px' }}
           >
             Clear
           </button>
@@ -100,13 +101,13 @@ export default function InvoiceList() {
       </div>
 
       {invoices.length === 0 ? (
-        <div style={{ padding: 32, textAlign: 'center', color: '#888', border: '1px dashed #ddd', borderRadius: 8 }}>
+        <div style={{ padding: 32, textAlign: 'center', color: '#7a6a5f', border: '1px dashed #e8dfd6', borderRadius: 8 }}>
           No invoices found.
         </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '2px solid #ccc' }}>
+            <tr style={{ textAlign: 'left', borderBottom: '2px solid #e8dfd6' }}>
               <th style={{ padding: '8px' }}>#</th>
               <th style={{ padding: '8px' }}>Patient</th>
               <th style={{ padding: '8px' }}>Total</th>
@@ -125,7 +126,7 @@ export default function InvoiceList() {
                 <tr
                   key={inv.id}
                   onClick={() => navigate(`/invoices/${inv.id}`)}
-                  style={{ borderBottom: '1px solid #eee', cursor: 'pointer' }}
+                  style={{ borderBottom: '1px solid #e8dfd6', cursor: 'pointer', transition: 'background 0.15s ease' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}
                 >
@@ -133,11 +134,11 @@ export default function InvoiceList() {
                   <td style={{ padding: '8px' }}>{inv.first_name} {inv.last_name}</td>
                   <td style={{ padding: '8px' }}>{total.toFixed(2)}</td>
                   <td style={{ padding: '8px' }}>{paid.toFixed(2)}</td>
-                  <td style={{ padding: '8px', fontWeight: balance > 0 ? 600 : 'normal', color: balance > 0 ? '#cc3333' : '#166534' }}>
+                  <td style={{ padding: '8px', fontWeight: balance > 0 ? 600 : 'normal', color: balance > 0 ? '#c97b7b' : '#6b8f71' }}>
                     {balance.toFixed(2)}
                   </td>
                   <td style={{ padding: '8px' }}><InvoiceStatusBadge status={inv.status} /></td>
-                  <td style={{ padding: '8px', fontSize: 13, color: '#555' }}>
+                  <td style={{ padding: '8px', fontSize: 13, color: '#7a6a5f' }}>
                     {new Date(inv.created_at).toLocaleDateString()}
                   </td>
                 </tr>
@@ -157,7 +158,7 @@ function SummaryCard({ label, value, color }) {
       border: `1px solid ${color}22`, background: `${color}0d`,
     }}>
       <div style={{ fontSize: 22, fontWeight: '700', color }}>{value}</div>
-      <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#7a6a5f', marginTop: 4 }}>{label}</div>
     </div>
   );
 }

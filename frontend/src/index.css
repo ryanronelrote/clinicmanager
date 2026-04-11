@@ -17,27 +17,31 @@
   --hover-bg: #f5f5f5;
   --signout-border: #ddd;
   --signout-color: #888;
+  --card-bg: #ffffff;
+  --text-primary: #111827;
 }
 
 /* Warm theme */
 :root[data-theme="warm"] {
-  --primary: #8B5E52;
-  --primary-light: #F5EDE8;
-  --primary-hover: #7A5047;
-  --sidebar-bg: #2C1A14;
-  --sidebar-border: #3D2518;
-  --sidebar-text: #D4C4BC;
-  --sidebar-sub-text: #C4B4AC;
-  --sidebar-label: #8A7068;
-  --sidebar-active-bg: #4A2E23;
-  --sidebar-active-text: #F5EDE8;
-  --brand-text: #F5EDE8;
-  --page-bg: #FAF8F5;
-  --input-border: #D4C4BC;
-  --label-color: #9E8880;
-  --hover-bg: #F5EDE8;
-  --signout-border: #4A2E23;
-  --signout-color: #A09088;
+  --primary: #c8a97e;
+  --primary-light: #f5ede4;
+  --primary-hover: #b8956a;
+  --sidebar-bg: #f5ede4;
+  --sidebar-border: #e8dfd6;
+  --sidebar-text: #3e2f25;
+  --sidebar-sub-text: #7a6a5f;
+  --sidebar-label: #b8a99e;
+  --sidebar-active-bg: #ede3d8;
+  --sidebar-active-text: #3e2f25;
+  --brand-text: #3e2f25;
+  --page-bg: #f8f5f0;
+  --input-border: #e8dfd6;
+  --label-color: #7a6a5f;
+  --hover-bg: #f0e8de;
+  --signout-border: #e8dfd6;
+  --signout-color: #7a6a5f;
+  --card-bg: #fdfaf6;
+  --text-primary: #3e2f25;
 }
 
 * { box-sizing: border-box; }

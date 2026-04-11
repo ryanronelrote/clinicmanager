@@ -70,21 +70,21 @@ export default function AddAppointment() {
     }
   }
 
-  const fieldStyle = { display: 'block', width: '100%', padding: '8px', marginTop: 4, boxSizing: 'border-box' };
+  const fieldStyle = { display: 'block', width: '100%', padding: '8px', marginTop: 4, boxSizing: 'border-box', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 14 };
   const labelStyle = { display: 'block', marginBottom: 12 };
 
   return (
     <div style={{ maxWidth: 500 }}>
-      <button onClick={() => navigate('/calendar')} style={{ marginBottom: 16 }}>← Back to Calendar</button>
+      <button onClick={() => navigate('/calendar')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', padding: 0, fontSize: 14 }}>← Back to Calendar</button>
       <h2>Add Appointment</h2>
-      {error && <p style={{ color: 'red', background: '#fff0f0', padding: '8px', borderRadius: 4 }}>{error}</p>}
+      {error && <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8 }}>{error}</p>}
       {conflicts && conflicts.count > 0 && conflicts.count < 3 && (
-        <p style={{ color: '#b45309', background: '#fef3c7', padding: '8px', borderRadius: 4, fontSize: 13 }}>
+        <p style={{ color: '#7a5c2e', background: '#fdf3e3', padding: '8px', borderRadius: 8, fontSize: 13 }}>
           {conflicts.count} of 3 slots occupied at this time. You can still book.
         </p>
       )}
       {conflicts && conflicts.count >= 3 && (
-        <p style={{ color: '#cc3333', background: '#fdecea', padding: '8px', borderRadius: 4, fontSize: 13 }}>
+        <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8, fontSize: 13 }}>
           All 3 slots are occupied at this time. Please choose a different time.
         </p>
       )}
@@ -140,7 +140,7 @@ export default function AddAppointment() {
           <TreatmentListInput
             value={form.treatments}
             onChange={v => setForm(f => ({ ...f, treatments: v }))}
-            inputStyle={{ padding: '8px', border: '1px solid #ccc', borderRadius: 4, boxSizing: 'border-box', fontSize: 14, marginTop: 4 }}
+            inputStyle={{ padding: '8px', border: '1px solid #e8dfd6', borderRadius: 8, boxSizing: 'border-box', fontSize: 14, marginTop: 4 }}
           />
         </label>
         <label style={labelStyle}>
@@ -154,7 +154,7 @@ export default function AddAppointment() {
             <option value="tentative">Tentative (no emails, doesn't block slots)</option>
           </select>
         </label>
-        <button type="submit" disabled={form.status !== 'tentative' && conflicts && conflicts.count >= 3} style={{ padding: '8px 20px' }}>Save Appointment</button>
+        <button type="submit" disabled={form.status !== 'tentative' && conflicts && conflicts.count >= 3} style={{ padding: '9px 22px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Appointment</button>
       </form>
     </div>
   );

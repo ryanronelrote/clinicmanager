@@ -3,7 +3,7 @@ import { settingsService } from '../services/settingsService';
 import { serviceService } from '../services/serviceService';
 import { useClinicSettings } from '../context/SettingsContext';
 
-const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
+const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 8, width: '100%', boxSizing: 'border-box', fontSize: 14 };
 const lbl = { fontSize: 12, color: 'var(--label-color)', display: 'block', marginBottom: 3 };
 
 export default function Settings() {
@@ -14,13 +14,14 @@ export default function Settings() {
       <h2 style={{ marginTop: 0, marginBottom: 20 }}>Settings</h2>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 28, borderBottom: '1px solid #eee', paddingBottom: 0 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 28, borderBottom: '1px solid #e8dfd6', paddingBottom: 0 }}>
         {[['clinic', 'Clinic'], ['services', 'Services'], ['notifications', 'Notifications'], ['email', 'Email'], ['templates', 'Templates'], ['appearance', 'Appearance']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             padding: '8px 18px', fontSize: 14, cursor: 'pointer', border: 'none',
             borderBottom: tab === key ? '2px solid var(--primary)' : '2px solid transparent',
-            background: 'none', color: tab === key ? 'var(--primary)' : '#555',
+            background: 'none', color: tab === key ? 'var(--primary)' : '#7a6a5f',
             fontWeight: tab === key ? '600' : 'normal', marginBottom: -1,
+            transition: 'color 0.15s ease',
           }}>{label}</button>
         ))}
       </div>
@@ -79,10 +80,10 @@ function ClinicTab() {
         <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={form.business_hours} onChange={e => setForm(f => ({ ...f, business_hours: e.target.value }))} placeholder="e.g. Mon–Fri 9am–6pm, Sat 9am–4pm" />
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: '600', cursor: 'pointer', color: '#3e2f25' }}>
           {saving ? 'Saving…' : 'Save'}
         </button>
-        {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
+        {saved && <span style={{ fontSize: 13, color: '#6b8f71' }}>Saved!</span>}
       </div>
     </div>
   );
@@ -129,7 +130,7 @@ function ServicesTab() {
   return (
     <div>
       {/* Add form */}
-      <div style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
+      <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
         <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 12 }}>Add Service</div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
           <label style={{ flex: 2, minWidth: 140 }}>
@@ -151,8 +152,8 @@ function ServicesTab() {
             <input style={inp} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. Skin, Body" />
           </label>
         </div>
-        {error && <p style={{ color: '#cc3333', fontSize: 13, margin: '0 0 10px' }}>{error}</p>}
-        <button onClick={add} disabled={adding} style={{ padding: '7px 18px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: '600', cursor: 'pointer' }}>
+        {error && <p style={{ color: '#c97b7b', fontSize: 13, margin: '0 0 10px' }}>{error}</p>}
+        <button onClick={add} disabled={adding} style={{ padding: '7px 18px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: '600', cursor: 'pointer' }}>
           {adding ? '…' : '+ Add Service'}
         </button>
       </div>
@@ -161,17 +162,17 @@ function ServicesTab() {
       {services.length === 0 ? (
         <p style={{ color: '#bbb', fontSize: 13 }}>No services yet.</p>
       ) : (
-        <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 100px 40px', padding: '8px 16px', background: '#fafafa', borderBottom: '1px solid #eee', fontSize: 12, fontWeight: '700', color: '#888', textTransform: 'uppercase' }}>
+        <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 100px 40px', padding: '8px 16px', background: '#fdfaf6', borderBottom: '1px solid #e8dfd6', fontSize: 12, fontWeight: '700', color: '#b8a99e', textTransform: 'uppercase' }}>
             <span>Service</span><span style={{ textAlign: 'right' }}>Duration</span><span style={{ textAlign: 'right' }}>Price</span><span>Category</span><span></span>
           </div>
           {services.map((s, i) => (
-            <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 100px 40px', alignItems: 'center', padding: '10px 16px', borderTop: i > 0 ? '1px solid #f0f0f0' : 'none' }}>
+            <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 100px 40px', alignItems: 'center', padding: '10px 16px', borderTop: i > 0 ? '1px solid #e8dfd6' : 'none' }}>
               <span style={{ fontWeight: '600', fontSize: 14 }}>{s.name}</span>
-              <span style={{ textAlign: 'right', fontSize: 13, color: '#555' }}>{s.duration_minutes} min</span>
-              <span style={{ textAlign: 'right', fontSize: 13, color: '#555' }}>{s.price ? `₱${s.price}` : '—'}</span>
-              <span style={{ fontSize: 13, color: '#aaa' }}>{s.category || '—'}</span>
-              <button onClick={() => remove(s.id)} style={{ background: 'none', border: 'none', color: '#cc3333', cursor: 'pointer', fontSize: 16, padding: 0 }}>✕</button>
+              <span style={{ textAlign: 'right', fontSize: 13, color: '#7a6a5f' }}>{s.duration_minutes} min</span>
+              <span style={{ textAlign: 'right', fontSize: 13, color: '#7a6a5f' }}>{s.price ? `₱${s.price}` : '—'}</span>
+              <span style={{ fontSize: 13, color: '#b8a99e' }}>{s.category || '—'}</span>
+              <button onClick={() => remove(s.id)} style={{ background: 'none', border: 'none', color: '#c97b7b', cursor: 'pointer', fontSize: 16, padding: 0 }}>✕</button>
             </div>
           ))}
         </div>
@@ -238,7 +239,7 @@ function EmailTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Enable toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', border: '1px solid #eee', borderRadius: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', border: '1px solid #e8dfd6', borderRadius: 8 }}>
         <div>
           <div style={{ fontWeight: '600', fontSize: 14 }}>Enable Email Sending</div>
           <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Disable to stop all outgoing emails</div>
@@ -250,7 +251,7 @@ function EmailTab() {
       </div>
 
       {/* Resend config */}
-      <div style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>Brevo Configuration</div>
         <label>
           <span style={lbl}>API Key</span>
@@ -266,32 +267,32 @@ function EmailTab() {
             <input style={inp} value={form.fromName} onChange={e => setForm(f => ({ ...f, fromName: e.target.value }))} placeholder="e.g. Gentle Skin Aesthetics" />
           </label>
         </div>
-        <p style={{ margin: 0, fontSize: 12, color: '#aaa' }}>
+        <p style={{ margin: 0, fontSize: 12, color: '#b8a99e' }}>
           Need an API key? Sign up free at <strong>brevo.com</strong>. Verify your sender email under Senders &amp; IP → Senders.
         </p>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: '600', cursor: 'pointer', color: '#3e2f25' }}>
           {saving ? 'Saving…' : 'Save'}
         </button>
-        {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
+        {saved && <span style={{ fontSize: 13, color: '#6b8f71' }}>Saved!</span>}
       </div>
 
       {/* Test email */}
-      <div style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px' }}>
+      <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, padding: '16px 20px' }}>
         <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 10 }}>Send Test Email</div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
           <label style={{ flex: 1 }}>
             <span style={lbl}>Recipient</span>
             <input style={inp} type="email" value={testTo} onChange={e => setTestTo(e.target.value)} placeholder="test@example.com" />
           </label>
-          <button onClick={sendTest} disabled={testing || !testTo.trim()} style={{ padding: '7px 18px', background: '#555', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          <button onClick={sendTest} disabled={testing || !testTo.trim()} style={{ padding: '7px 18px', background: '#7a6a5f', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
             {testing ? 'Sending…' : 'Send Test'}
           </button>
         </div>
-        {testResult === 'ok' && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#0f9d58' }}>Test email sent successfully!</p>}
-        {testResult && testResult !== 'ok' && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#cc3333' }}>{testResult}</p>}
+        {testResult === 'ok' && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#6b8f71' }}>Test email sent successfully!</p>}
+        {testResult && testResult !== 'ok' && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#c97b7b' }}>{testResult}</p>}
       </div>
     </div>
   );
@@ -344,12 +345,12 @@ function NotificationsTab() {
 
   return (
     <div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, border: '1px solid #eee', borderRadius: 8, overflow: 'hidden', marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, border: '1px solid #e8dfd6', borderRadius: 8, overflow: 'hidden', marginBottom: 20 }}>
         {NOTIF_KEYS.map(({ key, label, desc }, i) => (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: i > 0 ? '1px solid #f0f0f0' : 'none' }}>
+          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: i > 0 ? '1px solid #e8dfd6' : 'none' }}>
             <div>
               <div style={{ fontWeight: '600', fontSize: 14 }}>{label}</div>
-              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{desc}</div>
+              <div style={{ fontSize: 12, color: '#7a6a5f', marginTop: 2 }}>{desc}</div>
             </div>
             <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, flexShrink: 0 }}>
               <input type="checkbox" checked={toggles[key]} onChange={e => setToggles(t => ({ ...t, [key]: e.target.checked }))} style={{ opacity: 0, width: 0, height: 0 }} />
@@ -368,10 +369,10 @@ function NotificationsTab() {
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: '600', cursor: 'pointer', color: '#3e2f25' }}>
           {saving ? 'Saving…' : 'Save'}
         </button>
-        {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
+        {saved && <span style={{ fontSize: 13, color: '#6b8f71' }}>Saved!</span>}
       </div>
     </div>
   );
@@ -421,19 +422,19 @@ function TemplatesTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <p style={{ margin: 0, fontSize: 13, color: '#888' }}>
-        Customize email subjects and bodies. Leave blank to use the built-in default. Use <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 3 }}>{'{{variable}}'}</code> placeholders shown below each template.
+      <p style={{ margin: 0, fontSize: 13, color: '#7a6a5f' }}>
+        Customize email subjects and bodies. Leave blank to use the built-in default. Use <code style={{ background: '#f5ede4', padding: '1px 5px', borderRadius: 3, color: '#7a5c2e' }}>{'{{variable}}'}</code> placeholders shown below each template.
       </p>
 
       {TEMPLATE_META.map(({ name, label, vars }) => {
         const tpl = templates[name] || { subject: '', body: '' };
         return (
-          <div key={name} style={{ border: '1px solid #eee', borderRadius: 8, padding: '16px 20px' }}>
+          <div key={name} style={{ border: '1px solid #e8dfd6', borderRadius: 8, padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ fontWeight: '600', fontSize: 14 }}>{label}</div>
               <button
                 onClick={() => reset(name)}
-                style={{ fontSize: 12, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                style={{ fontSize: 12, color: '#b8a99e', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
               >
                 Reset to default
               </button>
@@ -463,7 +464,7 @@ function TemplatesTab() {
 
             <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {vars.map(v => (
-                <span key={v} style={{ fontSize: 11, background: '#f0f4ff', color: '#3b4cc0', padding: '2px 8px', borderRadius: 4, fontFamily: 'monospace' }}>
+                <span key={v} style={{ fontSize: 11, background: '#f5ede4', color: '#7a5c2e', padding: '2px 8px', borderRadius: 4, fontFamily: 'monospace' }}>
                   {`{{${v}}}`}
                 </span>
               ))}
@@ -476,7 +477,7 @@ function TemplatesTab() {
         <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
           {saving ? 'Saving…' : 'Save All'}
         </button>
-        {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Saved!</span>}
+        {saved && <span style={{ fontSize: 13, color: '#6b8f71' }}>Saved!</span>}
       </div>
     </div>
   );
@@ -495,7 +496,7 @@ const THEMES = [
     key: 'warm',
     label: 'Warm',
     desc: 'Cream and warm brown — clinic brand',
-    preview: { sidebar: '#2C1A14', primary: '#8B5E52', page: '#FAF8F5' },
+    preview: { sidebar: '#f5ede4', primary: '#c8a97e', page: '#f8f5f0' },
   },
 ];
 
@@ -532,7 +533,7 @@ function AppearanceTab() {
             onClick={() => setCurrent(t.key)}
             style={{
               flex: '1 1 180px', border: `2px solid ${current === t.key ? 'var(--primary)' : '#eee'}`,
-              borderRadius: 10, overflow: 'hidden', cursor: 'pointer',
+              borderRadius: 12, overflow: 'hidden', cursor: 'pointer',
               boxShadow: current === t.key ? '0 0 0 3px var(--primary-light)' : 'none',
               transition: 'all 0.15s',
             }}
@@ -546,21 +547,21 @@ function AppearanceTab() {
                 <div style={{ marginTop: 4, height: 14, width: 40, background: t.preview.primary, borderRadius: 4 }} />
               </div>
             </div>
-            <div style={{ padding: '10px 14px', borderTop: '1px solid #f0f0f0' }}>
+            <div style={{ padding: '10px 14px', borderTop: '1px solid #e8dfd6' }}>
               <div style={{ fontWeight: '600', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {t.label}
                 {current === t.key && <span style={{ fontSize: 11, color: 'var(--primary)' }}>✓ Selected</span>}
               </div>
-              <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{t.desc}</div>
+              <div style={{ fontSize: 12, color: '#b8a99e', marginTop: 2 }}>{t.desc}</div>
             </div>
           </div>
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={applyAndSave} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
+        <button onClick={applyAndSave} disabled={saving} style={{ padding: '8px 20px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: '600', cursor: 'pointer' }}>
           {saving ? 'Applying…' : 'Apply Theme'}
         </button>
-        {saved && <span style={{ fontSize: 13, color: '#0f9d58' }}>Theme applied!</span>}
+        {saved && <span style={{ fontSize: 13, color: '#6b8f71' }}>Theme applied!</span>}
       </div>
     </div>
   );

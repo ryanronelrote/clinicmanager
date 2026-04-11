@@ -156,7 +156,7 @@ export default function ClientDetail() {
   const upcoming = appointments.filter(a => a.date >= today).sort((a, b) => a.date.localeCompare(b.date));
   const past     = appointments.filter(a => a.date <  today).sort((a, b) => b.date.localeCompare(a.date));
 
-  const inputStyle = { padding: '6px 8px', border: '1px solid #ccc', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
+  const inputStyle = { padding: '6px 8px', border: '1px solid #e8dfd6', borderRadius: 8, width: '100%', boxSizing: 'border-box', fontSize: 14 };
   const mh = editMode
     ? (profileDraft.medical_history || EMPTY_MH)
     : ((client.medical_history && typeof client.medical_history === 'object') ? client.medical_history : EMPTY_MH);
@@ -167,7 +167,7 @@ export default function ClientDetail() {
 
   return (
     <div style={{ maxWidth: 680 }}>
-      <button onClick={() => navigate('/clients')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#555', padding: 0 }}>← Back</button>
+      <button onClick={() => navigate('/clients')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', padding: 0, fontSize: 14 }}>← Back</button>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
@@ -177,10 +177,11 @@ export default function ClientDetail() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={toggleVip} disabled={toggling} style={{
-            padding: '4px 12px', fontSize: 12, cursor: 'pointer', borderRadius: 4,
-            border: client.is_vip ? '1px solid #d97706' : '1px solid #ccc',
-            background: client.is_vip ? '#fffbeb' : '#fafafa',
-            color: client.is_vip ? '#92400e' : '#555',
+            padding: '4px 12px', fontSize: 12, cursor: 'pointer', borderRadius: 8,
+            border: client.is_vip ? '1px solid #d6a45c' : '1px solid #e8dfd6',
+            background: client.is_vip ? '#fdf3e3' : '#fdfaf6',
+            color: client.is_vip ? '#7a5c2e' : '#7a6a5f',
+            transition: 'background 0.15s ease',
           }}>
             {client.is_vip ? 'Remove VIP' : 'Mark as VIP'}
           </button>
@@ -188,11 +189,11 @@ export default function ClientDetail() {
             <button onClick={enterEdit} style={outlineBtn('var(--primary)')}>Edit</button>
           ) : (
             <>
-              <button onClick={cancelEdit} style={outlineBtn('#888')}>Cancel</button>
+              <button onClick={cancelEdit} style={outlineBtn('#7a6a5f')}>Cancel</button>
               <button onClick={saveEdit} disabled={saving} style={solidBtn('var(--primary)')}>{saving ? 'Saving…' : 'Save'}</button>
             </>
           )}
-          <button onClick={() => { setShowDeleteModal(true); setConfirmPassword(''); setPasswordError(''); }} style={outlineBtn('#cc3333')}>
+          <button onClick={() => { setShowDeleteModal(true); setConfirmPassword(''); setPasswordError(''); }} style={outlineBtn('#c97b7b')}>
             Delete client
           </button>
         </div>
@@ -211,7 +212,7 @@ export default function ClientDetail() {
       )}
 
       {/* ── Patient Chart ── */}
-      <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
+      <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
         <div style={{ fontWeight: '700', fontSize: 15, textAlign: 'center', marginBottom: 16, letterSpacing: 1 }}>PATIENT CHART</div>
 
         {/* Personal info */}
@@ -275,33 +276,33 @@ export default function ClientDetail() {
         ) : (
           <div style={{ marginBottom: 16 }}>
             {/* Row 1 */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #eee', paddingBottom: 8, marginBottom: 8, flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid #e8dfd6', paddingBottom: 8, marginBottom: 8, flexWrap: 'wrap', gap: 16 }}>
               <ChartField label="Birthdate" value={client.birthdate ? new Date(client.birthdate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null} />
               <ChartField label="Age" value={calcAge(client.birthdate) != null ? `${calcAge(client.birthdate)} yrs` : null} />
               <ChartField label="Sex" value={client.sex} />
             </div>
-            <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid #eee', paddingBottom: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid #e8dfd6', paddingBottom: 8, marginBottom: 8, flexWrap: 'wrap' }}>
               <ChartField label="Address" value={client.address} flex={2} />
               <ChartField label="Occupation" value={client.occupation} />
               <ChartField label="Status" value={client.civil_status} />
             </div>
-            <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid #eee', paddingBottom: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid #e8dfd6', paddingBottom: 8, marginBottom: 8, flexWrap: 'wrap' }}>
               <ChartField label="Contact Number" value={client.phone} />
               <ChartField label="Email Address" value={client.email} flex={2} />
             </div>
             {client.notes && (
-              <div style={{ borderBottom: '1px solid #eee', paddingBottom: 8, marginBottom: 8 }}>
+              <div style={{ borderBottom: '1px solid #e8dfd6', paddingBottom: 8, marginBottom: 8 }}>
                 <ChartField label="Notes" value={client.notes} />
               </div>
             )}
-            <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: '#b8a99e', marginTop: 4 }}>
               Added: {new Date(client.created_at).toLocaleDateString()}
             </div>
           </div>
         )}
 
         {/* Medical History */}
-        <div style={{ borderTop: '1px solid #ddd', paddingTop: 14 }}>
+        <div style={{ borderTop: '1px solid #e8dfd6', paddingTop: 14 }}>
           <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 12 }}>Medical History:</div>
 
           {editMode ? (
@@ -379,15 +380,15 @@ export default function ClientDetail() {
       {/* ── Upcoming Appointments ── */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <h3 style={{ margin: 0, fontSize: 15, color: '#333' }}>Upcoming Appointments</h3>
-          <button onClick={() => navigate(`/appointments/add?client_id=${id}`)} style={solidBtn('#0f9d58')}>
+          <h3 style={{ margin: 0, fontSize: 15, color: '#3e2f25' }}>Upcoming Appointments</h3>
+          <button onClick={() => navigate(`/appointments/add?client_id=${id}`)} style={solidBtn('#6b8f71')}>
             + Schedule Appointment
           </button>
         </div>
         {upcoming.length === 0 ? (
-          <p style={{ color: '#aaa', fontSize: 13, margin: 0 }}>No upcoming appointments</p>
+          <p style={{ color: '#b8a99e', fontSize: 13, margin: 0 }}>No upcoming appointments</p>
         ) : (
-          <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, overflow: 'hidden' }}>
             {upcoming.map((appt, i) => (
               <ApptRow key={appt.id} appt={appt} i={i} editMode={editMode}
                 treatmentDrafts={treatmentDrafts} setTreatmentDrafts={setTreatmentDrafts}
@@ -400,12 +401,12 @@ export default function ClientDetail() {
 
       {/* ── Past Appointments ── */}
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ marginBottom: 10, fontSize: 15, color: '#333' }}>Past Appointments</h3>
+        <h3 style={{ marginBottom: 10, fontSize: 15, color: '#3e2f25' }}>Past Appointments</h3>
         {past.length === 0 && !editMode && (
-          <p style={{ color: '#aaa', fontSize: 13, margin: 0 }}>No past appointments</p>
+          <p style={{ color: '#b8a99e', fontSize: 13, margin: 0 }}>No past appointments</p>
         )}
         {past.length > 0 && (
-          <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden', marginBottom: editMode ? 8 : 0 }}>
+          <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, overflow: 'hidden', marginBottom: editMode ? 8 : 0 }}>
             {past.map((appt, i) => (
               <ApptRow key={appt.id} appt={appt} i={i} editMode={editMode}
                 treatmentDrafts={treatmentDrafts} setTreatmentDrafts={setTreatmentDrafts}
@@ -417,24 +418,24 @@ export default function ClientDetail() {
         {editMode && (
           <div style={{
             display: 'flex', gap: 8, alignItems: 'flex-start',
-            padding: '10px 12px', border: '1px dashed #ccc', borderRadius: 8, background: '#fafafa',
+            padding: '10px 12px', border: '1px dashed #e8dfd6', borderRadius: 8, background: '#fdfaf6',
           }}>
             <input type="date" max={today} value={newPast.date}
               onChange={e => setNewPast(d => ({ ...d, date: e.target.value }))}
-              style={{ padding: '5px 8px', border: '1px solid #ccc', borderRadius: 4, fontSize: 13, flexShrink: 0 }} />
+              style={{ padding: '5px 8px', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 13, flexShrink: 0 }} />
             <input type="text" placeholder="Therapist" value={newPast.therapist}
               onChange={e => setNewPast(d => ({ ...d, therapist: e.target.value }))}
-              style={{ padding: '5px 8px', border: '1px solid #ccc', borderRadius: 4, fontSize: 13, width: 110, flexShrink: 0 }} />
+              style={{ padding: '5px 8px', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 13, width: 110, flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
               <TreatmentListInput value={newPast.treatments} onChange={v => setNewPast(d => ({ ...d, treatments: v }))}
-                inputStyle={{ padding: '5px 8px', border: '1px solid #ccc', borderRadius: 4, fontSize: 13 }}
+                inputStyle={{ padding: '5px 8px', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 13 }}
                 placeholder="Treatments" />
             </div>
             <input type="text" placeholder="Notes" value={newPast.notes}
               onChange={e => setNewPast(d => ({ ...d, notes: e.target.value }))}
-              style={{ padding: '5px 8px', border: '1px solid #ccc', borderRadius: 4, fontSize: 13, flex: 1 }} />
+              style={{ padding: '5px 8px', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 13, flex: 1 }} />
             <button onClick={addPastAppointment} disabled={!newPast.date || addingPast}
-              style={{ ...solidBtn('#555'), flexShrink: 0, alignSelf: 'flex-start' }}>
+              style={{ ...solidBtn('#7a6a5f'), flexShrink: 0, alignSelf: 'flex-start' }}>
               {addingPast ? '…' : '+ Add'}
             </button>
           </div>
@@ -449,8 +450,8 @@ export default function ClientDetail() {
 function ChartField({ label, value, flex }) {
   return (
     <div style={{ flex: flex || 1, minWidth: 0 }}>
-      <div style={{ fontSize: 11, color: '#aaa', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 14, color: value ? '#222' : '#ccc' }}>{value || '—'}</div>
+      <div style={{ fontSize: 11, color: '#b8a99e', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 14, color: value ? '#3e2f25' : '#c8bdb7' }}>{value || '—'}</div>
     </div>
   );
 }
@@ -458,25 +459,25 @@ function ChartField({ label, value, flex }) {
 function MHViewQ({ num, text, yesno, explain, value }) {
   const hasContent = yesno || value;
   return (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #f5f5f5' }}>
-      <span style={{ minWidth: 22, fontSize: 12, color: '#888', paddingTop: 1 }}>{num}.</span>
+    <div style={{ display: 'flex', gap: 8, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #f0e8de' }}>
+      <span style={{ minWidth: 22, fontSize: 12, color: '#b8a99e', paddingTop: 1 }}>{num}.</span>
       <div style={{ flex: 1 }}>
-        <span style={{ fontSize: 12, color: '#555' }}>{text}</span>
+        <span style={{ fontSize: 12, color: '#7a6a5f' }}>{text}</span>
         {yesno && (
           <span style={{
             marginLeft: 8, fontSize: 11, fontWeight: '700',
-            color: yesno === 'yes' ? '#cc3333' : '#0f9d58',
+            color: yesno === 'yes' ? '#c97b7b' : '#6b8f71',
           }}>
             {yesno.toUpperCase()}
           </span>
         )}
         {(explain || value) && (
-          <div style={{ fontSize: 12, color: '#444', marginTop: 2, fontStyle: explain ? 'italic' : 'normal' }}>
+          <div style={{ fontSize: 12, color: '#3e2f25', marginTop: 2, fontStyle: explain ? 'italic' : 'normal' }}>
             {explain || value}
           </div>
         )}
         {!hasContent && !value && !yesno && (
-          <span style={{ fontSize: 12, color: '#ccc', marginLeft: 8 }}>—</span>
+          <span style={{ fontSize: 12, color: '#c8bdb7', marginLeft: 8 }}>—</span>
         )}
       </div>
     </div>
@@ -487,9 +488,9 @@ function MHEditQ({ num, text, children }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', gap: 8 }}>
-        <span style={{ minWidth: 22, fontWeight: '500', color: '#444', fontSize: 13 }}>{num}.</span>
+        <span style={{ minWidth: 22, fontWeight: '500', color: '#3e2f25', fontSize: 13 }}>{num}.</span>
         <div style={{ flex: 1 }}>
-          <span style={{ fontSize: 13, color: '#333' }}>{text}</span>
+          <span style={{ fontSize: 13, color: '#3e2f25' }}>{text}</span>
           {children}
         </div>
       </div>
@@ -513,29 +514,29 @@ function YesNoEdit({ value, onChange, name }) {
 function ExplainEdit({ label, value, onChange, inp }) {
   return (
     <div style={{ marginTop: 6 }}>
-      <span style={{ fontSize: 12, color: '#888' }}>{label}</span>
+      <span style={{ fontSize: 12, color: '#7a6a5f' }}>{label}</span>
       <input style={{ ...inp, marginTop: 3 }} value={value} onChange={e => onChange(e.target.value)} />
     </div>
   );
 }
 
 function ApptRow({ appt, i, editMode, treatmentDrafts, setTreatmentDrafts, therapistDrafts, setTherapistDrafts, navigate, muted }) {
-  const inputStyle = { padding: '4px 8px', border: '1px solid #ccc', borderRadius: 4, boxSizing: 'border-box', fontSize: 13 };
+  const inputStyle = { padding: '4px 8px', border: '1px solid #e8dfd6', borderRadius: 8, boxSizing: 'border-box', fontSize: 13 };
   return (
     <div
       style={{
         display: 'flex', alignItems: 'flex-start', gap: 12,
         padding: '11px 14px',
-        borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
-        background: '#fff',
+        borderTop: i > 0 ? '1px solid #e8dfd6' : 'none',
+        background: '#fdfaf6',
         cursor: editMode ? 'default' : 'pointer',
         opacity: muted ? 0.65 : 1,
       }}
       onClick={() => { if (!editMode) navigate(`/appointments/${appt.id}`); }}
-      onMouseEnter={e => { if (!editMode) e.currentTarget.style.background = '#f8f9ff'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+      onMouseEnter={e => { if (!editMode) e.currentTarget.style.background = '#f0e8de'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = '#fdfaf6'; }}
     >
-      <div style={{ minWidth: 150, fontSize: 13, fontWeight: '600', color: muted ? '#888' : '#333', paddingTop: editMode ? 5 : 0 }}>
+      <div style={{ minWidth: 150, fontSize: 13, fontWeight: '600', color: muted ? '#b8a99e' : '#3e2f25', paddingTop: editMode ? 5 : 0 }}>
         {formatDateShort(appt.date)}
       </div>
       <div style={{ flex: 1 }} onClick={e => editMode && e.stopPropagation()}>
@@ -550,17 +551,17 @@ function ApptRow({ appt, i, editMode, treatmentDrafts, setTreatmentDrafts, thera
           </div>
         ) : (
           <div>
-            {appt.therapist && <div style={{ fontSize: 12, color: muted ? '#aaa' : '#888', marginBottom: 2 }}>{appt.therapist}</div>}
-            <span style={{ fontSize: 13, color: muted ? '#999' : '#555' }}>
+            {appt.therapist && <div style={{ fontSize: 12, color: muted ? '#c8bdb7' : '#b8a99e', marginBottom: 2 }}>{appt.therapist}</div>}
+            <span style={{ fontSize: 13, color: muted ? '#b8a99e' : '#7a6a5f' }}>
               {appt.treatments
                 ? appt.treatments.split('\n').filter(Boolean).join(', ')
-                : <span style={{ color: '#ccc' }}>No treatments recorded</span>}
+                : <span style={{ color: '#c8bdb7' }}>No treatments recorded</span>}
             </span>
           </div>
         )}
       </div>
       {!editMode && appt.notes && (
-        <div style={{ fontSize: 12, color: '#bbb', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 12, color: '#c8bdb7', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {appt.notes}
         </div>
       )}
@@ -568,7 +569,7 @@ function ApptRow({ appt, i, editMode, treatmentDrafts, setTreatmentDrafts, thera
   );
 }
 
-const lblStyle = { fontSize: 12, color: '#888', display: 'block', marginBottom: 3 };
+const lblStyle = { fontSize: 12, color: '#7a6a5f', display: 'block', marginBottom: 3 };
 
 function DeleteConfirmModal({ clientName, confirmPassword, setConfirmPassword, passwordError, deleting, onConfirm, onCancel }) {
   return (
@@ -578,19 +579,19 @@ function DeleteConfirmModal({ clientName, confirmPassword, setConfirmPassword, p
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{
-        background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+        background: '#fdfaf6', borderRadius: 12, boxShadow: '0 4px 20px rgba(62,47,37,0.10)',
         padding: '28px 32px', maxWidth: 420, width: '90%',
       }}>
-        <div style={{ fontSize: 18, fontWeight: '700', color: '#cc3333', marginBottom: 12 }}>
+        <div style={{ fontSize: 18, fontWeight: '700', color: '#c97b7b', marginBottom: 12 }}>
           ⚠️ Delete Client
         </div>
-        <p style={{ margin: '0 0 8px', fontSize: 14, color: '#333', lineHeight: 1.5 }}>
+        <p style={{ margin: '0 0 8px', fontSize: 14, color: '#3e2f25', lineHeight: 1.5 }}>
           You are about to permanently delete <strong>{clientName}</strong> and all their appointment records.
         </p>
-        <p style={{ margin: '0 0 18px', fontSize: 13, color: '#888' }}>
+        <p style={{ margin: '0 0 18px', fontSize: 13, color: '#7a6a5f' }}>
           This cannot be undone.
         </p>
-        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#555' }}>
+        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#7a6a5f' }}>
           Enter clinic password to confirm:
         </label>
         <input
@@ -602,23 +603,23 @@ function DeleteConfirmModal({ clientName, confirmPassword, setConfirmPassword, p
           autoFocus
           style={{
             width: '100%', boxSizing: 'border-box',
-            padding: '8px 10px', border: '1px solid #ccc', borderRadius: 6,
+            padding: '8px 10px', border: '1px solid #e8dfd6', borderRadius: 8,
             fontSize: 14, marginBottom: 6,
           }}
         />
         {passwordError && (
-          <div style={{ fontSize: 12, color: '#cc3333', marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: '#c97b7b', marginBottom: 10 }}>
             ⛔ {passwordError}
           </div>
         )}
         {!passwordError && <div style={{ marginBottom: 10 }} />}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
-          <button onClick={onCancel} style={outlineBtn('#888')}>Cancel</button>
+          <button onClick={onCancel} style={outlineBtn('#7a6a5f')}>Cancel</button>
           <button
             onClick={onConfirm}
             disabled={deleting || !confirmPassword}
             style={{
-              ...solidBtn('#cc3333'),
+              ...solidBtn('#c97b7b'),
               opacity: deleting || !confirmPassword ? 0.6 : 1,
               cursor: deleting || !confirmPassword ? 'not-allowed' : 'pointer',
             }}

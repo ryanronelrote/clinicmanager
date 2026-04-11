@@ -60,41 +60,41 @@ export default function Home() {
       {/* Stats cards */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
         <StatCard label="Today's Appointments" value={loading ? '—' : todayCount} color="var(--primary)" />
-        <StatCard label="This Week" value={loading ? '—' : weekCount} color="#0f9d58" />
-        <StatCard label="Total Clients" value={loading ? '—' : clientCount} color="#9c27b0" />
-        <StatCard label="VIP Clients" value={loading ? '—' : vipCount} color="#f59e0b" onClick={() => navigate('/clients?vip=1')} />
+        <StatCard label="This Week" value={loading ? '—' : weekCount} color="#6b8f71" />
+        <StatCard label="Total Clients" value={loading ? '—' : clientCount} color="#7a6a5f" />
+        <StatCard label="VIP Clients" value={loading ? '—' : vipCount} color="#d6a45c" onClick={() => navigate('/clients?vip=1')} />
       </div>
 
       {/* Low stock alerts */}
       {!loading && (
         <div style={{ marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <h3 style={{ margin: 0, color: lowStockItems.length > 0 ? '#e07b54' : '#555' }}>
+            <h3 style={{ margin: 0, color: lowStockItems.length > 0 ? '#c97b7b' : '#7a6a5f' }}>
               {lowStockItems.length > 0 ? '⚠ Low Stock Alerts' : 'Low Stock Alerts'}
             </h3>
-            <button onClick={() => navigate('/inventory')} style={{ padding: '5px 14px', border: '1px solid #ccc', borderRadius: 4, color: '#555', background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+            <button onClick={() => navigate('/inventory')} style={{ padding: '6px 16px', border: '1px solid #e8dfd6', borderRadius: 8, color: '#7a6a5f', background: '#fff', cursor: 'pointer', fontSize: 13, transition: 'background 0.15s ease' }}>
               View Inventory
             </button>
           </div>
           {lowStockItems.length === 0 ? (
-            <div style={{ padding: '14px 16px', border: '1px solid #eee', borderRadius: 8, color: '#aaa', fontSize: 13 }}>
+            <div style={{ padding: '14px 16px', border: '1px solid #e8dfd6', borderRadius: 8, color: '#b8a99e', fontSize: 13 }}>
               All stock levels are good.
             </div>
           ) : (
-            <div style={{ border: '1px solid #fcd9c8', borderRadius: 8, overflow: 'hidden', background: '#fff8f4' }}>
+            <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, overflow: 'hidden', background: '#fdf9f5' }}>
               {lowStockItems.map((item, i) => (
                 <div key={item.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 16px',
-                  borderTop: i > 0 ? '1px solid #fcd9c8' : 'none',
+                  borderTop: i > 0 ? '1px solid #e8dfd6' : 'none',
                 }}>
                   <div>
                     <span style={{ fontWeight: '600', fontSize: 14 }}>{item.name}</span>
-                    {item.category && <span style={{ fontSize: 12, color: '#aaa', marginLeft: 8 }}>{item.category}</span>}
+                    {item.category && <span style={{ fontSize: 12, color: '#b8a99e', marginLeft: 8 }}>{item.category}</span>}
                   </div>
-                  <div style={{ fontSize: 13, color: '#e07b54', fontWeight: '600' }}>
+                  <div style={{ fontSize: 13, color: '#c97b7b', fontWeight: '600' }}>
                     {item.stock_quantity} {item.unit || ''} left
-                    <span style={{ fontSize: 11, color: '#bbb', fontWeight: 'normal', marginLeft: 6 }}>(min {item.low_stock_threshold})</span>
+                    <span style={{ fontSize: 11, color: '#c8bdb7', fontWeight: 'normal', marginLeft: 6 }}>(min {item.low_stock_threshold})</span>
                   </div>
                 </div>
               ))}
@@ -108,26 +108,26 @@ export default function Home() {
         <h3 style={{ margin: 0 }}>Upcoming This Week</h3>
         <button
           onClick={() => navigate('/calendar')}
-          style={{ padding: '5px 14px', border: '1px solid var(--primary)', borderRadius: 4, color: 'var(--primary)', background: '#fff', cursor: 'pointer', fontSize: 13 }}
+          style={{ padding: '6px 16px', border: '1px solid var(--primary)', borderRadius: 8, color: 'var(--primary)', background: '#fff', cursor: 'pointer', fontSize: 13, transition: 'background 0.15s ease' }}
         >
           View Calendar
         </button>
       </div>
 
-      {loading && <p style={{ color: '#888' }}>Loading…</p>}
+      {loading && <p style={{ color: '#b8a99e' }}>Loading…</p>}
 
       {!loading && upcoming.length === 0 && (
-        <div style={{ padding: '32px', textAlign: 'center', color: '#888', border: '1px dashed #ddd', borderRadius: 8 }}>
+        <div style={{ padding: '32px', textAlign: 'center', color: '#7a6a5f', border: '1px dashed #e8dfd6', borderRadius: 8 }}>
           No upcoming appointments this week.
         </div>
       )}
 
       {!loading && groupedDates.map(date => (
         <div key={date} style={{ marginBottom: 24 }}>
-          <div style={{ fontWeight: '700', fontSize: 13, color: '#555', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          <div style={{ fontWeight: '700', fontSize: 13, color: '#7a6a5f', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             {dayLabel(date)}
           </div>
-          <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, overflow: 'hidden' }}>
             {grouped[date].map((appt, i) => (
               <div
                 key={appt.id}
@@ -135,9 +135,10 @@ export default function Home() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 16,
                   padding: '12px 16px',
-                  borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
+                  borderTop: i > 0 ? '1px solid #e8dfd6' : 'none',
                   cursor: 'pointer',
                   background: '#fff',
+                  transition: 'background 0.15s ease',
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                 onMouseLeave={e => e.currentTarget.style.background = '#fff'}
@@ -154,17 +155,17 @@ export default function Home() {
                     {appt.is_vip ? VIP_BADGE : null}
                   </div>
                   {appt.therapist && (
-                    <div style={{ fontSize: 12, color: '#aaa', marginTop: 2 }}>{appt.therapist}</div>
+                    <div style={{ fontSize: 12, color: '#b8a99e', marginTop: 2 }}>{appt.therapist}</div>
                   )}
                   {appt.treatments && (() => {
                     const parts = appt.treatments.split('\n').filter(Boolean);
                     const label = parts[0] + (parts.length > 1 ? ` +${parts.length - 1}` : '');
-                    return <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{label}</div>;
+                    return <div style={{ fontSize: 12, color: '#7a6a5f', marginTop: 2 }}>{label}</div>;
                   })()}
                 </div>
 
                 {/* Duration */}
-                <div style={{ fontSize: 12, color: '#aaa', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 12, color: '#b8a99e', whiteSpace: 'nowrap' }}>
                   {appt.duration_minutes} min
                 </div>
 
@@ -180,12 +181,12 @@ export default function Home() {
 }
 
 const STATUS_BADGE_CONFIG = {
-  tentative:           { label: 'Tentative',           color: '#92400e', bg: '#fef3c7', border: '#fbbf24' },
-  confirmed:           { label: 'Confirmed',           color: '#166534', bg: '#dcfce7', border: '#86efac' },
-  confirmed_by_client: { label: 'Client Confirmed',   color: '#166534', bg: '#dcfce7', border: '#86efac' },
-  done:                { label: 'Done',                color: '#555',    bg: '#f0f0f0', border: '#ccc' },
-  cancelled:           { label: 'Cancelled',           color: '#cc3333', bg: '#fdecea', border: '#f8b4b4' },
-  cancelled_by_client: { label: 'Cancelled',           color: '#e07b54', bg: '#fff3ee', border: '#fbd0be' },
+  tentative:           { label: 'Tentative',          color: '#7a5c2e', bg: '#fdf3e3', border: '#d6a45c' },
+  confirmed:           { label: 'Confirmed',          color: '#3d5c41', bg: '#edf4ee', border: '#6b8f71' },
+  confirmed_by_client: { label: 'Client Confirmed',  color: '#3d5c41', bg: '#edf4ee', border: '#6b8f71' },
+  done:                { label: 'Done',               color: '#7a6a5f', bg: '#f3eeea', border: '#e8dfd6' },
+  cancelled:           { label: 'Cancelled',          color: '#8b3a3a', bg: '#faeaea', border: '#c97b7b' },
+  cancelled_by_client: { label: 'Cancelled',          color: '#8b3a3a', bg: '#faeaea', border: '#c97b7b' },
 };
 
 function ApptStatusBadge({ status }) {
@@ -215,7 +216,7 @@ function StatCard({ label, value, color, onClick }) {
       }}
     >
       <div style={{ fontSize: 28, fontWeight: '700', color }}>{value}</div>
-      <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#7a6a5f', marginTop: 4 }}>{label}</div>
     </div>
   );
 }

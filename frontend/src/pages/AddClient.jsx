@@ -34,17 +34,17 @@ export default function AddClient() {
   }
 
   const mh = form.medical_history;
-  const inp = { padding: '6px 8px', border: '1px solid var(--input-border)', borderRadius: 4, fontSize: 14, boxSizing: 'border-box' };
+  const inp = { padding: '6px 8px', border: '1px solid var(--input-border)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' };
   const inpFull = { ...inp, width: '100%' };
 
   return (
     <div style={{ maxWidth: 680 }}>
       <h2 style={{ textAlign: 'center', letterSpacing: 1, marginBottom: 20 }}>PATIENT CHART</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p style={{ color: '#c97b7b' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
 
         {/* ── Personal Info ── */}
-        <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: '16px 20px', marginBottom: 20 }}>
+        <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, padding: '16px 20px', marginBottom: 20 }}>
           <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
             <label style={{ flex: 2 }}>
               <span style={lbl}>First Name *</span>
@@ -103,7 +103,7 @@ export default function AddClient() {
         </div>
 
         {/* ── Medical History ── */}
-        <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: '16px 20px', marginBottom: 20 }}>
+        <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, padding: '16px 20px', marginBottom: 20 }}>
           <div style={{ fontWeight: '600', fontSize: 15, marginBottom: 14 }}>Medical History:</div>
 
           <MHQuestion num={1} text="Are you currently taking prescription, herbal or over the counter medication?">
@@ -191,7 +191,7 @@ export default function AddClient() {
           </label>
         </div>
 
-        <button type="submit" style={{ padding: '8px 24px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: '600' }}>
+        <button type="submit" style={{ padding: '9px 24px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontSize: 14, cursor: 'pointer', fontWeight: '600' }}>
           Save Patient
         </button>
       </form>
@@ -203,9 +203,9 @@ function MHQuestion({ num, text, children }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', gap: 8 }}>
-        <span style={{ minWidth: 22, fontWeight: '500', color: '#444' }}>{num}.</span>
+        <span style={{ minWidth: 22, fontWeight: '500', color: '#3e2f25' }}>{num}.</span>
         <div style={{ flex: 1 }}>
-          <span style={{ fontSize: 13, color: '#333' }}>{text}</span>
+          <span style={{ fontSize: 13, color: '#3e2f25' }}>{text}</span>
           {children}
         </div>
       </div>
@@ -229,10 +229,10 @@ function YesNo({ value, onChange }) {
 function ExplainField({ label, value, onChange, inp }) {
   return (
     <div style={{ marginTop: 6 }}>
-      <span style={{ fontSize: 12, color: '#888' }}>{label}</span>
+      <span style={{ fontSize: 12, color: '#7a6a5f' }}>{label}</span>
       <input style={{ ...inp, marginTop: 3 }} value={value} onChange={e => onChange(e.target.value)} />
     </div>
   );
 }
 
-const lbl = { fontSize: 12, color: '#888', display: 'block', marginBottom: 3 };
+const lbl = { fontSize: 12, color: '#7a6a5f', display: 'block', marginBottom: 3 };

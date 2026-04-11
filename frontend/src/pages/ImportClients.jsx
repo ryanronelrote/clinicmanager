@@ -135,7 +135,7 @@ export default function ImportClients() {
   return (
     <div style={{ maxWidth: 800 }}>
       <h2>Import Clients from CSV</h2>
-      <p style={{ color: '#666', marginTop: 0 }}>
+      <p style={{ color: '#7a6a5f', marginTop: 0 }}>
         Upload a CSV file to bulk-add clients. Expected columns (in any order):<br />
         <code style={{ background: 'var(--hover-bg)', padding: '2px 6px', borderRadius: 3 }}>
           first_name, last_name, phone, email, notes
@@ -146,7 +146,7 @@ export default function ImportClients() {
       {result && (
         <div style={{ marginBottom: 20 }}>
           <div style={{
-            background: '#e6f4ea', border: '1px solid #a8d5b5', borderRadius: 6,
+            background: '#edf4ee', border: '1px solid #6b8f71', borderRadius: 8,
             padding: '12px 16px', marginBottom: result.errors.length ? 8 : 0,
           }}>
             {result.imported} client{result.imported !== 1 ? 's' : ''} imported successfully.
@@ -154,7 +154,7 @@ export default function ImportClients() {
             <button onClick={reset} style={{ marginLeft: 8, ...linkBtn }}>Import more</button>
           </div>
           {result.errors.length > 0 && (
-            <div style={{ background: '#fef3e2', border: '1px solid #f5c97a', borderRadius: 6, padding: '10px 16px' }}>
+            <div style={{ background: '#fdf3e3', border: '1px solid #d6a45c', borderRadius: 8, padding: '10px 16px' }}>
               {result.errors.length} row{result.errors.length !== 1 ? 's' : ''} skipped:
               <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
                 {result.errors.map((e, i) => <li key={i}>Row {e.row}: {e.reason}</li>)}
@@ -172,24 +172,24 @@ export default function ImportClients() {
           onDrop={onDrop}
           onClick={() => fileRef.current.click()}
           style={{
-            border: `2px dashed ${dragOver ? 'var(--primary)' : '#ccc'}`,
+            border: `2px dashed ${dragOver ? 'var(--primary)' : '#e8dfd6'}`,
             borderRadius: 8,
             padding: '40px 24px',
             textAlign: 'center',
             cursor: 'pointer',
-            background: dragOver ? '#f0f7ff' : '#fafafa',
-            color: '#555',
+            background: dragOver ? '#f0e8de' : '#fdfaf6',
+            color: '#7a6a5f',
             marginBottom: 16,
           }}
         >
           <div style={{ fontSize: 32, marginBottom: 8 }}>📂</div>
           <div style={{ fontWeight: '600', marginBottom: 4 }}>Drop your CSV file here</div>
-          <div style={{ fontSize: 13, color: '#888' }}>or click to browse</div>
+          <div style={{ fontSize: 13, color: '#b8a99e' }}>or click to browse</div>
           <input ref={fileRef} type="file" accept=".csv" onChange={onFileInput} style={{ display: 'none' }} />
         </div>
       )}
 
-      {parseError && <p style={{ color: 'red' }}>{parseError}</p>}
+      {parseError && <p style={{ color: '#c97b7b' }}>{parseError}</p>}
 
       {/* Preview table */}
       {preview && (
@@ -197,13 +197,13 @@ export default function ImportClients() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <strong>{preview.rows.length} client{preview.rows.length !== 1 ? 's' : ''} ready to import</strong>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={reset} style={{ padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: 4, background: '#fff' }}>
+              <button onClick={reset} style={{ padding: '6px 14px', cursor: 'pointer', border: '1px solid #e8dfd6', borderRadius: 8, background: '#fdfaf6', color: '#7a6a5f' }}>
                 Cancel
               </button>
               <button
                 onClick={handleImport}
                 disabled={importing}
-                style={{ padding: '6px 16px', cursor: 'pointer', border: 'none', borderRadius: 4, background: 'var(--primary)', color: '#fff', fontWeight: '600' }}
+                style={{ padding: '6px 16px', cursor: 'pointer', border: 'none', borderRadius: 8, background: 'var(--primary)', color: '#3e2f25', fontWeight: '600' }}
               >
                 {importing ? 'Importing…' : `Import ${preview.rows.length} clients`}
               </button>
@@ -213,17 +213,17 @@ export default function ImportClients() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: 'var(--hover-bg)', borderBottom: '2px solid #ddd' }}>
+                <tr style={{ background: 'var(--hover-bg)', borderBottom: '2px solid #e8dfd6' }}>
                   <th style={th}>#</th>
                   {DISPLAY_COLS.map(c => <th key={c} style={th}>{c.replace('_', ' ')}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {preview.rows.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #eee', background: (!row.first_name || !row.last_name) ? '#fff8e1' : 'transparent' }}>
+                  <tr key={i} style={{ borderBottom: '1px solid #e8dfd6', background: (!row.first_name || !row.last_name) ? '#fdf3e3' : 'transparent' }}>
                     <td style={td}>{i + 1}</td>
                     {DISPLAY_COLS.map(c => (
-                      <td key={c} style={{ ...td, color: !row[c] ? '#bbb' : '#222' }}>
+                      <td key={c} style={{ ...td, color: !row[c] ? '#c8bdb7' : '#3e2f25' }}>
                         {row[c] || '—'}
                       </td>
                     ))}
@@ -233,7 +233,7 @@ export default function ImportClients() {
             </table>
           </div>
           {preview.rows.some(r => !r.first_name || !r.last_name) && (
-            <p style={{ color: '#b45309', fontSize: 12, marginTop: 8 }}>
+            <p style={{ color: '#7a5c2e', fontSize: 12, marginTop: 8 }}>
               Rows highlighted in yellow are missing first or last name and will be skipped.
             </p>
           )}
@@ -242,7 +242,7 @@ export default function ImportClients() {
 
       {/* CSV format hint */}
       {!preview && !result && (
-        <details style={{ marginTop: 16, fontSize: 13, color: '#666' }}>
+        <details style={{ marginTop: 16, fontSize: 13, color: '#7a6a5f' }}>
           <summary style={{ cursor: 'pointer', fontWeight: '600' }}>CSV format example</summary>
           <pre style={{ background: 'var(--hover-bg)', padding: 12, borderRadius: 4, marginTop: 8, overflowX: 'auto' }}>
 {`first_name,last_name,phone,email,notes

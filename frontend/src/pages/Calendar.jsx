@@ -116,11 +116,11 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
         width: Math.max(0, width - CARD_GAP),
         height: Math.max(0, height - 2),
         background: isTentative
-          ? (hovered ? '#b45309' : '#d97706')
-          : (hovered ? '#15803d' : '#16a34a'),
-        border: isTentative ? '2px dashed rgba(255,255,255,0.6)' : 'none',
-        opacity: isTentative ? 0.85 : 1,
-        borderRadius: 6,
+          ? (hovered ? '#b8956a' : '#d6a45c')
+          : (hovered ? '#5a7b60' : '#6b8f71'),
+        border: isTentative ? '2px dashed rgba(255,255,255,0.5)' : 'none',
+        opacity: isTentative ? 0.9 : 1,
+        borderRadius: 8,
         padding: '5px 8px',
         boxSizing: 'border-box',
         overflow: 'hidden',
@@ -130,8 +130,8 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
         lineHeight: 1.35,
         transition: 'background 0.15s ease',
         boxShadow: hovered
-          ? (isTentative ? '0 2px 8px rgba(180,83,9,0.3)' : '0 2px 8px rgba(21,128,61,0.3)')
-          : '0 1px 2px rgba(0,0,0,0.08)',
+          ? (isTentative ? '0 2px 8px rgba(214,164,92,0.3)' : '0 2px 8px rgba(107,143,113,0.25)')
+          : '0 1px 2px rgba(0,0,0,0.06)',
       }}
     >
       <div style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -163,7 +163,7 @@ function TimeLabels() {
           justifyContent: 'flex-end',
           paddingRight: 10,
           marginTop: slot.isHour ? -7 : 0, // nudge label up to align with hour line
-          color: '#9ca3af',
+          color: '#b8a99e',
           fontSize: 11,
           fontWeight: 500,
           boxSizing: 'border-box',
@@ -185,7 +185,7 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
   const slotColW = colWidth / maxCols;
 
   return (
-    <div style={{ width: colWidth, borderLeft: '1px solid #e5e7eb', position: 'relative', flexShrink: 0 }}>
+    <div style={{ width: colWidth, borderLeft: '1px solid #e8dfd6', position: 'relative', flexShrink: 0 }}>
       {/* Slot rows */}
       {SLOT_META.map((slot, si) => {
         const outsideHours = slot.mins < opensAt;
@@ -196,8 +196,8 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
             data-disabled={disabled}
             style={{
               height: SLOT_HEIGHT,
-              borderTop: slot.isHour ? '1px solid #e5e7eb' : '1px solid #f3f4f6',
-              background: disabled ? '#fdf8f4' : 'transparent',
+              borderTop: slot.isHour ? '1px solid #e8dfd6' : '1px solid #f0e8de',
+              background: disabled ? '#f5ede4' : 'transparent',
               cursor: disabled ? 'default' : 'pointer',
               boxSizing: 'border-box',
             }}
@@ -208,8 +208,8 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
                 navigate(`/appointments/add?date=${dateStr}&time=${h}:${m}`);
               }
             }}
-            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = '#fef6ee'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = disabled ? '#fdf8f4' : 'transparent'; }}
+            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = '#f0e8de'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = disabled ? '#f5ede4' : 'transparent'; }}
           />
         );
       })}
@@ -221,10 +221,10 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
         return (
           <div key={b.id} style={{
             position: 'absolute', top, left: 0, width: '100%', height,
-            background: 'repeating-linear-gradient(45deg,#fde68a,#fde68a 3px,#fef3c7 3px,#fef3c7 10px)',
-            borderLeft: '3px solid #f59e0b',
+            background: 'repeating-linear-gradient(45deg,#e8dfd6,#e8dfd6 3px,#f5ede4 3px,#f5ede4 10px)',
+            borderLeft: '3px solid #d6a45c',
             boxSizing: 'border-box', overflow: 'hidden',
-            zIndex: 1, padding: '3px 6px', fontSize: 11, color: '#92400e',
+            zIndex: 1, padding: '3px 6px', fontSize: 11, color: '#7a5c2e',
             pointerEvents: 'none',
           }}>
             🔒 {b.reason || 'Blocked'}
@@ -257,7 +257,7 @@ function DayColumn({ dateStr, dayIndex, appts, blocks, colWidth, navigate }) {
 function DayHeader({ days, apptsByDate }) {
   const td = todayStr();
   return (
-    <div style={{ display: 'flex', marginLeft: LABEL_W, borderBottom: '2px solid #e5e7eb' }}>
+    <div style={{ display: 'flex', marginLeft: LABEL_W, borderBottom: '2px solid #e8dfd6' }}>
       {days.map((day, di) => {
         const ds = toDateStr(day);
         const isToday = ds === td;
@@ -266,11 +266,11 @@ function DayHeader({ days, apptsByDate }) {
         return (
           <div key={di} style={{
             flex: 1, textAlign: 'center', padding: '8px 4px 10px',
-            borderLeft: '1px solid #e5e7eb',
-            background: isToday ? '#fef9f0' : 'transparent',
+            borderLeft: '1px solid #e8dfd6',
+            background: isToday ? '#f5ede4' : 'transparent',
           }}>
             <div style={{
-              fontSize: 11, color: isToday ? '#b45309' : '#6b7280',
+              fontSize: 11, color: isToday ? '#7a5c2e' : '#b8a99e',
               fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
             }}>
               {DAYS_SHORT[dayIdx]}
@@ -278,14 +278,14 @@ function DayHeader({ days, apptsByDate }) {
             <div style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: 34, height: 34, borderRadius: '50%', marginTop: 3,
-              background: isToday ? '#f59e0b' : 'transparent',
-              color: isToday ? '#fff' : '#111827',
+              background: isToday ? '#c8a97e' : 'transparent',
+              color: isToday ? '#3e2f25' : '#3e2f25',
               fontSize: 16, fontWeight: isToday ? 700 : 400,
             }}>
               {day.getDate()}
             </div>
             {count > 0 && (
-              <div style={{ fontSize: 10, color: isToday ? '#b45309' : '#9ca3af', marginTop: 2, fontWeight: 500 }}>
+              <div style={{ fontSize: 10, color: isToday ? '#7a5c2e' : '#b8a99e', marginTop: 2, fontWeight: 500 }}>
                 {count} appt{count !== 1 ? 's' : ''}
               </div>
             )}
@@ -306,11 +306,11 @@ function MonthGrid({ currentDate, apptsByDate, onDayClick }) {
 
   return (
     <div style={{ marginTop: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid #e5e7eb' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid #e8dfd6' }}>
         {DAYS_SHORT.map(d => (
           <div key={d} style={{
             padding: '8px 0', textAlign: 'center', fontSize: 11,
-            fontWeight: 600, color: '#6b7280', letterSpacing: '0.06em', textTransform: 'uppercase',
+            fontWeight: 600, color: '#b8a99e', letterSpacing: '0.06em', textTransform: 'uppercase',
           }}>{d}</div>
         ))}
       </div>
@@ -326,19 +326,19 @@ function MonthGrid({ currentDate, apptsByDate, onDayClick }) {
               onClick={() => onDayClick(day)}
               style={{
                 minHeight: 88, padding: '8px 10px',
-                border: '1px solid #e5e7eb',
-                background: isToday ? '#fef9f0' : '#fff',
+                border: '1px solid #e8dfd6',
+                background: isToday ? '#f5ede4' : '#fff',
                 cursor: 'pointer',
                 opacity: inMonth ? 1 : 0.3,
               }}
-              onMouseEnter={e => { if (inMonth) e.currentTarget.style.background = isToday ? '#fef3c7' : '#fdf8f4'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = isToday ? '#fef9f0' : '#fff'; }}
+              onMouseEnter={e => { if (inMonth) e.currentTarget.style.background = isToday ? '#ede3d8' : '#f0e8de'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = isToday ? '#f5ede4' : '#fff'; }}
             >
               <div style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 28, height: 28, borderRadius: '50%',
-                background: isToday ? '#f59e0b' : 'transparent',
-                color: isToday ? '#fff' : inMonth ? '#111827' : '#9ca3af',
+                background: isToday ? '#c8a97e' : 'transparent',
+                color: isToday ? '#3e2f25' : inMonth ? '#3e2f25' : '#c8bdb7',
                 fontSize: 13, fontWeight: isToday ? 700 : 400,
               }}>
                 {day.getDate()}
@@ -346,7 +346,7 @@ function MonthGrid({ currentDate, apptsByDate, onDayClick }) {
               {count > 0 && (
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  background: '#f59e0b', color: '#fff',
+                  background: '#c8a97e', color: '#3e2f25',
                   borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: 600,
                   marginLeft: 6, verticalAlign: 'middle',
                 }}>
@@ -378,15 +378,15 @@ function CalendarHeader({
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '10px 0 14px', borderBottom: '1px solid #e5e7eb',
+      padding: '10px 0 14px', borderBottom: '1px solid #e8dfd6',
       marginBottom: 0, gap: 12, flexWrap: 'wrap',
     }}>
       {/* LEFT: Period title + appointment count */}
       <div style={{ minWidth: 200 }}>
-        <div style={{ fontSize: 19, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>
+        <div style={{ fontSize: 19, fontWeight: 700, color: '#3e2f25', lineHeight: 1.2 }}>
           {periodLabel}
         </div>
-        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>
+        <div style={{ fontSize: 12, color: '#7a6a5f', marginTop: 3 }}>
           {loading ? 'Loading…' : `${appointmentCount} appointment${appointmentCount !== 1 ? 's' : ''}`}
         </div>
       </div>
@@ -402,7 +402,7 @@ function CalendarHeader({
 
         {/* View tabs */}
         <div style={{
-          display: 'flex', border: '1px solid #e5e7eb', borderRadius: 8,
+          display: 'flex', border: '1px solid #e8dfd6', borderRadius: 8,
           overflow: 'hidden', flexShrink: 0,
         }}>
           {[['daily','Day'], ['weekly','Week'], ['monthly','Month']].map(([v, label]) => (
@@ -434,10 +434,10 @@ function NavBtn({ onClick, title, wide, children }) {
         fontSize: wide ? 13 : 18,
         fontWeight: wide ? 500 : 400,
         cursor: 'pointer',
-        border: '1px solid #e5e7eb',
-        borderRadius: 7,
-        background: hov ? '#f3f4f6' : '#fff',
-        color: '#374151',
+        border: '1px solid #e8dfd6',
+        borderRadius: 8,
+        background: hov ? '#f0e8de' : '#fff',
+        color: '#3e2f25',
         lineHeight: 1,
         transition: 'background 0.12s',
       }}
@@ -457,9 +457,9 @@ function ViewTab({ label, active, onClick, last }) {
       style={{
         padding: '6px 14px', fontSize: 13, cursor: 'pointer',
         border: 'none',
-        borderRight: last ? 'none' : '1px solid #e5e7eb',
-        background: active ? '#fef9f0' : hov ? '#fdf8f4' : '#fff',
-        color: active ? '#b45309' : '#374151',
+        borderRight: last ? 'none' : '1px solid #e8dfd6',
+        background: active ? '#f5ede4' : hov ? '#f0e8de' : '#fff',
+        color: active ? '#7a5c2e' : '#3e2f25',
         fontWeight: active ? 600 : 400,
         transition: 'all 0.12s',
       }}
@@ -475,7 +475,7 @@ function SearchBox({ value, onChange }) {
     <div style={{ position: 'relative' }}>
       <span style={{
         position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-        color: '#9ca3af', fontSize: 13, pointerEvents: 'none', lineHeight: 1,
+        color: '#b8a99e', fontSize: 13, pointerEvents: 'none', lineHeight: 1,
       }}>🔍</span>
       <input
         type="text"
@@ -486,9 +486,9 @@ function SearchBox({ value, onChange }) {
         onBlur={() => setFocused(false)}
         style={{
           paddingLeft: 30, paddingRight: 12, paddingTop: 7, paddingBottom: 7,
-          fontSize: 13, border: `1px solid ${focused ? '#16a34a' : '#e5e7eb'}`,
+          fontSize: 13, border: `1px solid ${focused ? '#c8a97e' : '#e8dfd6'}`,
           borderRadius: 999, outline: 'none', width: 150,
-          color: '#374151', background: '#f9fafb',
+          color: '#3e2f25', background: '#fdfaf6',
           transition: 'border-color 0.15s',
         }}
       />
@@ -505,9 +505,9 @@ function BlockBtn({ onClick }) {
       onMouseLeave={() => setHov(false)}
       style={{
         padding: '7px 14px', fontSize: 12, fontWeight: 600,
-        border: '1.5px solid #374151', borderRadius: 7,
-        background: hov ? '#f3f4f6' : 'transparent',
-        color: '#374151', cursor: 'pointer',
+        border: '1.5px solid #e8dfd6', borderRadius: 8,
+        background: hov ? '#f0e8de' : 'transparent',
+        color: '#7a6a5f', cursor: 'pointer',
         letterSpacing: '0.04em', whiteSpace: 'nowrap',
         transition: 'background 0.12s',
       }}
@@ -591,7 +591,7 @@ export default function Calendar() {
   const dailyColW  = Math.max(400, Math.min(800, available));
 
   return (
-    <div style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', color: '#111827' }}>
+    <div style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', color: '#3e2f25' }}>
       {/* ── Header ── */}
       <CalendarHeader
         view={view}

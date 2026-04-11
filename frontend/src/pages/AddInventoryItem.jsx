@@ -20,14 +20,14 @@ export default function AddInventoryItem() {
     }
   }
 
-  const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 4, width: '100%', boxSizing: 'border-box', fontSize: 14 };
-  const lbl = { fontSize: 12, color: '#888', display: 'block', marginBottom: 3 };
+  const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 8, width: '100%', boxSizing: 'border-box', fontSize: 14 };
+  const lbl = { fontSize: 12, color: '#7a6a5f', display: 'block', marginBottom: 3 };
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <button onClick={() => navigate('/inventory')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#555', padding: 0 }}>← Back</button>
+      <button onClick={() => navigate('/inventory')} style={{ marginBottom: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', padding: 0, fontSize: 14 }}>← Back</button>
       <h2 style={{ marginTop: 0, marginBottom: 20 }}>Add Inventory Item</h2>
-      {error && <p style={{ color: '#cc3333' }}>{error}</p>}
+      {error && <p style={{ color: '#c97b7b' }}>{error}</p>}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <label>
           <span style={lbl}>Item Name *</span>
@@ -53,7 +53,7 @@ export default function AddInventoryItem() {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <label style={{ flex: 1 }}>
-            <span style={lbl}>Conversion Unit <span style={{ color: '#bbb' }}>(optional)</span></span>
+            <span style={lbl}>Conversion Unit <span style={{ color: '#c8bdb7' }}>(optional)</span></span>
             <input style={inp} value={form.conversion_unit} onChange={e => set('conversion_unit', e.target.value)} placeholder="e.g. bottle, box, L" />
           </label>
           <label style={{ flex: 1 }}>
@@ -61,7 +61,7 @@ export default function AddInventoryItem() {
             <input type="number" min="0" step="any" style={inp} value={form.conversion_factor} onChange={e => set('conversion_factor', e.target.value)} placeholder="e.g. 500" />
           </label>
         </div>
-        <button type="submit" style={{ padding: '8px 20px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: '600', alignSelf: 'flex-start' }}>
+        <button type="submit" style={{ padding: '9px 22px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontSize: 14, cursor: 'pointer', fontWeight: '600', alignSelf: 'flex-start' }}>
           Save Item
         </button>
       </form>
