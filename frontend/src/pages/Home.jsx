@@ -51,11 +51,11 @@ export default function Home() {
   return (
     <div style={{ maxWidth: 720 }}>
       {clinicName && (
-        <div style={{ fontSize: 22, fontWeight: '700', color: 'var(--primary)', marginBottom: 4 }}>
+        <div style={{ fontSize: 22, fontWeight: '700', color: 'var(--primary)', marginBottom: 4, fontFamily: 'var(--font-display)' }}>
           {clinicName}
         </div>
       )}
-      <h2 style={{ marginTop: 0, marginBottom: 20 }}>Dashboard</h2>
+      <h2 style={{ marginTop: 0, marginBottom: 20, fontSize: 30, letterSpacing: '-0.02em' }}>Dashboard</h2>
 
       {/* Stats cards */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
@@ -85,7 +85,7 @@ export default function Home() {
               {lowStockItems.map((item, i) => (
                 <div key={item.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 16px',
+                  padding: '12px 20px',
                   borderTop: i > 0 ? '1px solid #e8dfd6' : 'none',
                 }}>
                   <div>
@@ -134,7 +134,7 @@ export default function Home() {
                 onClick={() => navigate(`/appointments/${appt.id}`)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 16,
-                  padding: '12px 16px',
+                  padding: '14px 20px',
                   borderTop: i > 0 ? '1px solid #e8dfd6' : 'none',
                   cursor: 'pointer',
                   background: '#fff',
@@ -210,12 +210,12 @@ function StatCard({ label, value, color, onClick }) {
     <div
       onClick={onClick}
       style={{
-        flex: '1 1 160px', padding: '16px 20px', borderRadius: 10,
+        flex: '1 1 160px', padding: '20px 24px', borderRadius: 10,
         border: `1px solid ${color}22`, background: `${color}0d`,
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
-      <div style={{ fontSize: 28, fontWeight: '700', color }}>{value}</div>
+      <div style={{ fontSize: 28, fontWeight: '700', color, fontFamily: 'var(--font-display)' }}>{value}</div>
       <div style={{ fontSize: 13, color: '#7a6a5f', marginTop: 4 }}>{label}</div>
     </div>
   );

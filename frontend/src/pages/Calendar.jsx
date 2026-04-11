@@ -134,7 +134,7 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
           : '0 1px 2px rgba(0,0,0,0.06)',
       }}
     >
-      <div style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {isTentative ? '~ ' : ''}{appt.first_name} {appt.last_name}
       </div>
       {showDuration && (
@@ -383,7 +383,7 @@ function CalendarHeader({
     }}>
       {/* LEFT: Period title + appointment count */}
       <div style={{ minWidth: 200 }}>
-        <div style={{ fontSize: 19, fontWeight: 700, color: '#3e2f25', lineHeight: 1.2 }}>
+        <div style={{ fontSize: 19, fontWeight: 700, color: '#3e2f25', lineHeight: 1.2, fontFamily: 'var(--font-display)' }}>
           {periodLabel}
         </div>
         <div style={{ fontSize: 12, color: '#7a6a5f', marginTop: 3 }}>
@@ -591,7 +591,7 @@ export default function Calendar() {
   const dailyColW  = Math.max(400, Math.min(800, available));
 
   return (
-    <div style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', color: '#3e2f25' }}>
+    <div style={{ fontFamily: 'var(--font-body)', color: '#3e2f25' }}>
       {/* ── Header ── */}
       <CalendarHeader
         view={view}

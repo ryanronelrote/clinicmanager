@@ -101,3 +101,29 @@ Both checks are **skipped entirely** when `apptStatus === 'tentative'`.
 | System | Settings | `/settings` |
 
 "+ Add Client" is a button on `ClientList.jsx`, **not** in the sidebar.
+
+## Design System
+
+### Typography
+- **Display font**: Cormorant Garamond (500/600/700) — used for `h1`, `h2`, `h3`, brand name (sidebar + Home), stat card values
+- **Body font**: Inter (400/500/600/700) — used for everything else (forms, tables, buttons, nav)
+- Loaded via Google Fonts `<link>` in `frontend/index.html` (not `@import`)
+- CSS vars: `--font-display`, `--font-body` defined in `index.css` for both `:root` and `[data-theme="warm"]`
+- The `h1, h2, h3 { font-family: var(--font-display); }` rule in `index.css` automatically propagates the display font across all page titles — no per-file changes needed
+
+### Spacing Scale
+4 / 8 / 12 / 16 / 20 / 24 / 28 / 32 / 36px
+
+### Input Standard
+- Min-height: 40px (enforced via `input, select, textarea { min-height: 40px; }` in `index.css`)
+- Padding: `9px 12px`
+- Border radius: 8px
+- Use `inputBase` from `styleUtils.jsx` when building new forms
+
+### Button Standard
+- Use `solidBtn(color)` and `outlineBtn(color)` from `styleUtils.jsx`
+- Padding: `9px 20px`, border-radius: 8px, font: Inter 600, font-size: 13px
+- `solidBtn` auto-picks dark text (`#3e2f25`) for warm palette colors: `#c8a97e`, `var(--primary)`, `#6b8f71`, `#d6a45c`, `#c97b7b`
+
+### Color System (Warm Theme — `data-theme="warm"`)
+See `[data-theme="warm"]` block in `index.css`. Primary accent: `#c8a97e` (tan/gold). All semantic colors use CSS vars.

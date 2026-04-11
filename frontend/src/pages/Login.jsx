@@ -25,14 +25,14 @@ export default function Login() {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      minHeight: '100vh', background: 'var(--page-bg)', fontFamily: 'sans-serif',
+      minHeight: '100vh', background: 'var(--page-bg)', fontFamily: 'var(--font-body)',
     }}>
       <div style={{
         background: '#fdfaf6', borderRadius: 12, padding: '40px 36px',
         boxShadow: '0 2px 20px rgba(62,47,37,0.08)', width: '100%', maxWidth: 360,
         border: '1px solid #e8dfd6',
       }}>
-        <h2 style={{ margin: '0 0 6px', fontSize: 22, color: '#3e2f25' }}>Clinic Manager</h2>
+        <h2 style={{ margin: '0 0 6px', fontSize: 28, letterSpacing: '-0.02em', color: '#3e2f25' }}>Clinic Manager</h2>
         <p style={{ margin: '0 0 28px', color: '#7a6a5f', fontSize: 14 }}>Enter your password to continue</p>
 
         <form onSubmit={handleSubmit}>

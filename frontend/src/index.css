@@ -19,6 +19,8 @@
   --signout-color: #888;
   --card-bg: #ffffff;
   --text-primary: #111827;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 /* Warm theme */
@@ -42,12 +44,28 @@
   --signout-color: #7a6a5f;
   --card-bg: #fdfaf6;
   --text-primary: #3e2f25;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: sans-serif;
+  font-family: var(--font-body);
   background: var(--page-bg);
+}
+
+/* Editorial display font for all headings */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+/* Standardized input height — non-breaking floor */
+input, select, textarea {
+  min-height: 40px;
+  box-sizing: border-box;
+  font-family: var(--font-body);
 }

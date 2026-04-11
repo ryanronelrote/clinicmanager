@@ -5,45 +5,49 @@ const sidebarStyle = {
   position: 'fixed',
   top: 0,
   left: 0,
-  width: 200,
+  width: 220,
   height: '100vh',
   background: 'var(--sidebar-bg)',
   borderRight: '1px solid var(--sidebar-border)',
   display: 'flex',
   flexDirection: 'column',
-  fontFamily: 'sans-serif',
+  fontFamily: 'var(--font-body)',
   overflowY: 'auto',
 };
 
 const brandStyle = {
-  padding: '20px 16px 16px',
-  fontWeight: 'bold',
-  fontSize: 16,
-  letterSpacing: '0.3px',
+  padding: '22px 18px 18px',
+  fontFamily: 'var(--font-display)',
+  fontWeight: '700',
+  fontSize: 19,
+  letterSpacing: '-0.01em',
+  lineHeight: 1.2,
   borderBottom: '1px solid var(--sidebar-border)',
   color: 'var(--brand-text)',
 };
 
 const sectionLabelStyle = {
   padding: '16px 16px 4px',
-  fontSize: 11,
-  fontWeight: 'bold',
+  fontSize: 10,
+  fontWeight: '600',
   color: 'var(--sidebar-label)',
   textTransform: 'uppercase',
-  letterSpacing: '0.5px',
+  letterSpacing: '0.8px',
+  fontFamily: 'var(--font-body)',
 };
 
 function navLinkStyle({ isActive }) {
   return {
     display: 'block',
-    padding: '7px 16px',
+    padding: '8px 16px',
     textDecoration: 'none',
     color: isActive ? 'var(--sidebar-active-text)' : 'var(--sidebar-text)',
     background: isActive ? 'var(--sidebar-active-bg)' : 'transparent',
     borderRadius: 8,
     margin: '1px 8px',
-    fontWeight: isActive ? '600' : 'normal',
+    fontWeight: isActive ? '600' : '400',
     fontSize: 14,
+    fontFamily: 'var(--font-body)',
     transition: 'background 0.15s ease',
   };
 }
@@ -51,14 +55,15 @@ function navLinkStyle({ isActive }) {
 function subNavLinkStyle({ isActive }) {
   return {
     display: 'block',
-    padding: '6px 16px 6px 28px',
+    padding: '7px 16px 7px 28px',
     textDecoration: 'none',
     color: isActive ? 'var(--sidebar-active-text)' : 'var(--sidebar-sub-text)',
     background: isActive ? 'var(--sidebar-active-bg)' : 'transparent',
     borderRadius: 8,
     margin: '1px 8px',
-    fontWeight: isActive ? '600' : 'normal',
+    fontWeight: isActive ? '600' : '400',
     fontSize: 13,
+    fontFamily: 'var(--font-body)',
     transition: 'background 0.15s ease',
   };
 }
@@ -68,7 +73,7 @@ export default function App({ onLogout }) {
   const clinicName = settings?.clinic_name || 'Clinic Manager';
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--font-body)' }}>
       {/* Sidebar */}
       <nav style={sidebarStyle}>
         <div style={brandStyle}>{clinicName}</div>
@@ -108,9 +113,10 @@ export default function App({ onLogout }) {
           <button
             onClick={onLogout}
             style={{
-              width: '100%', padding: '7px 16px', fontSize: 13,
+              width: '100%', padding: '8px 16px', fontSize: 13,
               background: 'none', border: '1px solid var(--signout-border)', borderRadius: 8,
               color: 'var(--signout-color)', cursor: 'pointer', textAlign: 'left',
+              fontFamily: 'var(--font-body)',
               transition: 'background 0.15s ease',
             }}
           >
@@ -120,7 +126,7 @@ export default function App({ onLogout }) {
       </nav>
 
       {/* Main content */}
-      <main style={{ marginLeft: 200, flex: 1, padding: '24px 28px', minHeight: '100vh', background: 'var(--page-bg)' }}>
+      <main style={{ marginLeft: 220, flex: 1, padding: '28px 36px', minHeight: '100vh', background: 'var(--page-bg)' }}>
         <Outlet />
       </main>
     </div>
