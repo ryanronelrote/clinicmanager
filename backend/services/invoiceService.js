@@ -214,4 +214,15 @@ async function deleteInvoice(id) {
   return { success: true };
 }
 
-module.exports = { createInvoice, getInvoice, listInvoices, updateInvoiceItems, deleteInvoice, computeStatus };
+async function getMonthlyStats() {
+  const { rows } = await pool.query(`
+    SELECT COALESCE(SUM(amount_paid), 0) AS monthly_sales,
+           COUNT(*) AS invoice_count
+    FROM invoices
+    WHERE DATE_TRUNC('month', created_at AT TIME ZONE 'Asia/Manila')
+          = DATE_TRUNC('month', CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')
+  `);
+  return { monthly_sales: parseFloat(rows[0].monthly_sales), invoice_count: parseInt(rows[0].invoice_count) };
+}
+
+module.exports = { createInvoice, getInvoice, listInvoices, updateInvoiceItems, deleteInvoice, computeStatus, getMonthlyStats };

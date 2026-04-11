@@ -49,6 +49,7 @@ app.use('/blocked-slots', require('./routes/blockedSlots'));
 app.use('/inventory', require('./routes/inventory'));
 app.use('/settings', require('./routes/settings'));
 app.use('/services', require('./routes/services'));
+app.use('/staff', require('./routes/staff'));
 app.use('/therapist-schedules', require('./routes/therapistSchedule'));
 app.use('/invoices', require('./routes/invoices'));
 

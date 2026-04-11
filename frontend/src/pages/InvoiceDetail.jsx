@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAsync } from '../hooks/useAsync';
 import { invoiceService } from '../services/invoiceService';
+import { staffService } from '../services/staffService';
 import { solidBtn, outlineBtn } from '../utils/styleUtils';
 
 const STATUS_CONFIG = {
@@ -29,6 +30,7 @@ export default function InvoiceDetail() {
   const navigate = useNavigate();
   const printRef = useRef(null);
   const { data: invoice, loading, setData: setInvoice } = useAsync(() => invoiceService.getById(id), [id]);
+  const { data: staffList = [] } = useAsync(() => staffService.getAll(), []);
 
   // Payment form
   const [payAmount, setPayAmount] = useState('');
@@ -205,14 +207,23 @@ export default function InvoiceDetail() {
         <div style={{ marginBottom: 16, padding: '12px 16px', background: '#edf4ee', border: '1px solid #6b8f71', borderRadius: 8, display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <label style={{ flex: '1 1 180px' }}>
             <span style={{ fontSize: 12, color: '#3d5c41', fontWeight: 600, display: 'block', marginBottom: 4 }}>Received by *</span>
-            <input
-              autoFocus
-              type="text"
-              value={markPaidReceivedBy}
-              onChange={e => setMarkPaidReceivedBy(e.target.value)}
-              placeholder="Staff name"
-              style={inputStyle}
-            />
+            {staffList.length > 0 ? (
+              <select autoFocus value={markPaidReceivedBy} onChange={e => setMarkPaidReceivedBy(e.target.value)} style={inputStyle}>
+                <option value="">— Select staff —</option>
+                {staffList.map(s => (
+                  <option key={s.id} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                autoFocus
+                type="text"
+                value={markPaidReceivedBy}
+                onChange={e => setMarkPaidReceivedBy(e.target.value)}
+                placeholder="Staff name"
+                style={inputStyle}
+              />
+            )}
           </label>
           <button
             onClick={handleMarkPaid}
@@ -371,14 +382,23 @@ export default function InvoiceDetail() {
             </label>
             <label style={{ flex: '1 1 120px' }}>
               <span style={{ fontSize: 12, color: '#7a6a5f' }}>Received by *</span>
-              <input
-                type="text"
-                value={payReceivedBy}
-                onChange={e => setPayReceivedBy(e.target.value)}
-                placeholder="Staff name"
-                style={{ ...inputStyle, marginTop: 4 }}
-                required
-              />
+              {staffList.length > 0 ? (
+                <select value={payReceivedBy} onChange={e => setPayReceivedBy(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} required>
+                  <option value="">— Select staff —</option>
+                  {staffList.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={payReceivedBy}
+                  onChange={e => setPayReceivedBy(e.target.value)}
+                  placeholder="Staff name"
+                  style={{ ...inputStyle, marginTop: 4 }}
+                  required
+                />
+              )}
             </label>
             <button type="submit" disabled={paying} style={{ ...solidBtn('var(--primary)'), padding: '8px 20px', marginBottom: 0 }}>
               {paying ? 'Processing…' : 'Record Payment'}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { settingsService } from '../services/settingsService';
 import { serviceService } from '../services/serviceService';
+import { staffService } from '../services/staffService';
 import { useClinicSettings } from '../context/SettingsContext';
 
 const inp = { padding: '7px 10px', border: '1px solid var(--input-border)', borderRadius: 8, width: '100%', boxSizing: 'border-box', fontSize: 14 };
@@ -15,7 +16,7 @@ export default function Settings() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 28, borderBottom: '1px solid #e8dfd6', paddingBottom: 0 }}>
-        {[['clinic', 'Clinic'], ['services', 'Services'], ['notifications', 'Notifications'], ['email', 'Email'], ['templates', 'Templates'], ['appearance', 'Appearance']].map(([key, label]) => (
+        {[['clinic', 'Clinic'], ['services', 'Services'], ['staff', 'Staff'], ['notifications', 'Notifications'], ['email', 'Email'], ['templates', 'Templates'], ['appearance', 'Appearance']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             padding: '8px 18px', fontSize: 14, cursor: 'pointer', border: 'none',
             borderBottom: tab === key ? '2px solid var(--primary)' : '2px solid transparent',
@@ -28,6 +29,7 @@ export default function Settings() {
 
       {tab === 'clinic'        && <ClinicTab />}
       {tab === 'services'      && <ServicesTab />}
+      {tab === 'staff'         && <StaffTab />}
       {tab === 'notifications' && <NotificationsTab />}
       {tab === 'email'         && <EmailTab />}
       {tab === 'templates'     && <TemplatesTab />}
@@ -176,6 +178,81 @@ function ServicesTab() {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Staff Tab ─────────────────────────────────────────────────
+
+function StaffTab() {
+  const [staff, setStaff] = useState([]);
+  const [form, setForm] = useState({ name: '', role: '' });
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    staffService.getAll().then(setStaff).catch(() => {});
+  }, []);
+
+  async function add() {
+    if (!form.name.trim()) { setError('Name is required'); return; }
+    setAdding(true); setError('');
+    try {
+      const data = await staffService.create(form);
+      setStaff(s => [...s, data]);
+      setForm({ name: '', role: '' });
+    } catch (err) { setError(err.message || 'Error'); }
+    setAdding(false);
+  }
+
+  async function remove(id) {
+    try { await staffService.delete(id); setStaff(s => s.filter(x => x.id !== id)); }
+    catch (err) { console.error('Delete failed:', err); }
+  }
+
+  return (
+    <div>
+      <div style={{ border: '1px solid #e8dfd6', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
+        <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 12 }}>Add Staff</div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+          <label style={{ flex: 2, minWidth: 140 }}>
+            <span style={lbl}>Name *</span>
+            <input style={inp} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Maria Santos" />
+          </label>
+          <label style={{ flex: 1, minWidth: 120 }}>
+            <span style={lbl}>Role</span>
+            <input style={inp} value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} placeholder="e.g. Therapist, Admin" />
+          </label>
+        </div>
+        {error && <p style={{ color: '#c97b7b', fontSize: 13, margin: '0 0 10px' }}>{error}</p>}
+        <button onClick={add} disabled={adding} style={{ padding: '7px 18px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: '600', cursor: 'pointer' }}>
+          {adding ? '…' : '+ Add Staff'}
+        </button>
+      </div>
+      {staff.length === 0 ? (
+        <p style={{ color: '#b8a99e', fontSize: 13 }}>No staff added yet.</p>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid #e8dfd6', textAlign: 'left' }}>
+              <th style={{ padding: '8px 10px' }}>Name</th>
+              <th style={{ padding: '8px 10px' }}>Role</th>
+              <th style={{ padding: '8px 10px', width: 50 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {staff.map(s => (
+              <tr key={s.id} style={{ borderBottom: '1px solid #e8dfd6' }}>
+                <td style={{ padding: '8px 10px', fontWeight: 600 }}>{s.name}</td>
+                <td style={{ padding: '8px 10px', color: '#7a6a5f' }}>{s.role || '—'}</td>
+                <td style={{ padding: '8px 10px' }}>
+                  <button onClick={() => remove(s.id)} style={{ background: 'none', border: 'none', color: '#c97b7b', cursor: 'pointer', fontSize: 16, padding: 0 }} title="Remove">×</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

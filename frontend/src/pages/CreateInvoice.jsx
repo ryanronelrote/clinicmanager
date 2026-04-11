@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAsync } from '../hooks/useAsync';
 import { invoiceService } from '../services/invoiceService';
 import { clientService } from '../services/clientService';
+import { staffService } from '../services/staffService';
 import { authFetch } from '../authFetch';
 import { solidBtn, outlineBtn } from '../utils/styleUtils';
 
@@ -14,6 +15,7 @@ export default function CreateInvoice() {
   const presetTreatments = searchParams.get('treatments') || '';
 
   const { data: clients = [] } = useAsync(() => clientService.getAll(), []);
+  const { data: staffList = [] } = useAsync(() => staffService.getAll(), []);
   const { data: services = [] } = useAsync(async () => {
     const res = await authFetch('/services');
     if (!res.ok) return [];
@@ -241,14 +243,23 @@ export default function CreateInvoice() {
         {/* Created by */}
         <label style={labelStyle}>
           <strong>Created by *</strong>
-          <input
-            type="text"
-            value={createdBy}
-            onChange={e => setCreatedBy(e.target.value)}
-            placeholder="Staff name"
-            style={fieldStyle}
-            required
-          />
+          {staffList.length > 0 ? (
+            <select value={createdBy} onChange={e => setCreatedBy(e.target.value)} style={fieldStyle} required>
+              <option value="">— Select staff —</option>
+              {staffList.map(s => (
+                <option key={s.id} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={createdBy}
+              onChange={e => setCreatedBy(e.target.value)}
+              placeholder="Staff name"
+              style={fieldStyle}
+              required
+            />
+          )}
         </label>
 
         {/* Submit */}

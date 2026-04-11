@@ -30,6 +30,12 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json(rows);
 }));
 
+// Monthly sales stats
+router.get('/stats', asyncHandler(async (req, res) => {
+  const stats = await invoiceService.getMonthlyStats();
+  res.json(stats);
+}));
+
 // Get single invoice (with items + payments)
 router.get('/:id', asyncHandler(async (req, res) => {
   const invoice = await invoiceService.getInvoice(req.params.id);

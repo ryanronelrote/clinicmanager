@@ -183,6 +183,17 @@ const migrations = [
     name: '016_payments_received_by',
     sql: `ALTER TABLE payments ADD COLUMN IF NOT EXISTS received_by TEXT NOT NULL DEFAULT '';`,
   },
+  {
+    name: '017_staff_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS staff (
+        id         SERIAL PRIMARY KEY,
+        name       TEXT NOT NULL,
+        role       TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `,
+  },
 ];
 
 async function runMigrations(pool) {
