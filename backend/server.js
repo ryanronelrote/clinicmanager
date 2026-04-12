@@ -37,6 +37,7 @@ app.get('*', (req, res, next) => {
 });
 
 // ── Public routes (no auth) ──────────────────────────────────
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.use('/auth', require('./routes/auth'));
 
 // ── Auth middleware ───────────────────────────────────────────
