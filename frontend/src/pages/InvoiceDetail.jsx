@@ -452,6 +452,7 @@ export default function InvoiceDetail() {
               <select value={payMethod} onChange={e => setPayMethod(e.target.value)} style={{ ...inputStyle, marginTop: 4 }}>
                 <option value="cash">Cash</option>
                 <option value="gcash">GCash</option>
+                <option value="bdo">BDO Online</option>
                 <option value="card">Card</option>
               </select>
             </label>
@@ -516,8 +517,8 @@ export default function InvoiceDetail() {
                     <span style={{
                       fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
                       padding: '2px 8px', borderRadius: 10,
-                      background: p.payment_method === 'cash' ? '#edf4ee' : p.payment_method === 'gcash' ? '#f5ede4' : '#f3eeea',
-                      color: p.payment_method === 'cash' ? '#3d5c41' : p.payment_method === 'gcash' ? '#7a5c2e' : '#7a6a5f',
+                      background: p.payment_method === 'cash' ? '#edf4ee' : p.payment_method === 'gcash' ? '#f5ede4' : p.payment_method === 'bdo' ? '#e8eef8' : '#f3eeea',
+                      color: p.payment_method === 'cash' ? '#3d5c41' : p.payment_method === 'gcash' ? '#7a5c2e' : p.payment_method === 'bdo' ? '#2e4a7a' : '#7a6a5f',
                     }}>
                       {p.payment_method}
                     </span>
