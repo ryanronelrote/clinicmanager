@@ -439,7 +439,6 @@ export default function InvoiceDetail() {
                 type="number"
                 min="0.01"
                 step="0.01"
-                max={balance}
                 value={payAmount}
                 onChange={e => setPayAmount(e.target.value)}
                 placeholder={balance.toFixed(2)}

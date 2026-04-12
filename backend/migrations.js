@@ -222,6 +222,10 @@ const migrations = [
         CHECK (payment_method IN ('cash', 'gcash', 'bdo', 'card'));
     `,
   },
+  {
+    name: '021_drop_old_payment_method_check',
+    sql: `ALTER TABLE payments DROP CONSTRAINT IF EXISTS chk_payments_method;`,
+  },
 ];
 
 async function runMigrations(pool) {
