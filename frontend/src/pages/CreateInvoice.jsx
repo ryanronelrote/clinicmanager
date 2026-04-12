@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAsync } from '../hooks/useAsync';
 import { invoiceService } from '../services/invoiceService';
@@ -27,6 +27,28 @@ export default function CreateInvoice() {
   }, []);
 
   const [patientId, setPatientId] = useState(presetClientId);
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+
+  // Resolve preselected client name once clients load
+  useEffect(() => {
+    if (presetClientId && clients.length > 0 && !clientSearch) {
+      const match = clients.find(c => String(c.id) === presetClientId);
+      if (match) setClientSearch(`${match.first_name} ${match.last_name}`);
+    }
+  }, [clients, presetClientId]);
+
+  const filteredClients = clientSearch.trim()
+    ? clients.filter(c =>
+        `${c.first_name} ${c.last_name}`.toLowerCase().includes(clientSearch.toLowerCase())
+      )
+    : clients;
+
+  function selectClient(client) {
+    setPatientId(String(client.id));
+    setClientSearch(`${client.first_name} ${client.last_name}`);
+    setShowClientDropdown(false);
+  }
   const [appointmentId] = useState(presetAppointmentId);
   const [items, setItems] = useState(() => {
     if (presetTreatments) {
@@ -142,12 +164,57 @@ export default function CreateInvoice() {
         {/* Patient */}
         <label style={labelStyle}>
           <strong>Patient *</strong>
-          <select value={patientId} onChange={e => setPatientId(e.target.value)} style={fieldStyle} required>
-            <option value="">Select a patient…</option>
-            {clients.map(c => (
-              <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
-            ))}
-          </select>
+          <div style={{ position: 'relative', marginTop: 4 }}>
+            <input
+              type="text"
+              value={clientSearch}
+              onChange={e => { setClientSearch(e.target.value); setPatientId(''); setShowClientDropdown(true); }}
+              onFocus={() => setShowClientDropdown(true)}
+              onBlur={() => setTimeout(() => setShowClientDropdown(false), 150)}
+              placeholder="Search by name…"
+              required={!patientId}
+              style={{ ...fieldStyle, marginTop: 0 }}
+            />
+            <input type="hidden" value={patientId} required />
+            {showClientDropdown && filteredClients.length > 0 && (
+              <ul style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                background: '#fff', border: '1px solid #e8dfd6', borderRadius: 8,
+                margin: '2px 0 0', padding: 0, listStyle: 'none',
+                maxHeight: 220, overflowY: 'auto',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+              }}>
+                {filteredClients.map(c => (
+                  <li
+                    key={c.id}
+                    onMouseDown={() => selectClient(c)}
+                    style={{
+                      padding: '9px 12px', cursor: 'pointer', fontSize: 14,
+                      borderBottom: '1px solid #f3ede8',
+                      background: String(c.id) === patientId ? 'var(--sidebar-active-bg)' : 'transparent',
+                      fontWeight: String(c.id) === patientId ? 600 : 400,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fdf6f0'}
+                    onMouseLeave={e => e.currentTarget.style.background =
+                      String(c.id) === patientId ? 'var(--sidebar-active-bg)' : 'transparent'}
+                  >
+                    {c.first_name} {c.last_name}
+                    {c.is_vip ? ' ★' : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {showClientDropdown && clientSearch.trim() && filteredClients.length === 0 && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                background: '#fff', border: '1px solid #e8dfd6', borderRadius: 8,
+                margin: '2px 0 0', padding: '10px 12px', fontSize: 13, color: '#999',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+              }}>
+                No clients match "{clientSearch}"
+              </div>
+            )}
+          </div>
         </label>
 
         {appointmentId && (
