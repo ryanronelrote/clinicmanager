@@ -75,6 +75,21 @@ export default function InvoiceDetail() {
   const [editItems, setEditItems] = useState([]);
   const [editSaving, setEditSaving] = useState(false);
 
+  // Edit notes
+  const [notesEdit, setNotesEdit] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [notesSaving, setNotesSaving] = useState(false);
+
+  async function saveNotes() {
+    setNotesSaving(true);
+    try {
+      const updated = await invoiceService.updateNotes(id, notesDraft);
+      setInvoice(updated);
+      setNotesEdit(false);
+    } catch { /* stay in edit */ }
+    finally { setNotesSaving(false); }
+  }
+
   async function handleAddPayment(e) {
     e.preventDefault();
     setPayError('');
@@ -126,12 +141,13 @@ export default function InvoiceDetail() {
       name: i.name,
       quantity: String(i.quantity),
       unit_price: String(i.unit_price),
+      therapist: i.therapist || '',
     })));
     setEditMode(true);
   }
 
   function addEditItem() {
-    setEditItems(prev => [...prev, { name: '', quantity: '1', unit_price: '' }]);
+    setEditItems(prev => [...prev, { name: '', quantity: '1', unit_price: '', therapist: '' }]);
   }
 
   function removeEditItem(index) {
@@ -334,12 +350,36 @@ export default function InvoiceDetail() {
             <span style={labelStyle}>Created by</span>
             <span>{invoice.created_by || '—'}</span>
           </div>
-          {invoice.notes && (
-            <div style={rowStyle}>
-              <span style={labelStyle}>Notes</span>
-              <span style={{ whiteSpace: 'pre-wrap' }}>{invoice.notes}</span>
-            </div>
-          )}
+          <div style={rowStyle}>
+            <span style={labelStyle}>Notes</span>
+            {notesEdit ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <textarea
+                  autoFocus
+                  value={notesDraft}
+                  onChange={e => setNotesDraft(e.target.value)}
+                  rows={3}
+                  style={{ ...inputStyle, resize: 'vertical', width: '100%', boxSizing: 'border-box' }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={saveNotes} disabled={notesSaving} style={{ ...solidBtn('var(--primary)'), padding: '5px 14px', fontSize: 13 }}>
+                    {notesSaving ? 'Saving…' : 'Save'}
+                  </button>
+                  <button onClick={() => setNotesEdit(false)} style={{ ...outlineBtn('#7a6a5f'), padding: '5px 14px', fontSize: 13 }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <span style={{ whiteSpace: 'pre-wrap', flex: 1 }}>{invoice.notes || <span style={{ color: '#aaa' }}>—</span>}</span>
+                <button
+                  onClick={() => { setNotesDraft(invoice.notes || ''); setNotesEdit(true); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7a6a5f', fontSize: 12, padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}
+                >
+                  Edit
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Line items */}
@@ -348,6 +388,7 @@ export default function InvoiceDetail() {
           <div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, fontWeight: 600, color: '#7a6a5f' }}>
               <div style={{ flex: 2 }}>Name</div>
+              <div style={{ width: 100 }}>Therapist</div>
               <div style={{ width: 70 }}>Qty</div>
               <div style={{ width: 100 }}>Price</div>
               <div style={{ width: 80, textAlign: 'right' }}>Total</div>
@@ -361,6 +402,8 @@ export default function InvoiceDetail() {
                 <div key={index} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
                   <input type="text" value={item.name} onChange={e => updateEditItem(index, 'name', e.target.value)}
                     style={{ ...inputStyle, flex: 2 }} placeholder="Name" />
+                  <input type="text" value={item.therapist || ''} onChange={e => updateEditItem(index, 'therapist', e.target.value)}
+                    style={{ ...inputStyle, width: 100 }} placeholder="Therapist" />
                   <input type="number" value={item.quantity} onChange={e => updateEditItem(index, 'quantity', e.target.value)}
                     style={{ ...inputStyle, width: 70 }} min="0.01" step="0.01" />
                   <input type="number" value={item.unit_price} onChange={e => updateEditItem(index, 'unit_price', e.target.value)}
@@ -384,6 +427,7 @@ export default function InvoiceDetail() {
             <thead>
               <tr style={{ textAlign: 'left', borderBottom: '2px solid #e8dfd6' }}>
                 <th style={{ padding: '8px' }}>Treatment / Service</th>
+                <th style={{ padding: '8px', width: 110 }}>Therapist</th>
                 <th style={{ padding: '8px', width: 60 }}>Qty</th>
                 <th style={{ padding: '8px', width: 100 }}>Price</th>
                 <th style={{ padding: '8px', width: 100, textAlign: 'right' }}>Total</th>
@@ -393,6 +437,7 @@ export default function InvoiceDetail() {
               {items.map(item => (
                 <tr key={item.id} style={{ borderBottom: '1px solid #e8dfd6' }}>
                   <td style={{ padding: '8px' }}>{item.name}</td>
+                  <td style={{ padding: '8px', color: item.therapist ? 'inherit' : '#bbb', fontSize: 13 }}>{item.therapist || '—'}</td>
                   <td style={{ padding: '8px' }}>{parseFloat(item.quantity)}</td>
                   <td style={{ padding: '8px' }}>{parseFloat(item.unit_price).toFixed(2)}</td>
                   <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>{parseFloat(item.total_price).toFixed(2)}</td>

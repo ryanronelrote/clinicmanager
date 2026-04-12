@@ -36,6 +36,8 @@ export const invoiceService = {
         ...(paymentDate ? { payment_date: paymentDate } : {}),
       }),
     }),
+  updateNotes: (id, notes) =>
+    request(`/invoices/${id}/notes`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ notes }) }),
   updateInvoiceDate: (id, invoiceDate) =>
     request(`/invoices/${id}/invoice-date`, {
       method: 'PATCH',

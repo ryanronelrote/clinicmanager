@@ -80,6 +80,12 @@ router.post('/', validate(createSchema), asyncHandler(async (req, res) => {
   res.status(201).json(invoice);
 }));
 
+// Update invoice notes
+router.patch('/:id/notes', asyncHandler(async (req, res) => {
+  const invoice = await invoiceService.updateInvoiceNotes(req.params.id, req.body.notes);
+  res.json(invoice);
+}));
+
 // Update invoice items
 router.patch('/:id/items', asyncHandler(async (req, res) => {
   const { items } = req.body;

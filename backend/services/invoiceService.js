@@ -87,7 +87,7 @@ async function createInvoice({ patient_id, appointment_id, items, created_by, in
       const price = parseFloat(item.unit_price);
       const lineTotal = Math.round(qty * price * 100) / 100;
       totalAmount += lineTotal;
-      return { name: item.name.trim(), quantity: qty, unit_price: price, total_price: lineTotal };
+      return { name: item.name.trim(), quantity: qty, unit_price: price, total_price: lineTotal, therapist: item.therapist?.trim() || null };
     });
     totalAmount = Math.round(totalAmount * 100) / 100;
 
@@ -104,9 +104,9 @@ async function createInvoice({ patient_id, appointment_id, items, created_by, in
     // Insert line items
     for (const item of processedItems) {
       await client.query(
-        `INSERT INTO invoice_items (invoice_id, name, quantity, unit_price, total_price)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [invoiceId, item.name, item.quantity, item.unit_price, item.total_price]
+        `INSERT INTO invoice_items (invoice_id, name, quantity, unit_price, total_price, therapist)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [invoiceId, item.name, item.quantity, item.unit_price, item.total_price, item.therapist]
       );
     }
 
@@ -208,8 +208,8 @@ async function updateInvoiceItems(invoiceId, items) {
       const lineTotal = Math.round(qty * price * 100) / 100;
       totalAmount += lineTotal;
       await client.query(
-        'INSERT INTO invoice_items (invoice_id, name, quantity, unit_price, total_price) VALUES ($1, $2, $3, $4, $5)',
-        [parsedId, item.name.trim(), qty, price, lineTotal]
+        'INSERT INTO invoice_items (invoice_id, name, quantity, unit_price, total_price, therapist) VALUES ($1, $2, $3, $4, $5, $6)',
+        [parsedId, item.name.trim(), qty, price, lineTotal, item.therapist?.trim() || null]
       );
     }
     totalAmount = Math.round(totalAmount * 100) / 100;
@@ -255,6 +255,14 @@ async function getMonthlyStats() {
   return { monthly_sales: parseFloat(rows[0].monthly_sales), invoice_count: parseInt(rows[0].invoice_count) };
 }
 
+async function updateInvoiceNotes(invoiceId, notes) {
+  const parsedId = parseInt(invoiceId);
+  if (!parsedId || isNaN(parsedId)) throw svcError(400, 'Invalid invoice id');
+  const { rowCount } = await pool.query('UPDATE invoices SET notes = $1 WHERE id = $2', [notes?.trim() || null, parsedId]);
+  if (!rowCount) throw svcError(404, 'Invoice not found');
+  return getInvoice(parsedId);
+}
+
 async function updateInvoiceDate(invoiceId, invoice_date) {
   const parsedId = parseInt(invoiceId);
   if (!parsedId || isNaN(parsedId)) throw svcError(400, 'Invalid invoice id');
@@ -269,6 +277,7 @@ module.exports = {
   getInvoice,
   listInvoices,
   updateInvoiceItems,
+  updateInvoiceNotes,
   deleteInvoice,
   computeStatus,
   getMonthlyStats,

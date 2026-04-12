@@ -226,6 +226,10 @@ const migrations = [
     name: '021_drop_old_payment_method_check',
     sql: `ALTER TABLE payments DROP CONSTRAINT IF EXISTS chk_payments_method;`,
   },
+  {
+    name: '022_invoice_item_therapist',
+    sql: `ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS therapist TEXT;`,
+  },
 ];
 
 async function runMigrations(pool) {

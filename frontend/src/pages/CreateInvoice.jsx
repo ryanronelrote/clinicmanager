@@ -53,10 +53,10 @@ export default function CreateInvoice() {
   const [items, setItems] = useState(() => {
     if (presetTreatments) {
       return presetTreatments.split('\n').filter(Boolean).map(name => ({
-        name, quantity: '1', unit_price: '',
+        name, quantity: '1', unit_price: '', therapist: '',
       }));
     }
-    return [{ name: '', quantity: '1', unit_price: '' }];
+    return [{ name: '', quantity: '1', unit_price: '', therapist: '' }];
   });
   const [createdBy, setCreatedBy] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(manilaTodayYmd);
@@ -65,7 +65,7 @@ export default function CreateInvoice() {
   const [submitting, setSubmitting] = useState(false);
 
   function addItem() {
-    setItems(prev => [...prev, { name: '', quantity: '1', unit_price: '' }]);
+    setItems(prev => [...prev, { name: '', quantity: '1', unit_price: '', therapist: '' }]);
   }
 
   function removeItem(index) {
@@ -252,6 +252,7 @@ export default function CreateInvoice() {
           <div style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, fontWeight: 600, color: '#7a6a5f' }}>
             {services.length > 0 && <div style={{ width: 120 }}>Service</div>}
             <div style={{ flex: 2 }}>Name</div>
+            <div style={{ width: 100 }}>Therapist</div>
             <div style={{ width: 70 }}>Qty</div>
             <div style={{ width: 100 }}>Price</div>
             <div style={{ width: 90, textAlign: 'right' }}>Total</div>
@@ -284,6 +285,13 @@ export default function CreateInvoice() {
                   onChange={e => updateItem(index, 'name', e.target.value)}
                   style={{ ...fieldStyle, flex: 2, marginTop: 0 }}
                   required
+                />
+                <input
+                  type="text"
+                  placeholder="Therapist"
+                  value={item.therapist}
+                  onChange={e => updateItem(index, 'therapist', e.target.value)}
+                  style={{ ...fieldStyle, width: 100, marginTop: 0 }}
                 />
                 <input
                   type="number"
