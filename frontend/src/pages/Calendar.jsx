@@ -535,7 +535,7 @@ function BlockBtn({ onClick }) {
 // ── Main Calendar ─────────────────────────────────────────────
 export default function Calendar() {
   const navigate = useNavigate();
-  const [view, setView] = useState('weekly');
+  const [view, setView] = useState('daily');
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [appointments, setAppointments] = useState([]);
   const [blockedSlots, setBlockedSlots] = useState([]);
