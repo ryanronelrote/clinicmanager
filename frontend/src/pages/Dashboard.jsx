@@ -517,7 +517,6 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   <th style={thStyle()}>Name</th>
-                  <th style={{ ...thStyle(), textAlign: 'right' }}>Revenue</th>
                   <th style={{ ...thStyle(), textAlign: 'right' }}>Treatments Done</th>
                   <th style={{ ...thStyle(), textAlign: 'right' }}>Clients</th>
                 </tr>
@@ -526,7 +525,6 @@ export default function Dashboard() {
                 {data.therapistStats.map((row) => (
                   <tr key={row.name}>
                     <td style={tdStyle()}>{row.name}</td>
-                    <td style={{ ...tdStyle(), textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{moneyFmtFine.format(row.revenue)}</td>
                     <td style={{ ...tdStyle(), textAlign: 'right' }}>{row.treatmentsDone}</td>
                     <td style={{ ...tdStyle(), textAlign: 'right' }}>{row.clientsHandled}</td>
                   </tr>
