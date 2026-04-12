@@ -24,6 +24,7 @@ import InvoiceList from './pages/InvoiceList';
 import CreateInvoice from './pages/CreateInvoice';
 import InvoiceDetail from './pages/InvoiceDetail';
 import Dashboard from './pages/Dashboard';
+import PaymentList from './pages/PaymentList';
 import { useEffect } from 'react';
 
 function AppShell() {
@@ -66,6 +67,7 @@ function AppShell() {
           <Route path="invoices/create" element={<CreateInvoice />} />
           <Route path="invoices/:id" element={<InvoiceDetail />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="payments" element={<PaymentList />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -44,6 +44,13 @@ export const invoiceService = {
       headers: JSON_HEADERS,
       body: JSON.stringify({ invoice_date: invoiceDate }),
     }),
+  listPayments: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.from_date) qs.set('from_date', params.from_date);
+    if (params.to_date)   qs.set('to_date',   params.to_date);
+    const q = qs.toString();
+    return request(`/invoices/payments${q ? '?' + q : ''}`);
+  },
   delete:      (id) => request(`/invoices/${id}`, { method: 'DELETE' }),
   getStats:    () => request('/invoices/stats'),
 };

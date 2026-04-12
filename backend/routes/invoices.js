@@ -93,6 +93,13 @@ router.patch('/:id/items', asyncHandler(async (req, res) => {
   res.json(invoice);
 }));
 
+// List all payments across all invoices
+router.get('/payments', asyncHandler(async (req, res) => {
+  const { from_date, to_date } = req.query;
+  const rows = await paymentService.listAllPayments({ from_date, to_date });
+  res.json(rows);
+}));
+
 // Add payment to invoice
 router.post('/:id/payments', validate(paymentSchema), asyncHandler(async (req, res) => {
   const { amount, payment_method, received_by, payment_date } = req.body;

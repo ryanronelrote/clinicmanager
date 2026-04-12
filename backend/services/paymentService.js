@@ -126,4 +126,33 @@ async function getPaymentsByInvoice(invoiceId) {
   return rows;
 }
 
-module.exports = { addPayment, markAsPaid, getPaymentsByInvoice };
+async function listAllPayments({ from_date, to_date } = {}) {
+  const conditions = [];
+  const params = [];
+  if (from_date) { params.push(from_date); conditions.push(`p.payment_date >= $${params.length}::date`); }
+  if (to_date)   { params.push(to_date);   conditions.push(`p.payment_date <= $${params.length}::date`); }
+
+  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+  const { rows } = await pool.query(
+    `SELECT
+       p.id,
+       p.invoice_id,
+       p.amount,
+       p.payment_method,
+       p.received_by,
+       p.payment_date,
+       p.created_at,
+       c.first_name,
+       c.last_name,
+       c.id AS patient_id
+     FROM payments p
+     JOIN invoices i ON i.id = p.invoice_id
+     JOIN clients c ON c.id = i.patient_id
+     ${where}
+     ORDER BY p.payment_date DESC, p.created_at DESC`,
+    params
+  );
+  return rows;
+}
+
+module.exports = { addPayment, markAsPaid, getPaymentsByInvoice, listAllPayments };
