@@ -45,12 +45,12 @@ router.get('/check-conflicts', validate(conflictQuerySchema), asyncHandler(async
 
 // POST /appointments
 router.post('/', validate(createSchema), asyncHandler(async (req, res) => {
-  const { client_id, date, start_time, duration_minutes, treatments, therapist, notes, status } = req.body;
+  const { client_id, date, start_time, duration_minutes, treatments, therapist, notes, status, treatment_items, appointment_type } = req.body;
   const appt = await appointmentService.create({
     client_id: parseInt(client_id),
     date, start_time,
     duration_minutes: parseInt(duration_minutes),
-    treatments, therapist, notes, status,
+    treatments, therapist, notes, status, treatment_items, appointment_type,
   });
   res.status(201).json(appt);
 }));
@@ -80,9 +80,9 @@ router.patch('/:id/confirm', asyncHandler(async (req, res) => {
 
 // PATCH /appointments/:id
 router.patch('/:id', asyncHandler(async (req, res) => {
-  const { treatments, therapist, notes, date, start_time, duration_minutes, status } = req.body;
+  const { treatments, therapist, notes, date, start_time, duration_minutes, status, treatment_items, appointment_type } = req.body;
   const updated = await appointmentService.update(req.params.id, {
-    treatments, therapist, notes, date, start_time, duration_minutes, status,
+    treatments, therapist, notes, date, start_time, duration_minutes, status, treatment_items, appointment_type,
   });
   res.json(updated);
 }));

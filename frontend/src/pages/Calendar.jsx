@@ -110,12 +110,20 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
   const showDuration = height >= 38;
   const showTreatments = height >= 58 && treatments.length > 0;
   const isTentative = appt.status === 'tentative';
+  const isWalkIn = appt.appointment_type === 'walk_in';
 
   const tooltipBase = `${appt.first_name} ${appt.last_name}${appt.therapist ? ` · ${appt.therapist}` : ''}${treatments.length ? `\n${treatments.join(', ')}` : ''}`;
+  const typePrefix = isWalkIn ? '[Walk-in] ' : (isTentative ? '[Tentative — not yet confirmed]\n' : '');
+
+  function cardBg() {
+    if (isTentative) return hovered ? '#b8956a' : '#d6a45c';
+    if (isWalkIn)    return hovered ? '#4f7a9a' : '#5f8faf';
+    return hovered ? '#5a7b60' : '#6b8f71';
+  }
 
   return (
     <div
-      title={isTentative ? `[Tentative — not yet confirmed]\n${tooltipBase}` : tooltipBase}
+      title={`${typePrefix}${tooltipBase}`}
       onClick={e => { e.stopPropagation(); navigate(`/appointments/${appt.id}`); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -125,9 +133,7 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
         left: left + CARD_GAP / 2,
         width: Math.max(0, width - CARD_GAP),
         height: Math.max(0, height - 2),
-        background: isTentative
-          ? (hovered ? '#b8956a' : '#d6a45c')
-          : (hovered ? '#5a7b60' : '#6b8f71'),
+        background: cardBg(),
         border: isTentative ? '2px dashed rgba(255,255,255,0.5)' : 'none',
         opacity: isTentative ? 0.9 : 1,
         borderRadius: 8,
@@ -140,7 +146,7 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
         lineHeight: 1.35,
         transition: 'background 0.15s ease',
         boxShadow: hovered
-          ? (isTentative ? '0 2px 8px rgba(214,164,92,0.3)' : '0 2px 8px rgba(107,143,113,0.25)')
+          ? (isTentative ? '0 2px 8px rgba(214,164,92,0.3)' : isWalkIn ? '0 2px 8px rgba(95,143,175,0.3)' : '0 2px 8px rgba(107,143,113,0.25)')
           : '0 1px 2px rgba(0,0,0,0.06)',
       }}
     >
@@ -150,7 +156,7 @@ function AppointmentCard({ appt, top, height, left, width, navigate }) {
         background: STATUS_DOT_COLOR[appt.status] || 'rgba(255,255,255,0.8)',
       }} />
       <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>
-        {isTentative ? '~ ' : ''}{appt.first_name} {appt.last_name}
+        {isTentative ? '~ ' : isWalkIn ? '⚡ ' : ''}{appt.first_name} {appt.last_name}
       </div>
       {showDuration && (
         <div style={{ fontSize: 11, opacity: 0.88, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

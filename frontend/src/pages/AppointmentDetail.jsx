@@ -41,6 +41,7 @@ export default function AppointmentDetail() {
       treatment_items: items,
       notes: appt.notes || '',
       status: ['tentative', 'confirmed', 'done', 'cancelled'].includes(appt.status) ? appt.status : 'confirmed',
+      appointment_type: appt.appointment_type || 'regular',
     });
     setEditMode(true);
   }
@@ -267,6 +268,25 @@ export default function AppointmentDetail() {
                 {DURATIONS.map(d => <option key={d} value={d}>{d} min</option>)}
               </select>
             : <span>{appt.duration_minutes} minutes</span>}
+        </div>
+
+        {/* Type */}
+        <div style={rowStyle}>
+          <span style={{ ...labelStyle, paddingTop: editMode ? 6 : 0 }}>Type</span>
+          {editMode
+            ? <select value={draft.appointment_type}
+                onChange={e => setDraft(d => ({ ...d, appointment_type: e.target.value }))} style={inputStyle}>
+                <option value="regular">Regular</option>
+                <option value="walk_in">Walk-in</option>
+              </select>
+            : <span style={{
+                fontSize: 13, fontWeight: 600,
+                color: appt.appointment_type === 'walk_in' ? '#3a6080' : '#7a6a5f',
+                background: appt.appointment_type === 'walk_in' ? '#ddeef8' : '#f3eeea',
+                borderRadius: 6, padding: '2px 10px', display: 'inline-block',
+              }}>
+                {appt.appointment_type === 'walk_in' ? '⚡ Walk-in' : 'Regular'}
+              </span>}
         </div>
 
         {/* Status */}

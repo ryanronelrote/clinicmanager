@@ -23,6 +23,7 @@ export default function AddAppointment() {
     duration_minutes: '60',
     notes: '',
     status: 'confirmed',
+    appointment_type: 'regular',
   });
   const [treatmentItems, setTreatmentItems] = useState([{ name: '', therapist: '' }]);
   const [error, setError] = useState('');
@@ -82,11 +83,12 @@ export default function AddAppointment() {
     }
 
     const isTentative = form.status === 'tentative';
+    const isWalkIn = form.appointment_type === 'walk_in';
     if (conflicts && conflicts.blocked) {
       setError('This time overlaps a blocked period. Please choose a different time.');
       return;
     }
-    if (!isTentative && conflicts && conflicts.count >= 3) {
+    if (!isTentative && !isWalkIn && conflicts && conflicts.count >= 3) {
       setError('All 3 slots are occupied at this time. Please choose a different time.');
       return;
     }
@@ -117,12 +119,12 @@ export default function AddAppointment() {
           This time overlaps a blocked period. Please choose a different time.
         </p>
       )}
-      {conflicts && !conflicts.blocked && conflicts.count > 0 && conflicts.count < 3 && (
+      {conflicts && !conflicts.blocked && conflicts.count > 0 && conflicts.count < 3 && form.appointment_type !== 'walk_in' && (
         <p style={{ color: '#7a5c2e', background: '#fdf3e3', padding: '8px', borderRadius: 8, fontSize: 13 }}>
           {conflicts.count} of 3 slots occupied at this time. You can still book.
         </p>
       )}
-      {conflicts && !conflicts.blocked && conflicts.count >= 3 && (
+      {conflicts && !conflicts.blocked && conflicts.count >= 3 && form.appointment_type !== 'walk_in' && (
         <p style={{ color: '#c97b7b', background: '#faeaea', padding: '8px', borderRadius: 8, fontSize: 13 }}>
           All 3 slots are occupied at this time. Please choose a different time.
         </p>
@@ -228,13 +230,26 @@ export default function AddAppointment() {
           <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} style={fieldStyle} />
         </label>
         <label style={labelStyle}>
+          Type
+          <select name="appointment_type" value={form.appointment_type} onChange={handleChange} style={fieldStyle}>
+            <option value="regular">Regular</option>
+            <option value="walk_in">Walk-in (bypasses slot limit)</option>
+          </select>
+        </label>
+        <label style={labelStyle}>
           Status
           <select name="status" value={form.status} onChange={handleChange} style={fieldStyle}>
             <option value="confirmed">Confirmed</option>
             <option value="tentative">Tentative (no emails, doesn't block slots)</option>
           </select>
         </label>
-        <button type="submit" disabled={conflicts && (conflicts.blocked || (form.status !== 'tentative' && conflicts.count >= 3))} style={{ padding: '9px 22px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Appointment</button>
+        <button
+          type="submit"
+          disabled={conflicts && (conflicts.blocked || (form.status !== 'tentative' && form.appointment_type !== 'walk_in' && conflicts.count >= 3))}
+          style={{ padding: '9px 22px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}
+        >
+          Save Appointment
+        </button>
       </form>
     </div>
   );

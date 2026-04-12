@@ -234,6 +234,16 @@ const migrations = [
     name: '023_appointment_treatment_items',
     sql: `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS treatment_items JSONB;`,
   },
+  {
+    name: '024_appointment_type',
+    sql: `
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS appointment_type TEXT NOT NULL DEFAULT 'regular';
+      DO $$ BEGIN
+        ALTER TABLE appointments ADD CONSTRAINT chk_appointment_type CHECK (appointment_type IN ('regular', 'walk_in'));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+    `,
+  },
 ];
 
 async function runMigrations(pool) {

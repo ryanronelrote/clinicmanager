@@ -52,8 +52,10 @@ function _checkOverlaps(rows, startTime, durationMinutes, excludeId) {
  */
 async function checkConflicts(date, startTime, durationMinutes, excludeId, txClient) {
   const db = txClient || pool;
+  // Walk-in appointments are excluded from capacity count — they don't occupy regular slots
   let query = `SELECT id, start_time, duration_minutes, client_id
-               FROM appointments WHERE date = $1 AND status NOT IN ('cancelled', 'cancelled_by_client', 'tentative')`;
+               FROM appointments WHERE date = $1 AND status NOT IN ('cancelled', 'cancelled_by_client', 'tentative')
+               AND COALESCE(appointment_type, 'regular') != 'walk_in'`;
   const params = [date];
 
   if (excludeId) {
@@ -106,8 +108,9 @@ async function checkTherapistConflict(therapist, date, startTime, durationMinute
 
 // ── CRUD ─────────────────────────────────────────────────────
 
-async function create({ client_id, date, start_time, duration_minutes, treatments, therapist, notes, status, treatment_items }) {
+async function create({ client_id, date, start_time, duration_minutes, treatments, therapist, notes, status, treatment_items, appointment_type }) {
   const apptStatus = status === 'tentative' ? 'tentative' : 'confirmed';
+  const apptType = appointment_type === 'walk_in' ? 'walk_in' : 'regular';
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -118,18 +121,17 @@ async function create({ client_id, date, start_time, duration_minutes, treatment
       [date]
     );
 
-    // Blocked slot check applies to all appointments (including tentative)
+    // Blocked slot check applies to all appointments (including tentative and walk-in)
     const { count, blocked } = await checkConflicts(date, start_time, duration_minutes, null, client);
     if (blocked) {
       throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
     }
 
-    // Slot capacity and therapist checks only apply to confirmed bookings
-    if (apptStatus !== 'tentative') {
+    // Slot capacity check: confirmed regular appointments only (walk-ins bypass the limit)
+    if (apptStatus !== 'tentative' && apptType !== 'walk_in') {
       if (count >= 3) {
         throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
       }
-
     }
 
     // If structured treatment_items provided, derive flat treatments text from names
@@ -140,9 +142,9 @@ async function create({ client_id, date, start_time, duration_minutes, treatment
 
     const confirmationToken = crypto.randomBytes(24).toString('hex');
     const { rows: inserted } = await client.query(
-      `INSERT INTO appointments (client_id, date, start_time, duration_minutes, treatments, therapist, notes, confirmation_token, status, treatment_items)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
-      [client_id, date, start_time, duration_minutes, resolvedTreatments, therapist || null, notes || null, confirmationToken, apptStatus, resolvedItems ? JSON.stringify(resolvedItems) : null]
+      `INSERT INTO appointments (client_id, date, start_time, duration_minutes, treatments, therapist, notes, confirmation_token, status, treatment_items, appointment_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      [client_id, date, start_time, duration_minutes, resolvedTreatments, therapist || null, notes || null, confirmationToken, apptStatus, resolvedItems ? JSON.stringify(resolvedItems) : null, apptType]
     );
     const newId = inserted[0].id;
 
@@ -238,12 +240,13 @@ async function update(id, updates) {
     if (!existing.length) throw svcError(404, 'Appointment not found');
     const e = existing[0];
 
-    const { treatments, therapist, notes, date, start_time, duration_minutes, status, treatment_items } = updates;
+    const { treatments, therapist, notes, date, start_time, duration_minutes, status, treatment_items, appointment_type } = updates;
 
     const newDate = date !== undefined ? date : e.date;
     const newStart = start_time !== undefined ? start_time : e.start_time;
     const newDuration = duration_minutes !== undefined ? duration_minutes : e.duration_minutes;
     const newTherapist = therapist !== undefined ? therapist : e.therapist;
+    const newType = appointment_type === 'walk_in' ? 'walk_in' : (appointment_type === 'regular' ? 'regular' : (e.appointment_type || 'regular'));
 
     // Resolve treatment_items → treatments text
     const newItems = Array.isArray(treatment_items) && treatment_items.length > 0 ? treatment_items : null;
@@ -263,14 +266,15 @@ async function update(id, updates) {
 
       const { count, blocked } = await checkConflicts(newDate, newStart, newDuration, parsedId, client);
       if (blocked) throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
-      if (count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
+      // Walk-ins bypass the capacity limit
+      if (newType !== 'walk_in' && count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
     }
 
     const allowedStatuses = ['tentative', 'confirmed', 'done', 'cancelled'];
     const newStatus = (status && allowedStatuses.includes(status)) ? status : e.status;
 
     await client.query(
-      `UPDATE appointments SET date=$1, start_time=$2, duration_minutes=$3, treatments=$4, therapist=$5, notes=$6, status=$7, treatment_items=$8 WHERE id=$9`,
+      `UPDATE appointments SET date=$1, start_time=$2, duration_minutes=$3, treatments=$4, therapist=$5, notes=$6, status=$7, treatment_items=$8, appointment_type=$9 WHERE id=$10`,
       [
         newDate, newStart, newDuration,
         newTreatments,
@@ -278,6 +282,7 @@ async function update(id, updates) {
         notes !== undefined ? notes : e.notes,
         newStatus,
         newItems ? JSON.stringify(newItems) : (treatment_items === null ? null : e.treatment_items ?? null),
+        newType,
         parsedId,
       ]
     );
@@ -316,10 +321,10 @@ async function reschedule(id, { date, start_time, duration_minutes }) {
       [date, parsedId]
     );
 
-    // Global capacity + blocked slot check
+    // Global capacity + blocked slot check (walk-ins bypass the capacity limit)
     const { count, blocked } = await checkConflicts(date, start_time, duration_minutes, parsedId, client);
     if (blocked) throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
-    if (count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
+    if (row.appointment_type !== 'walk_in' && count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
 
     await client.query(
       'UPDATE appointments SET date=$1, start_time=$2, duration_minutes=$3, rescheduled_at=$4 WHERE id=$5',
