@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import TreatmentListInput from '../components/TreatmentListInput';
+import TreatmentTherapistInput from '../components/TreatmentTherapistInput';
 import { appointmentService } from '../services/appointmentService';
 import { useClients } from '../hooks/useClients';
 import { useServices } from '../hooks/useServices';
@@ -21,11 +21,10 @@ export default function AddAppointment() {
     date: searchParams.get('date') || '',
     start_time: searchParams.get('time') || '',
     duration_minutes: '60',
-    therapist: '',
-    treatments: '',
     notes: '',
     status: 'confirmed',
   });
+  const [treatmentItems, setTreatmentItems] = useState([{ name: '', therapist: '' }]);
   const [error, setError] = useState('');
 
   // Client search state
@@ -64,11 +63,8 @@ export default function AddAppointment() {
   function applyService(id) {
     const svc = services.find(s => String(s.id) === id);
     if (!svc) return;
-    setForm(f => ({
-      ...f,
-      duration_minutes: String(svc.duration_minutes),
-      treatments: svc.name,
-    }));
+    setForm(f => ({ ...f, duration_minutes: String(svc.duration_minutes) }));
+    setTreatmentItems([{ name: svc.name, therapist: '' }]);
   }
 
   function handleChange(e) {
@@ -100,6 +96,7 @@ export default function AddAppointment() {
         ...form,
         client_id: parseInt(form.client_id),
         duration_minutes: parseInt(form.duration_minutes),
+        treatment_items: treatmentItems.filter(t => t.name.trim()),
       });
       navigate('/calendar');
     } catch (err) {
@@ -217,17 +214,14 @@ export default function AddAppointment() {
           </select>
         </label>
         <label style={labelStyle}>
-          Therapist
-          <input name="therapist" type="text" value={form.therapist} onChange={handleChange}
-            placeholder="e.g. Sarah" style={fieldStyle} />
-        </label>
-        <label style={labelStyle}>
           Treatments
-          <TreatmentListInput
-            value={form.treatments}
-            onChange={v => setForm(f => ({ ...f, treatments: v }))}
-            inputStyle={{ padding: '8px', border: '1px solid #e8dfd6', borderRadius: 8, boxSizing: 'border-box', fontSize: 14, marginTop: 4 }}
-          />
+          <div style={{ marginTop: 6 }}>
+            <TreatmentTherapistInput
+              value={treatmentItems}
+              onChange={setTreatmentItems}
+              inputStyle={{ padding: '8px', border: '1px solid #e8dfd6', borderRadius: 8, boxSizing: 'border-box', fontSize: 14 }}
+            />
+          </div>
         </label>
         <label style={labelStyle}>
           Notes

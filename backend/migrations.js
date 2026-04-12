@@ -230,6 +230,10 @@ const migrations = [
     name: '022_invoice_item_therapist',
     sql: `ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS therapist TEXT;`,
   },
+  {
+    name: '023_appointment_treatment_items',
+    sql: `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS treatment_items JSONB;`,
+  },
 ];
 
 async function runMigrations(pool) {

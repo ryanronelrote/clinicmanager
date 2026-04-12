@@ -203,44 +203,37 @@ async function topTreatments(startDate, endDate) {
 
 async function therapistStats(startDate, endDate) {
   const { rows } = await pool.query(
-    `WITH appts AS (
-       SELECT id,
-              COALESCE(NULLIF(TRIM(therapist), ''), 'Unassigned') AS tname,
-              client_id
-       FROM appointments a
-       WHERE ${APPT_DAY} BETWEEN $1::date AND $2::date
-         AND ${APPT_ACTIVE}
-     ),
-     by_therapist AS (
-       SELECT tname,
-              COUNT(*)::int AS appointments_handled,
-              COUNT(DISTINCT client_id)::int AS clients_handled
-       FROM appts
-       GROUP BY tname
-     ),
-     rev AS (
-       SELECT COALESCE(NULLIF(TRIM(a.therapist), ''), 'Unassigned') AS tname,
-              COALESCE(SUM(COALESCE(i.amount_paid, 0)), 0)::float8 AS revenue
-       FROM invoices i
-       JOIN appointments a ON a.id = i.appointment_id
+    `WITH items AS (
+       SELECT
+         ii.invoice_id,
+         COALESCE(NULLIF(TRIM(ii.therapist), ''), 'Unassigned') AS tname,
+         COUNT(ii.id)::int AS treatments,
+         COUNT(DISTINCT i.patient_id)::int AS clients,
+         COALESCE(SUM(
+           CASE WHEN i.total_amount > 0
+             THEN ii.total_price / i.total_amount * i.amount_paid
+             ELSE 0
+           END
+         ), 0)::float8 AS revenue
+       FROM invoice_items ii
+       JOIN invoices i ON i.id = ii.invoice_id
        WHERE ${INVOICE_DAY} BETWEEN $1::date AND $2::date
-         AND ${APPT_DAY} BETWEEN $1::date AND $2::date
-         AND ${APPT_ACTIVE}
-       GROUP BY 1
+       GROUP BY ii.invoice_id, tname
      )
-     SELECT bt.tname AS name,
-            COALESCE(r.revenue, 0)::float8 AS revenue,
-            bt.appointments_handled,
-            bt.clients_handled
-     FROM by_therapist bt
-     LEFT JOIN rev r ON r.tname = bt.tname
-     ORDER BY revenue DESC NULLS LAST, bt.appointments_handled DESC`,
+     SELECT
+       tname AS name,
+       SUM(treatments)::int               AS treatments_done,
+       SUM(clients)::int                  AS clients_handled,
+       COALESCE(SUM(revenue), 0)::float8  AS revenue
+     FROM items
+     GROUP BY tname
+     ORDER BY revenue DESC NULLS LAST, treatments_done DESC`,
     [startDate, endDate]
   );
   return rows.map((r) => ({
     name: r.name,
     revenue: Math.round((parseFloat(r.revenue) || 0) * 100) / 100,
-    appointmentsHandled: r.appointments_handled,
+    treatmentsDone: r.treatments_done,
     clientsHandled: r.clients_handled,
   }));
 }

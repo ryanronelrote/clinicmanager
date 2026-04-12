@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import TreatmentListInput from '../components/TreatmentListInput';
+import TreatmentTherapistInput from '../components/TreatmentTherapistInput';
 import { appointmentService } from '../services/appointmentService';
 import { useAppointment } from '../hooks/useAppointment';
 import { useConflictCheck } from '../hooks/useConflictCheck';
@@ -31,11 +31,16 @@ export default function AppointmentDetail() {
   );
 
   function enterEdit() {
+    // Prefer structured treatment_items; fall back to splitting treatments text
+    const items = appt.treatment_items && appt.treatment_items.length > 0
+      ? appt.treatment_items
+      : (appt.treatments
+          ? appt.treatments.split('\n').filter(Boolean).map(name => ({ name, therapist: '' }))
+          : [{ name: '', therapist: '' }]);
     setDraft({
-      therapist:  appt.therapist || '',
-      treatments: appt.treatments || '',
-      notes:      appt.notes || '',
-      status:     ['tentative', 'confirmed', 'done', 'cancelled'].includes(appt.status) ? appt.status : 'confirmed',
+      treatment_items: items,
+      notes: appt.notes || '',
+      status: ['tentative', 'confirmed', 'done', 'cancelled'].includes(appt.status) ? appt.status : 'confirmed',
     });
     setEditMode(true);
   }
@@ -264,15 +269,6 @@ export default function AppointmentDetail() {
             : <span>{appt.duration_minutes} minutes</span>}
         </div>
 
-        {/* Therapist */}
-        <div style={rowStyle}>
-          <span style={{ ...labelStyle, paddingTop: rescheduleMode ? 0 : labelStyle.paddingTop }}>Therapist</span>
-          {editMode
-            ? <input type="text" value={draft.therapist} placeholder="e.g. Sarah"
-                onChange={e => setDraft(d => ({ ...d, therapist: e.target.value }))} style={inputStyle} />
-            : <span>{appt.therapist || '—'}</span>}
-        </div>
-
         {/* Status */}
         <div style={rowStyle}>
           <span style={{ ...labelStyle, paddingTop: rescheduleMode ? 0 : labelStyle.paddingTop }}>Status</span>
@@ -287,21 +283,32 @@ export default function AppointmentDetail() {
             : <StatusBadge status={appt.status} />}
         </div>
 
-        {/* Treatments */}
-        <div style={rowStyle}>
-          <span style={{ ...labelStyle, paddingTop: rescheduleMode ? 0 : labelStyle.paddingTop }}>Treatments</span>
+        {/* Treatments (with per-item therapist) */}
+        <div style={{ ...rowStyle, alignItems: 'flex-start' }}>
+          <span style={{ ...labelStyle, paddingTop: 6 }}>Treatments</span>
           {editMode
-            ? <TreatmentListInput
-                value={draft.treatments}
-                onChange={v => setDraft(d => ({ ...d, treatments: v }))}
+            ? <TreatmentTherapistInput
+                value={draft.treatment_items}
+                onChange={v => setDraft(d => ({ ...d, treatment_items: v }))}
                 inputStyle={inputStyle}
               />
             : <div>
-                {appt.treatments
-                  ? appt.treatments.split('\n').filter(Boolean).map((t, i) => (
-                      <div key={i} style={{ marginBottom: 2 }}>{t}</div>
+                {(appt.treatment_items && appt.treatment_items.length > 0)
+                  ? appt.treatment_items.map((t, i) => (
+                      <div key={i} style={{ marginBottom: 4 }}>
+                        <span>{t.name}</span>
+                        {t.therapist && (
+                          <span style={{ marginLeft: 8, fontSize: 12, color: '#7a6a5f', background: '#f3ede8', borderRadius: 4, padding: '1px 6px' }}>
+                            {t.therapist}
+                          </span>
+                        )}
+                      </div>
                     ))
-                  : '—'}
+                  : appt.treatments
+                    ? appt.treatments.split('\n').filter(Boolean).map((t, i) => (
+                        <div key={i} style={{ marginBottom: 2 }}>{t}</div>
+                      ))
+                    : '—'}
               </div>}
         </div>
 

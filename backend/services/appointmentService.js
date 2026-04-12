@@ -106,7 +106,7 @@ async function checkTherapistConflict(therapist, date, startTime, durationMinute
 
 // ── CRUD ─────────────────────────────────────────────────────
 
-async function create({ client_id, date, start_time, duration_minutes, treatments, therapist, notes, status }) {
+async function create({ client_id, date, start_time, duration_minutes, treatments, therapist, notes, status, treatment_items }) {
   const apptStatus = status === 'tentative' ? 'tentative' : 'confirmed';
   const client = await pool.connect();
   try {
@@ -132,11 +132,17 @@ async function create({ client_id, date, start_time, duration_minutes, treatment
 
     }
 
+    // If structured treatment_items provided, derive flat treatments text from names
+    const resolvedItems = Array.isArray(treatment_items) && treatment_items.length > 0 ? treatment_items : null;
+    const resolvedTreatments = resolvedItems
+      ? resolvedItems.map(t => t.name).filter(Boolean).join('\n') || null
+      : (treatments || null);
+
     const confirmationToken = crypto.randomBytes(24).toString('hex');
     const { rows: inserted } = await client.query(
-      `INSERT INTO appointments (client_id, date, start_time, duration_minutes, treatments, therapist, notes, confirmation_token, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-      [client_id, date, start_time, duration_minutes, treatments || null, therapist || null, notes || null, confirmationToken, apptStatus]
+      `INSERT INTO appointments (client_id, date, start_time, duration_minutes, treatments, therapist, notes, confirmation_token, status, treatment_items)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+      [client_id, date, start_time, duration_minutes, resolvedTreatments, therapist || null, notes || null, confirmationToken, apptStatus, resolvedItems ? JSON.stringify(resolvedItems) : null]
     );
     const newId = inserted[0].id;
 
@@ -232,12 +238,18 @@ async function update(id, updates) {
     if (!existing.length) throw svcError(404, 'Appointment not found');
     const e = existing[0];
 
-    const { treatments, therapist, notes, date, start_time, duration_minutes, status } = updates;
+    const { treatments, therapist, notes, date, start_time, duration_minutes, status, treatment_items } = updates;
 
     const newDate = date !== undefined ? date : e.date;
     const newStart = start_time !== undefined ? start_time : e.start_time;
     const newDuration = duration_minutes !== undefined ? duration_minutes : e.duration_minutes;
     const newTherapist = therapist !== undefined ? therapist : e.therapist;
+
+    // Resolve treatment_items → treatments text
+    const newItems = Array.isArray(treatment_items) && treatment_items.length > 0 ? treatment_items : null;
+    const newTreatments = newItems
+      ? newItems.map(t => t.name).filter(Boolean).join('\n') || null
+      : (treatments !== undefined ? treatments : e.treatments);
 
     // If date/time/duration changed, check slot conflicts within the transaction
     const timeChanged = date !== undefined || start_time !== undefined || duration_minutes !== undefined;
@@ -258,13 +270,14 @@ async function update(id, updates) {
     const newStatus = (status && allowedStatuses.includes(status)) ? status : e.status;
 
     await client.query(
-      `UPDATE appointments SET date=$1, start_time=$2, duration_minutes=$3, treatments=$4, therapist=$5, notes=$6, status=$7 WHERE id=$8`,
+      `UPDATE appointments SET date=$1, start_time=$2, duration_minutes=$3, treatments=$4, therapist=$5, notes=$6, status=$7, treatment_items=$8 WHERE id=$9`,
       [
         newDate, newStart, newDuration,
-        treatments !== undefined ? treatments : e.treatments,
+        newTreatments,
         newTherapist || null,
         notes !== undefined ? notes : e.notes,
         newStatus,
+        newItems ? JSON.stringify(newItems) : (treatment_items === null ? null : e.treatment_items ?? null),
         parsedId,
       ]
     );

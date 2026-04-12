@@ -508,7 +508,7 @@ export default function Dashboard() {
         <div style={tableShellStyle()}>
           <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--sidebar-border)' }}>
             <h2 style={{ margin: 0, fontSize: 20, color: 'var(--text-primary)' }}>Therapist performance</h2>
-            <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--label-color)' }}>From appointment schedule; revenue via linked invoices</p>
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--label-color)' }}>Revenue and treatments from invoice line items per therapist</p>
           </div>
           {!data || data.therapistStats.length === 0 ? (
             <div style={{ padding: 28, textAlign: 'center', color: 'var(--label-color)', fontSize: 14 }}>No data available</div>
@@ -518,7 +518,7 @@ export default function Dashboard() {
                 <tr>
                   <th style={thStyle()}>Name</th>
                   <th style={{ ...thStyle(), textAlign: 'right' }}>Revenue</th>
-                  <th style={{ ...thStyle(), textAlign: 'right' }}>Appointments</th>
+                  <th style={{ ...thStyle(), textAlign: 'right' }}>Treatments Done</th>
                   <th style={{ ...thStyle(), textAlign: 'right' }}>Clients</th>
                 </tr>
               </thead>
@@ -527,7 +527,7 @@ export default function Dashboard() {
                   <tr key={row.name}>
                     <td style={tdStyle()}>{row.name}</td>
                     <td style={{ ...tdStyle(), textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{moneyFmtFine.format(row.revenue)}</td>
-                    <td style={{ ...tdStyle(), textAlign: 'right' }}>{row.appointmentsHandled}</td>
+                    <td style={{ ...tdStyle(), textAlign: 'right' }}>{row.treatmentsDone}</td>
                     <td style={{ ...tdStyle(), textAlign: 'right' }}>{row.clientsHandled}</td>
                   </tr>
                 ))}
