@@ -130,13 +130,6 @@ async function create({ client_id, date, start_time, duration_minutes, treatment
         throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
       }
 
-      // Per-therapist conflict check
-      if (therapist) {
-        const hasConflict = await checkTherapistConflict(therapist, date, start_time, duration_minutes, null, client);
-        if (hasConflict) {
-          throw svcError(409, `Schedule conflict: ${therapist} already has an appointment at this time`);
-        }
-      }
     }
 
     const confirmationToken = crypto.randomBytes(24).toString('hex');
@@ -246,29 +239,19 @@ async function update(id, updates) {
     const newDuration = duration_minutes !== undefined ? duration_minutes : e.duration_minutes;
     const newTherapist = therapist !== undefined ? therapist : e.therapist;
 
-    // If date/time/duration/therapist changed, check conflicts within the transaction
+    // If date/time/duration changed, check slot conflicts within the transaction
     const timeChanged = date !== undefined || start_time !== undefined || duration_minutes !== undefined;
-    const therapistChanged = therapist !== undefined && therapist !== e.therapist;
 
-    if (timeChanged || therapistChanged) {
+    if (timeChanged) {
       // Lock appointments on the target date
       await client.query(
         `SELECT id FROM appointments WHERE date = $1 AND status NOT IN ('cancelled','cancelled_by_client') AND id != $2 FOR UPDATE`,
         [newDate, parsedId]
       );
 
-      if (timeChanged) {
-        const { count, blocked } = await checkConflicts(newDate, newStart, newDuration, parsedId, client);
-        if (blocked) throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
-        if (count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
-      }
-
-      if (newTherapist) {
-        const hasConflict = await checkTherapistConflict(newTherapist, newDate, newStart, newDuration, parsedId, client);
-        if (hasConflict) {
-          throw svcError(409, `Schedule conflict: ${newTherapist} already has an appointment at this time`);
-        }
-      }
+      const { count, blocked } = await checkConflicts(newDate, newStart, newDuration, parsedId, client);
+      if (blocked) throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
+      if (count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
     }
 
     const allowedStatuses = ['tentative', 'confirmed', 'done', 'cancelled'];
@@ -324,14 +307,6 @@ async function reschedule(id, { date, start_time, duration_minutes }) {
     const { count, blocked } = await checkConflicts(date, start_time, duration_minutes, parsedId, client);
     if (blocked) throw svcError(409, 'This time overlaps a blocked period. Please choose a different time.');
     if (count >= 3) throw svcError(409, 'This time slot is fully booked (3/3 appointments)');
-
-    // Per-therapist check (use existing therapist from the appointment)
-    if (row.therapist) {
-      const hasConflict = await checkTherapistConflict(row.therapist, date, start_time, duration_minutes, parsedId, client);
-      if (hasConflict) {
-        throw svcError(409, `Schedule conflict: ${row.therapist} already has an appointment at this time`);
-      }
-    }
 
     await client.query(
       'UPDATE appointments SET date=$1, start_time=$2, duration_minutes=$3, rescheduled_at=$4 WHERE id=$5',
