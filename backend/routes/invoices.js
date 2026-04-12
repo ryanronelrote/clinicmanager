@@ -53,6 +53,13 @@ router.get('/stats', asyncHandler(async (req, res) => {
   res.json(stats);
 }));
 
+// List all payments across all invoices
+router.get('/payments', asyncHandler(async (req, res) => {
+  const { from_date, to_date } = req.query;
+  const rows = await paymentService.listAllPayments({ from_date, to_date });
+  res.json(rows);
+}));
+
 // Get single invoice (with items + payments)
 router.get('/:id', asyncHandler(async (req, res) => {
   const invoice = await invoiceService.getInvoice(req.params.id);
@@ -91,13 +98,6 @@ router.patch('/:id/items', asyncHandler(async (req, res) => {
   const { items } = req.body;
   const invoice = await invoiceService.updateInvoiceItems(req.params.id, items || []);
   res.json(invoice);
-}));
-
-// List all payments across all invoices
-router.get('/payments', asyncHandler(async (req, res) => {
-  const { from_date, to_date } = req.query;
-  const rows = await paymentService.listAllPayments({ from_date, to_date });
-  res.json(rows);
 }));
 
 // Add payment to invoice
