@@ -210,6 +210,10 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_invoices_invoice_date ON invoices(invoice_date);
     `,
   },
+  {
+    name: '019_invoice_notes',
+    sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS notes TEXT;`,
+  },
 ];
 
 async function runMigrations(pool) {

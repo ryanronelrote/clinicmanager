@@ -60,6 +60,7 @@ export default function CreateInvoice() {
   });
   const [createdBy, setCreatedBy] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(manilaTodayYmd);
+  const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -134,6 +135,7 @@ export default function CreateInvoice() {
         })),
         created_by: createdBy.trim(),
         invoice_date: invoiceDate,
+        notes: notes.trim() || null,
       });
       navigate(`/invoices/${invoice.id}`);
     } catch (err) {
@@ -347,6 +349,18 @@ export default function CreateInvoice() {
               required
             />
           )}
+        </label>
+
+        {/* Notes */}
+        <label style={labelStyle}>
+          <strong>Notes</strong>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="e.g. walk-in, package deal, referral…"
+            rows={3}
+            style={{ ...fieldStyle, resize: 'vertical' }}
+          />
         </label>
 
         {/* Submit */}

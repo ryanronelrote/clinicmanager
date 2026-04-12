@@ -53,7 +53,7 @@ function parseOptionalBusinessDate(value, fieldLabel) {
   return parseBusinessDate(value, fieldLabel);
 }
 
-async function createInvoice({ patient_id, appointment_id, items, created_by, invoice_date }) {
+async function createInvoice({ patient_id, appointment_id, items, created_by, invoice_date, notes }) {
   if (!created_by || !created_by.trim()) throw svcError(400, 'created_by is required');
   if (!items || items.length === 0) {
     throw svcError(400, 'Invoice must have at least 1 item');
@@ -95,9 +95,9 @@ async function createInvoice({ patient_id, appointment_id, items, created_by, in
 
     // Insert invoice
     const { rows: invoiceRows } = await client.query(
-      `INSERT INTO invoices (appointment_id, patient_id, total_amount, amount_paid, status, created_by, invoice_date)
-       VALUES ($1, $2, $3, 0, 'unpaid', $4, $5::date) RETURNING id`,
-      [appointment_id ? parseInt(appointment_id) : null, parseInt(patient_id), totalAmount, created_by.trim(), invoiceDateStr]
+      `INSERT INTO invoices (appointment_id, patient_id, total_amount, amount_paid, status, created_by, invoice_date, notes)
+       VALUES ($1, $2, $3, 0, 'unpaid', $4, $5::date, $6) RETURNING id`,
+      [appointment_id ? parseInt(appointment_id) : null, parseInt(patient_id), totalAmount, created_by.trim(), invoiceDateStr, notes?.trim() || null]
     );
     const invoiceId = invoiceRows[0].id;
 

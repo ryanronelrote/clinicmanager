@@ -334,6 +334,12 @@ export default function InvoiceDetail() {
             <span style={labelStyle}>Created by</span>
             <span>{invoice.created_by || '—'}</span>
           </div>
+          {invoice.notes && (
+            <div style={rowStyle}>
+              <span style={labelStyle}>Notes</span>
+              <span style={{ whiteSpace: 'pre-wrap' }}>{invoice.notes}</span>
+            </div>
+          )}
         </div>
 
         {/* Line items */}

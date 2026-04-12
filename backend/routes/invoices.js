@@ -68,13 +68,14 @@ router.patch('/:id/invoice-date', validate(invoiceDatePatchSchema), asyncHandler
 
 // Create invoice
 router.post('/', validate(createSchema), asyncHandler(async (req, res) => {
-  const { patient_id, appointment_id, items, created_by, invoice_date } = req.body;
+  const { patient_id, appointment_id, items, created_by, invoice_date, notes } = req.body;
   const invoice = await invoiceService.createInvoice({
     patient_id: parseInt(patient_id),
     appointment_id: appointment_id ? parseInt(appointment_id) : null,
     items: items || [],
     created_by,
     invoice_date,
+    notes,
   });
   res.status(201).json(invoice);
 }));
