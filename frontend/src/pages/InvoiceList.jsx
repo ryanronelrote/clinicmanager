@@ -4,6 +4,33 @@ import { useAsync } from '../hooks/useAsync';
 import { invoiceService } from '../services/invoiceService';
 import { solidBtn, outlineBtn } from '../utils/styleUtils';
 
+function manilaTodayYmd() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
+function manilaStartOfWeekYmd() {
+  const manila = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+  manila.setDate(manila.getDate() - manila.getDay());
+  return manila.toLocaleDateString('en-CA');
+}
+function manilaStartOfMonthYmd() {
+  const manila = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+  manila.setDate(1);
+  return manila.toLocaleDateString('en-CA');
+}
+function resolvePreset(key) {
+  const today = manilaTodayYmd();
+  if (key === 'today') return { from_date: today, to_date: today };
+  if (key === 'week')  return { from_date: manilaStartOfWeekYmd(), to_date: today };
+  if (key === 'month') return { from_date: manilaStartOfMonthYmd(), to_date: today };
+  return { from_date: '', to_date: '' };
+}
+const PRESETS = [
+  { label: 'Today',      key: 'today' },
+  { label: 'This Week',  key: 'week' },
+  { label: 'This Month', key: 'month' },
+  { label: 'Custom',     key: 'custom' },
+];
+
 const STATUS_CONFIG = {
   unpaid:  { label: 'Unpaid',  color: '#8b3a3a', bg: '#faeaea', border: '#c97b7b' },
   partial: { label: 'Partial', color: '#7a5c2e', bg: '#fdf3e3', border: '#d6a45c' },
@@ -26,13 +53,21 @@ function InvoiceStatusBadge({ status }) {
 
 export default function InvoiceList() {
   const navigate = useNavigate();
+  const today = manilaTodayYmd();
   const [statusFilter, setStatusFilter] = useState('');
+  const [preset, setPreset] = useState('month');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [applied, setApplied] = useState(() => resolvePreset('month'));
+
+  function selectPreset(key) {
+    setPreset(key);
+    if (key !== 'custom') setApplied(resolvePreset(key));
+  }
 
   const { data: invoices = [], loading, refetch } = useAsync(
-    () => invoiceService.getAll({ status: statusFilter || undefined, from_date: fromDate || undefined, to_date: toDate || undefined }),
-    [statusFilter, fromDate, toDate]
+    () => invoiceService.getAll({ status: statusFilter || undefined, from_date: applied.from_date || undefined, to_date: applied.to_date || undefined }),
+    [statusFilter, applied]
   );
 
   const totals = invoices.reduce((acc, inv) => {
@@ -69,36 +104,72 @@ export default function InvoiceList() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13 }}
+          style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13, marginRight: 4 }}
         >
           <option value="">All Statuses</option>
           <option value="unpaid">Unpaid</option>
           <option value="partial">Partial</option>
           <option value="paid">Paid</option>
         </select>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 13, color: '#7a6a5f' }}>From:</label>
-          <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
-            style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13 }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 13, color: '#7a6a5f' }}>To:</label>
-          <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
-            style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13 }} />
-        </div>
-        {(statusFilter || fromDate || toDate) && (
+        {PRESETS.map(p => (
           <button
-            onClick={() => { setStatusFilter(''); setFromDate(''); setToDate(''); }}
+            key={p.key}
+            onClick={() => selectPreset(p.key)}
+            style={{
+              padding: '6px 14px',
+              border: preset === p.key ? '2px solid var(--primary)' : '1px solid #e8dfd6',
+              borderRadius: 8, fontSize: 13,
+              fontWeight: preset === p.key ? 700 : 400,
+              background: preset === p.key ? '#fdf6ee' : '#fff',
+              color: preset === p.key ? '#3e2f25' : '#7a6a5f',
+              cursor: 'pointer', fontFamily: 'var(--font-body)',
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+        {statusFilter && (
+          <button
+            onClick={() => setStatusFilter('')}
             style={{ ...outlineBtn('#7a6a5f'), fontSize: 12, padding: '4px 10px' }}
           >
-            Clear
+            Clear status
           </button>
         )}
       </div>
+      {preset === 'custom' && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
+          <label style={{ fontSize: 13 }}>
+            <span style={{ display: 'block', marginBottom: 4, color: '#7a6a5f', fontWeight: 600 }}>From</span>
+            <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+              style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13 }} />
+          </label>
+          <label style={{ fontSize: 13 }}>
+            <span style={{ display: 'block', marginBottom: 4, color: '#7a6a5f', fontWeight: 600 }}>To</span>
+            <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} max={today}
+              style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid #e8dfd6', fontSize: 13 }} />
+          </label>
+          <button
+            onClick={() => setApplied({ from_date: fromDate, to_date: toDate })}
+            style={{ padding: '7px 18px', background: 'var(--primary)', color: '#3e2f25', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+          >
+            Apply
+          </button>
+          {(applied.from_date || applied.to_date) && (
+            <button
+              onClick={() => { setFromDate(''); setToDate(''); setApplied({ from_date: '', to_date: '' }); }}
+              style={{ padding: '7px 14px', background: 'none', border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 13, cursor: 'pointer', color: '#7a6a5f' }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+      {preset !== 'custom' && <div style={{ marginBottom: 16 }} />}
 
       {invoices.length === 0 ? (
         <div style={{ padding: 32, textAlign: 'center', color: '#7a6a5f', border: '1px dashed #e8dfd6', borderRadius: 8 }}>
