@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { VIP_BADGE } from '../utils/styleUtils';
@@ -7,8 +8,24 @@ export default function ClientList() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const vipOnly = searchParams.get('vip') === '1';
+  const [search, setSearch] = useState('');
+  const [sortDir, setSortDir] = useState('asc');
 
-  const displayed = vipOnly ? (clients || []).filter(c => c.is_vip) : (clients || []);
+  const base = vipOnly ? (clients || []).filter(c => c.is_vip) : (clients || []);
+
+  const filtered = search.trim()
+    ? base.filter(c =>
+        `${c.first_name} ${c.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
+        (c.phone || '').includes(search) ||
+        (c.email || '').toLowerCase().includes(search.toLowerCase())
+      )
+    : base;
+
+  const displayed = [...filtered].sort((a, b) => {
+    const nameA = `${a.last_name} ${a.first_name}`.toLowerCase();
+    const nameB = `${b.last_name} ${b.first_name}`.toLowerCase();
+    return sortDir === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+  });
 
   if (loading) return <p>Loading...</p>;
 
@@ -41,15 +58,33 @@ export default function ClientList() {
         </button>
       </div>
 
+      <input
+        type="text"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Search by name, phone, or email…"
+        style={{
+          display: 'block', width: '100%', boxSizing: 'border-box',
+          padding: '9px 12px', marginBottom: 16,
+          border: '1px solid #e8dfd6', borderRadius: 8, fontSize: 14,
+          fontFamily: 'var(--font-body)',
+        }}
+      />
+
       {displayed.length === 0 ? (
         <div style={{ padding: 32, textAlign: 'center', color: '#7a6a5f', border: '1px dashed #e8dfd6', borderRadius: 8 }}>
-          {vipOnly ? 'No VIP clients yet.' : 'No clients yet.'}
+          {search.trim() ? `No clients match "${search}".` : vipOnly ? 'No VIP clients yet.' : 'No clients yet.'}
         </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid #e8dfd6' }}>
-              <th style={{ padding: '8px' }}>Name</th>
+              <th
+                style={{ padding: '8px', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+              >
+                Name {sortDir === 'asc' ? '↑' : '↓'}
+              </th>
               <th style={{ padding: '8px' }}>Phone</th>
               <th style={{ padding: '8px' }}>Email</th>
               <th style={{ padding: '8px' }}>Added</th>
