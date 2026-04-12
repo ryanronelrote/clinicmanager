@@ -7,7 +7,7 @@ function svcError(statusCode, message) {
   return err;
 }
 
-const ALLOWED_METHODS = ['cash', 'gcash', 'card'];
+const ALLOWED_METHODS = ['cash', 'gcash', 'bdo', 'card'];
 
 async function addPayment({ invoice_id, amount, payment_method, received_by, payment_date }) {
   const parsedInvoiceId = parseInt(invoice_id);

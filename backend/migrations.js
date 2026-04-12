@@ -214,6 +214,14 @@ const migrations = [
     name: '019_invoice_notes',
     sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS notes TEXT;`,
   },
+  {
+    name: '020_payment_method_bdo',
+    sql: `
+      ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_payment_method_check;
+      ALTER TABLE payments ADD CONSTRAINT payments_payment_method_check
+        CHECK (payment_method IN ('cash', 'gcash', 'bdo', 'card'));
+    `,
+  },
 ];
 
 async function runMigrations(pool) {
