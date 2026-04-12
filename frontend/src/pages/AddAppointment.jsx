@@ -6,7 +6,7 @@ import { useClients } from '../hooks/useClients';
 import { useServices } from '../hooks/useServices';
 import { useConflictCheck } from '../hooks/useConflictCheck';
 
-const DURATIONS = [15, 30, 45, 60, 75, 90, 120, 150, 180];
+const DURATIONS = [15, 30, 45, 60, 75, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360];
 
 export default function AddAppointment() {
   const navigate = useNavigate();
@@ -212,7 +212,7 @@ export default function AddAppointment() {
           Duration *
           <select name="duration_minutes" value={form.duration_minutes} onChange={handleChange} required style={fieldStyle}>
             {DURATIONS.map(d => (
-              <option key={d} value={d}>{d} min ({d >= 60 ? `${d / 60}h` : ''})</option>
+              <option key={d} value={d}>{d} min {d >= 60 ? `(${Math.floor(d / 60)}h${d % 60 ? ` ${d % 60}m` : ''})` : ''}</option>
             ))}
           </select>
         </label>
